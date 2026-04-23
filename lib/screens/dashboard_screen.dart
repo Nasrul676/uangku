@@ -9,7 +9,10 @@ import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../providers/transaction_provider.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../widgets/animated_bouncing_card.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
 import 'settings_screen.dart';
@@ -936,7 +939,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 100), // Transparent space for navbar clearance
             ],
           ),
         );
@@ -985,7 +988,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFF111111), width: 1.2),
+              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x14000000),
@@ -1052,7 +1055,7 @@ class _FloatingQuickAddButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF5BB8A),
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF111111), width: 1.4),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
           boxShadow: const [
             BoxShadow(
               color: Color(0x22000000),
@@ -1071,17 +1074,17 @@ class _FloatingQuickAddButton extends StatelessWidget {
   }
 }
 
-class _QuickAddSheetItem extends StatefulWidget {
+class _QuickAddSheetItem extends StatelessWidget {
   const _QuickAddSheetItem({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
     required this.onTap,
-    this.textColor,
-    this.subtitleColor,
-    this.iconColor,
-    this.trailingColor,
+    this.textColor = const Color(0xFF111111),
+    this.subtitleColor = const Color(0xFF555555),
+    this.iconColor = const Color(0xFF111111),
+    this.trailingColor = const Color(0xFF111111),
   });
 
   final IconData icon;
@@ -1089,77 +1092,55 @@ class _QuickAddSheetItem extends StatefulWidget {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
-  final Color? textColor;
-  final Color? subtitleColor;
-  final Color? iconColor;
-  final Color? trailingColor;
-
-  @override
-  State<_QuickAddSheetItem> createState() => _QuickAddSheetItemState();
-}
-
-class _QuickAddSheetItemState extends State<_QuickAddSheetItem> {
-  bool _isPressed = false;
+  final Color textColor;
+  final Color subtitleColor;
+  final Color iconColor;
+  final Color trailingColor;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 110),
-      curve: Curves.easeOutCubic,
-      scale: _isPressed ? 0.985 : 1,
-      child: InkWell(
-        onTap: widget.onTap,
-        onHighlightChanged: (value) {
-          if (_isPressed == value) return;
-          setState(() => _isPressed = value);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF111111), width: 1.1),
+    return AnimatedBouncingCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(9),
+              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: widget.color,
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: const Color(0xFF111111), width: 1),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: textColor,
+                  ),
                 ),
-                child: Icon(widget.icon, size: 18, color: widget.iconColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: widget.textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      widget.subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: widget.subtitleColor,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: subtitleColor,
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: widget.trailingColor),
-            ],
+              ],
+            ),
           ),
-        ),
+          Icon(Icons.chevron_right_rounded, color: trailingColor),
+        ],
       ),
     );
   }
@@ -1218,7 +1199,7 @@ class _QuickNavItemState extends State<_QuickNavItem> {
                   color: background,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: const Color(0xFF111111),
+                    color: AppTheme.borderColor,
                     width: 1.2,
                   ),
                 ),
@@ -1302,7 +1283,7 @@ class _BookPeriodCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF111111), width: 1),
+                  border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
                 ),
                 child: Row(
                   children: [
@@ -1313,7 +1294,7 @@ class _BookPeriodCard extends StatelessWidget {
                         color: const Color(0xFFF5F7FF),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFF111111),
+                          color: AppTheme.borderColor,
                           width: 1,
                         ),
                       ),
@@ -1369,7 +1350,7 @@ class _BookPeriodCard extends StatelessWidget {
                         : const Color(0xFFA4DBB2),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: const Color(0xFF111111),
+                      color: AppTheme.borderColor,
                       width: 1,
                     ),
                   ),
@@ -1568,7 +1549,7 @@ class _BookPeriodCollapsedBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FF),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF111111), width: 1),
+                border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
               ),
               child: const Icon(Icons.menu_book_rounded, size: 16),
             ),
@@ -1630,7 +1611,7 @@ class _PeriodPickerItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF7EECF) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF111111), width: 1.1),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Row(
           children: [
@@ -1670,7 +1651,7 @@ class _PeriodPickerItem extends StatelessWidget {
                     color: const Color(0xFFF0C8C8),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: const Color(0xFF111111),
+                      color: AppTheme.borderColor,
                       width: 1,
                     ),
                   ),
@@ -1819,7 +1800,7 @@ class _FinancialPlanTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF111111), width: 1.2),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
       child: Row(
         children: [
@@ -1829,7 +1810,7 @@ class _FinancialPlanTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF7EECF),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF111111), width: 1.1),
+              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
             ),
             child: const Icon(Icons.flag_rounded, size: 18),
           ),
@@ -1970,97 +1951,103 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return AnimatedBouncingCard(
+      isPressedEffect: true,
+      padding: const EdgeInsets.all(14),
       color: const Color(0xFFEDD07D),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Dompet Kamu', style: theme.textTheme.bodySmall),
-                const Spacer(),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  splashRadius: 18,
-                  onPressed: onToggleBalanceVisibility,
-                  icon: Icon(
-                    isBalanceHidden
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    size: 18,
-                  ),
+      onTap: () {
+        // Toggle visibility maybe?
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Dompet Kamu',
+                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                const Icon(Icons.cloud_done_rounded, size: 16),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Saldo Kamu Sekarang',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
               ),
-            ),
-            const SizedBox(height: 2),
-            _AnimatedVisibilityCurrencyText(
-              value: netBalance,
-              isHidden: isBalanceHidden,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 34,
-                fontWeight: FontWeight.w700,
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                splashRadius: 18,
+                onPressed: onToggleBalanceVisibility,
+                icon: Icon(
+                  isBalanceHidden
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  size: 18,
+                ),
               ),
-              childBuilder: (style) =>
-                  _AnimatedNetBalanceText(value: netBalance, style: style),
+              const Icon(Icons.cloud_done_rounded, size: 16),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Saldo Kamu Sekarang',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 8),
-            _SummaryRow(
-              label: 'Total Pemasukan',
-              value: totalIncome,
-              isHidden: isBalanceHidden,
+          ),
+          const SizedBox(height: 2),
+          _AnimatedVisibilityCurrencyText(
+            value: netBalance,
+            isHidden: isBalanceHidden,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
             ),
-            _SummaryRow(
-              label: 'Total Pengeluaran',
-              value: totalExpense,
-              labelColor: const Color(0xFFC24545),
-              valueColor: const Color(0xFFC24545),
-              isHidden: isBalanceHidden,
-            ),
-            _SummaryRow(
-              label: 'Selisih',
-              value: netBalance,
-              withSign: true,
-              isHidden: isBalanceHidden,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Pemasukan',
-                    icon: Icons.south_west_rounded,
-                    background: Colors.white,
-                    iconBackground: const Color(0xFFA4DBB2),
-                    onTap: onAddIncome,
-                  ),
+            childBuilder: (style) =>
+                _AnimatedNetBalanceText(value: netBalance, style: style),
+          ),
+          const SizedBox(height: 8),
+          _SummaryRow(
+            label: 'Total Pemasukan',
+            value: totalIncome,
+            isHidden: isBalanceHidden,
+          ),
+          _SummaryRow(
+            label: 'Total Pengeluaran',
+            value: totalExpense,
+            labelColor: const Color(0xFFC24545),
+            valueColor: const Color(0xFFC24545),
+            isHidden: isBalanceHidden,
+          ),
+          _SummaryRow(
+            label: 'Selisih',
+            value: netBalance,
+            withSign: true,
+            isHidden: isBalanceHidden,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: 'Pemasukan',
+                  icon: Icons.south_west_rounded,
+                  background: Colors.white,
+                  iconBackground: const Color(0xFFA4DBB2),
+                  onTap: onAddIncome,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Pengeluaran',
-                    icon: Icons.north_east_rounded,
-                    background: const Color(0xFFF0C8C8),
-                    iconBackground: const Color(0xFFC24545),
-                    labelColor: const Color(0xFFC24545),
-                    iconColor: Colors.white,
-                    onTap: onAddExpense,
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActionButton(
+                  label: 'Pengeluaran',
+                  icon: Icons.north_east_rounded,
+                  background: const Color(0xFFF0C8C8),
+                  iconBackground: const Color(0xFFC24545),
+                  labelColor: const Color(0xFFC24545),
+                  iconColor: Colors.white,
+                  onTap: onAddExpense,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -2387,7 +2374,7 @@ class _GraphCard extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 28,
-                    color: const Color(0xFF111111),
+                    color: AppTheme.borderColor,
                   ),
                   const SizedBox(width: 10),
                   _IconFilterButton(
@@ -2478,7 +2465,7 @@ class _GraphCard extends StatelessWidget {
                         color: const Color(0xFFF7EECF),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: const Color(0xFF111111),
+                          color: AppTheme.borderColor,
                           width: 1.1,
                         ),
                       ),
@@ -2899,76 +2886,152 @@ class _TransactionTile extends StatelessWidget {
     final amountText =
         '${isIncome ? '+' : '-'}${rupiahFormatter.format(item.amount)}';
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
+    return Slidable(
+      key: ValueKey(item.id),
+      startActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (context) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => isIncome
+                      ? IncomeInputScreen(existingTransaction: item)
+                      : ExpenseInputScreen(existingTransaction: item),
+                ),
+              );
+            },
+            backgroundColor: const Color(0xFF6CC185),
+            foregroundColor: Colors.white,
+            icon: Icons.edit_rounded,
+            label: 'Edit',
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
+      ),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (slidableCtx) async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogCtx) => AlertDialog(
+                  title: const Text('Hapus Transaksi?'),
+                  content: const Text('Transaksi ini akan dihapus secara permanen.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx, false),
+                      child: const Text('Batal'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(dialogCtx, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFF0C8C8),
+                        foregroundColor: const Color(0xFFC24545),
+                      ),
+                      child: const Text('Hapus'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true && context.mounted) {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await context.read<TransactionProvider>().removeTransaction(item.id!);
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Transaksi berhasil dihapus.')),
+                  );
+                } catch (e) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}')),
+                  );
+                }
+              }
+            },
+            backgroundColor: const Color(0xFFC24545),
+            foregroundColor: Colors.white,
+            icon: Icons.delete_rounded,
+            label: 'Hapus',
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
+      ),
+      child: AnimatedBouncingCard(
+        isPressedEffect: true,
+        onTap: () {
+          // If you want tap to do something, add it here. 
+          // For now just for the bounce effect.
+        },
+        padding: const EdgeInsets.all(10),
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF111111), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isIncome
-                  ? const Color(0xFFA9DDB5)
-                  : const Color(0xFFF0C8C8),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF111111), width: 1.2),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isIncome
+                    ? const Color(0xFFA9DDB5)
+                    : const Color(0xFFF0C8C8),
+                borderRadius: BorderRadius.circular(8),
+                border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+              ),
+              child: Icon(
+                isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
+                size: 16,
+                color: isIncome ? null : const Color(0xFFC24545),
+              ),
             ),
-            child: Icon(
-              isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
-              size: 16,
-              color: isIncome ? null : const Color(0xFFC24545),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: isIncome ? null : const Color(0xFFC24545),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.category} • $datetimeLabel',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isIncome ? null : const Color(0xFFA13A3A),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  item.title,
+                  amountText,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: isIncome ? null : const Color(0xFFC24545),
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  '${item.category} • $datetimeLabel',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isIncome ? null : const Color(0xFFA13A3A),
-                  ),
+                Icon(
+                  item.isSynced == 1
+                      ? Icons.cloud_done_rounded
+                      : Icons.cloud_off_rounded,
+                  size: 16,
+                  color: item.isSynced == 1
+                      ? const Color(0xFF2A9D50)
+                      : const Color(0xFFC24545),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amountText,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: isIncome ? null : const Color(0xFFC24545),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Icon(
-                item.isSynced == 1
-                    ? Icons.cloud_done_rounded
-                    : Icons.cloud_off_rounded,
-                size: 16,
-                color: item.isSynced == 1
-                    ? const Color(0xFF2A9D50)
-                    : const Color(0xFFC24545),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3032,7 +3095,7 @@ class _FinancialPlanDueNoticeCard extends StatelessWidget {
                         : const Color(0xFFFFFFFF),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: const Color(0xFF111111),
+                      color: AppTheme.borderColor,
                       width: 1.1,
                     ),
                   ),
@@ -3096,7 +3159,7 @@ class _FilterButton extends StatelessWidget {
               ? (selectedColor ?? const Color(0xFFA4DBB2))
               : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Text(
           label,
@@ -3139,7 +3202,7 @@ class _IconFilterButton extends StatelessWidget {
               ? (selectedColor ?? const Color(0xFFA4DBB2))
               : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Icon(icon, size: 16, color: iconColor),
       ),
@@ -3191,7 +3254,7 @@ class _ActionButtonState extends State<_ActionButton> {
           decoration: BoxDecoration(
             color: widget.background,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF111111), width: 1.2),
+            border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -3211,7 +3274,7 @@ class _ActionButtonState extends State<_ActionButton> {
                 decoration: BoxDecoration(
                   color: widget.iconBackground,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: const Color(0xFF111111), width: 1),
+                  border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
                 ),
                 child: Icon(widget.icon, size: 12, color: widget.iconColor),
               ),
@@ -3240,7 +3303,7 @@ class _CircleIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Icon(icon, size: 18),
       ),

@@ -1,14 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../widgets/animated_bouncing_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/finance_transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
 
 class IncomeInputScreen extends StatefulWidget {
-  const IncomeInputScreen({super.key});
+  const IncomeInputScreen({super.key, this.existingTransaction});
+
+  final FinanceTransaction? existingTransaction;
 
   @override
   State<IncomeInputScreen> createState() => _IncomeInputScreenState();
@@ -23,6 +28,29 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
   String _category = 'Gaji';
   bool _isSaving = false;
   bool _isAddingCategory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingTransaction;
+    if (existing != null) {
+      _amountController.text = NumberFormat.decimalPattern('id_ID').format(existing.amount);
+      final parsedDate = DateTime.tryParse(existing.date);
+      if (parsedDate != null) {
+        _selectedDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+      }
+      if (existing.time != null && existing.time!.isNotEmpty) {
+        final parts = existing.time!.split(':');
+        if (parts.length == 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.tryParse(parts[0]) ?? 0, 
+            minute: int.tryParse(parts[1]) ?? 0,
+          );
+        }
+      }
+      _category = existing.category;
+    }
+  }
 
   @override
   void dispose() {
@@ -69,28 +97,53 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
+    final isEdit = widget.existingTransaction != null;
+
     setState(() => _isSaving = true);
 
     try {
-      await context
-          .read<TransactionProvider>()
-          .addTransaction(
-            title: _category,
-            amount: RupiahInputFormatter.parse(_amountController.text),
-            type: 'INCOME',
-            category: _category,
-            date: _selectedDate,
-            time: _selectedTime == null
-                ? null
-                : _formatTimeForStorage(_selectedTime!),
-          )
-          .timeout(const Duration(seconds: 10));
+      if (isEdit) {
+        await context
+            .read<TransactionProvider>()
+            .updateTransaction(
+              id: widget.existingTransaction!.id!,
+              title: _category,
+              amount: RupiahInputFormatter.parse(_amountController.text),
+              type: 'INCOME',
+              category: _category,
+              date: _selectedDate,
+              time: _selectedTime == null
+                  ? null
+                  : _formatTimeForStorage(_selectedTime!),
+            )
+            .timeout(const Duration(seconds: 10));
+      } else {
+        await context
+            .read<TransactionProvider>()
+            .addTransaction(
+              title: _category,
+              amount: RupiahInputFormatter.parse(_amountController.text),
+              type: 'INCOME',
+              category: _category,
+              date: _selectedDate,
+              time: _selectedTime == null
+                  ? null
+                  : _formatTimeForStorage(_selectedTime!),
+            )
+            .timeout(const Duration(seconds: 10));
+      }
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
       messenger.showSnackBar(
-        const SnackBar(content: Text('Yeay, pemasukan berhasil disimpan!')),
+        SnackBar(
+          content: Text(
+            isEdit
+                ? 'Pemasukan berhasil diperbarui!'
+                : 'Yeay, pemasukan berhasil disimpan!',
+          ),
+        ),
       );
     } on TimeoutException {
       if (!mounted) return;
@@ -244,7 +297,9 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Catat Pemasukan',
+                      widget.existingTransaction == null
+                          ? 'Catat Pemasukan'
+                          : 'Edit Pemasukan',
                       style: theme.textTheme.titleLarge?.copyWith(fontSize: 34),
                     ),
                   ),
@@ -375,7 +430,11 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Simpan Catatan'),
+                                  : Text(
+                                      widget.existingTransaction == null
+                                          ? 'Simpan Catatan'
+                                          : 'Simpan Perubahan',
+                                    ),
                             ),
                           ),
                         ],
@@ -409,7 +468,7 @@ class _CircleButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Icon(icon, size: 18),
       ),
@@ -430,20 +489,14 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AnimatedBouncingCard(
       onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: selected ? const Color(0xFFA4DBB2) : Colors.white,
       borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFA4DBB2) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
       ),
     );
   }
@@ -457,24 +510,18 @@ class _AddCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AnimatedBouncingCard(
       onTap: isLoading ? null : onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: Colors.white,
       borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.add_rounded, size: 16),
-      ),
+      child: isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.add_rounded, size: 16),
     );
   }
 }

@@ -1,17 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../widgets/animated_bouncing_card.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
-  const ExpenseInputScreen({super.key});
+  const ExpenseInputScreen({super.key, this.existingTransaction});
+
+  final FinanceTransaction? existingTransaction;
 
   @override
   State<ExpenseInputScreen> createState() => _ExpenseInputScreenState();
@@ -37,6 +42,31 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingTransaction;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _amountController.text = NumberFormat.decimalPattern('id_ID').format(existing.amount);
+      final parsedDate = DateTime.tryParse(existing.date);
+      if (parsedDate != null) {
+        _selectedDate = _normalizeDate(parsedDate);
+      }
+      if (existing.time != null && existing.time!.isNotEmpty) {
+        final parts = existing.time!.split(':');
+        if (parts.length == 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.tryParse(parts[0]) ?? 0, 
+            minute: int.tryParse(parts[1]) ?? 0,
+          );
+        }
+      }
+      _category = existing.category;
+      _selectedFinancialPlanId = existing.financialPlanId;
+    }
+  }
 
   @override
   void dispose() {
@@ -415,29 +445,55 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     final selectedPlanId = _selectedFinancialPlanId;
 
+    final isEdit = widget.existingTransaction != null;
+
     setState(() => _isSaving = true);
 
     try {
-      await context
-          .read<TransactionProvider>()
-          .addTransaction(
-            title: titleWithDetail,
-            amount: RupiahInputFormatter.parse(_amountController.text),
-            type: 'EXPENSE',
-            category: _category,
-            date: normalizedSelectedDate,
-            time: _selectedTime == null
-                ? null
-                : _formatTimeForStorage(_selectedTime!),
-            financialPlanId: selectedPlanId,
-          )
-          .timeout(const Duration(seconds: 10));
+      if (isEdit) {
+        await context
+            .read<TransactionProvider>()
+            .updateTransaction(
+              id: widget.existingTransaction!.id!,
+              title: titleWithDetail,
+              amount: RupiahInputFormatter.parse(_amountController.text),
+              type: 'EXPENSE',
+              category: _category,
+              date: normalizedSelectedDate,
+              time: _selectedTime == null
+                  ? null
+                  : _formatTimeForStorage(_selectedTime!),
+              financialPlanId: selectedPlanId,
+            )
+            .timeout(const Duration(seconds: 10));
+      } else {
+        await context
+            .read<TransactionProvider>()
+            .addTransaction(
+              title: titleWithDetail,
+              amount: RupiahInputFormatter.parse(_amountController.text),
+              type: 'EXPENSE',
+              category: _category,
+              date: normalizedSelectedDate,
+              time: _selectedTime == null
+                  ? null
+                  : _formatTimeForStorage(_selectedTime!),
+              financialPlanId: selectedPlanId,
+            )
+            .timeout(const Duration(seconds: 10));
+      }
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
       messenger.showSnackBar(
-        const SnackBar(content: Text('Sip, pengeluaran berhasil disimpan!')),
+        SnackBar(
+          content: Text(
+            isEdit
+                ? 'Pengeluaran berhasil diperbarui!'
+                : 'Sip, pengeluaran berhasil disimpan!',
+          ),
+        ),
       );
     } on TimeoutException {
       if (!mounted) return;
@@ -502,7 +558,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Catat Pengeluaran',
+                      widget.existingTransaction == null
+                          ? 'Catat Pengeluaran'
+                          : 'Edit Pengeluaran',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 34,
                         color: const Color(0xFFC24545),
@@ -547,7 +605,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               ),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: const Color(0xFF111111),
+                                color: AppTheme.borderColor,
                                 width: 1.1,
                               ),
                             ),
@@ -555,7 +613,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Catat Cepat',
+                                  widget.existingTransaction == null
+                                      ? 'Catat Cepat'
+                                      : 'Edit Data',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontSize: 24,
                                     color: const Color(0xFFC24545),
@@ -745,7 +805,11 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Simpan Catatan'),
+                                  : Text(
+                                      widget.existingTransaction == null
+                                          ? 'Simpan Catatan'
+                                          : 'Simpan Perubahan',
+                                    ),
                             ),
                           ),
                         ],
@@ -782,7 +846,7 @@ class _FinancialPlanSelectorField extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF111111), width: 1.1),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
       child: InkWell(
         onTap: onTap,
@@ -824,49 +888,43 @@ class _FinancialPlanSheetItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AnimatedBouncingCard(
       onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      color: selected ? const Color(0xFFF0C8C8) : Colors.white,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF0C8C8) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF111111), width: 1),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: selected ? const Color(0xFFC24545) : null,
-                    ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: selected ? const Color(0xFFC24545) : null,
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: selected ? const Color(0xFFA13A3A) : null,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: selected ? const Color(0xFFA13A3A) : null,
+                      ),
+                ),
+              ],
             ),
-            if (selected)
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFFC24545),
-                size: 18,
-              ),
-          ],
-        ),
+          ),
+          if (selected)
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFFC24545),
+              size: 18,
+            ),
+        ],
       ),
     );
   }
@@ -889,7 +947,7 @@ class _CircleButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Icon(icon, size: 18),
       ),
@@ -918,7 +976,7 @@ class _CategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF0C8C8) : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Text(
           label,
@@ -949,7 +1007,7 @@ class _AddCategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: isLoading
             ? const SizedBox(

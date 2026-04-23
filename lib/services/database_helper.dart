@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
@@ -25,8 +27,14 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+    String path;
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      path = _dbName;
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, _dbName);
+    }
 
     return openDatabase(
       path,
@@ -138,6 +146,22 @@ class DatabaseHelper {
       transactionsTable,
       transaction.toMap()..remove('id'),
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteTransaction(int id) async {
+    final db = await database;
+    await db.delete(transactionsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateTransaction(FinanceTransaction transaction) async {
+    if (transaction.id == null) return;
+    final db = await database;
+    await db.update(
+      transactionsTable,
+      transaction.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
     );
   }
 

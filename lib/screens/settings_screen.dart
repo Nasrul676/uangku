@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/transaction_provider.dart';
+import '../providers/theme_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/animated_bouncing_card.dart';
 import '../services/auth_service.dart';
 import 'onboarding_screen.dart';
 
@@ -11,7 +14,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('Setelan Aplikasi')),
       body: const SettingsContent(),
     );
@@ -260,10 +263,31 @@ class _SettingsContentState extends State<SettingsContent> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tampilan Tema',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Pilih gaya desain yang paling nyaman buatmu.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              const _ThemeSelectorRow(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -301,13 +325,12 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
-          ),
         ),
         const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -372,13 +395,12 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
-          ),
         ),
         const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -413,13 +435,12 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
-          ),
         ),
         const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -445,13 +466,12 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
-          ),
         ),
         const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -479,7 +499,6 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
-          ),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -498,6 +517,172 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ThemeSelectorRow extends StatelessWidget {
+  const _ThemeSelectorRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final currentTheme = themeProvider.currentStyle;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _ThemePreviewOption(
+            title: 'Modern Minimalis',
+            isSelected: currentTheme == AppThemeStyle.classic,
+            onTap: () => themeProvider.setTheme(AppThemeStyle.classic),
+            previewWidget: _buildClassicPreview(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ThemePreviewOption(
+            title: 'Neo-Brutalisme',
+            isSelected: currentTheme == AppThemeStyle.neoBrutalism,
+            onTap: () => themeProvider.setTheme(AppThemeStyle.neoBrutalism),
+            previewWidget: _buildNeoBrutalismPreview(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClassicPreview() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppTheme.lightScaffold,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 12,
+            width: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDD07D),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 30,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.classicBorder, width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNeoBrutalismPreview() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppTheme.neoScaffold,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 12,
+            width: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.borderColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppTheme.cream,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.borderColor, width: 1.2),
+              boxShadow: const [
+                BoxShadow(color: AppTheme.borderColor, offset: Offset(2, 2)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemePreviewOption extends StatelessWidget {
+  const _ThemePreviewOption({
+    required this.title,
+    required this.isSelected,
+    required this.onTap,
+    required this.previewWidget,
+  });
+
+  final String title;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Widget previewWidget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppThemeExtension>();
+
+    return AnimatedBouncingCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(8),
+      color: isSelected ? ext?.primaryActionColor : theme.cardTheme.color,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: previewWidget,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.black.withOpacity(0.1) : Colors.transparent,
+              border: Border.all(
+                color: isSelected ? AppTheme.borderColor : Colors.grey.shade400,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              isSelected ? 'Aktif' : 'Pilih',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppTheme.borderColor : Colors.grey.shade600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

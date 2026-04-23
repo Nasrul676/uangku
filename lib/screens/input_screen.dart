@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -356,7 +357,7 @@ class _TypeToggle extends StatelessWidget {
               ? (selectedColor ?? const Color(0xFFA4DBB2))
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Text(
           label,
@@ -387,7 +388,7 @@ class _CircleButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF111111), width: 1.2),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Icon(icon, size: 18),
       ),

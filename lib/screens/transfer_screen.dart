@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({super.key});
@@ -60,7 +61,7 @@ class _TransferScreenState extends State<TransferScreen> {
                         color: Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF111111),
+                          color: AppTheme.borderColor,
                           width: 1.2,
                         ),
                       ),
@@ -83,7 +84,7 @@ class _TransferScreenState extends State<TransferScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFF111111),
+                              color: AppTheme.borderColor,
                               width: 1.2,
                             ),
                           ),
@@ -96,7 +97,7 @@ class _TransferScreenState extends State<TransferScreen> {
                                   color: const Color(0xFFF4D284),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: const Color(0xFF111111),
+                                    color: AppTheme.borderColor,
                                     width: 1.2,
                                   ),
                                 ),
@@ -222,7 +223,7 @@ class _KeyButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF111111), width: 1.4),
+          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
         child: Center(
           child: Text(

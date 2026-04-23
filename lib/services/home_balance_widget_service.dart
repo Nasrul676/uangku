@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 
@@ -24,6 +25,7 @@ class HomeBalanceWidgetService {
     required double balance,
     required bool isHidden,
   }) async {
+    if (kIsWeb) return;
     final totalIncomeText = _currencyFormatter.format(totalIncome);
     final totalExpenseText = _currencyFormatter.format(totalExpense);
     final balanceText = _currencyFormatter.format(balance);
@@ -58,10 +60,12 @@ class HomeBalanceWidgetService {
   }
 
   Future<Uri?> getInitialLaunchUri() {
+    if (kIsWeb) return Future.value(null);
     return HomeWidget.initiallyLaunchedFromHomeWidget();
   }
 
-  Stream<Uri?> get widgetClickedStream => HomeWidget.widgetClicked;
+  Stream<Uri?> get widgetClickedStream =>
+      kIsWeb ? const Stream.empty() : HomeWidget.widgetClicked;
 
   bool isExpenseInputLaunchUri(Uri? uri) {
     if (uri == null) return false;

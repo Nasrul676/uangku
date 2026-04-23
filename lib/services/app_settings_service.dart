@@ -8,6 +8,7 @@ class AppSettingsService {
   static const planNotificationHourKey = 'plan_notification_hour';
   static const planNotificationMinuteKey = 'plan_notification_minute';
   static const hideBalanceKey = 'hide_balance';
+  static const appThemeKey = 'app_theme';
 
   static const defaultMapping = {
     'id': 'id',
@@ -123,5 +124,15 @@ class AppSettingsService {
   Future<void> saveHideBalance(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(hideBalanceKey, value);
+  }
+
+  Future<String> getAppTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(appThemeKey) ?? 'classic';
+  }
+
+  Future<void> saveAppTheme(String themeName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(appThemeKey, themeName);
   }
 }

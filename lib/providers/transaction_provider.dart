@@ -448,6 +448,67 @@ class TransactionProvider extends ChangeNotifier {
     await loadTransactions();
   }
 
+  Future<void> removeTransaction(int id) async {
+    await _databaseHelper.deleteTransaction(id);
+    await loadTransactions();
+  }
+
+  Future<void> updateTransaction({
+    required int id,
+    required String title,
+    required double amount,
+    required String type,
+    required String category,
+    required DateTime date,
+    String? time,
+    int? financialPlanId,
+  }) async {
+    final active = activeBookPeriod;
+    if (active == null || active.id == null) {
+      throw Exception('Buka buku dulu yuk sebelum mengubah transaksi.');
+    }
+
+    final normalizedDate = _normalizeDate(date);
+    final activeStart = DateTime.tryParse(active.startDate);
+    if (activeStart != null &&
+        normalizedDate.isBefore(_normalizeDate(activeStart))) {
+      throw Exception(
+        'Tanggal transaksi belum bisa sebelum tanggal buka buku aktif.',
+      );
+    }
+
+    if (financialPlanId != null) {
+      final targetPlan = _allFinancialPlans.where(
+        (p) => p.id == financialPlanId,
+      );
+      if (targetPlan.isEmpty) {
+        throw Exception('Rencana keuangan yang dipilih belum ketemu.');
+      }
+      final plan = targetPlan.first;
+      if (plan.bookPeriodId != active.id) {
+        throw Exception(
+          'Rencana keuangan harus dari buku yang sedang aktif, ya.',
+        );
+      }
+    }
+
+    final tx = FinanceTransaction(
+      id: id,
+      bookPeriodId: active.id,
+      financialPlanId: financialPlanId,
+      title: title,
+      amount: amount,
+      type: type,
+      category: category,
+      date: DateFormat('yyyy-MM-dd').format(normalizedDate),
+      time: time,
+      isSynced: 0,
+    );
+
+    await _databaseHelper.updateTransaction(tx);
+    await loadTransactions();
+  }
+
   Future<void> addFinancialPlan({
     required String title,
     required double targetAmount,
