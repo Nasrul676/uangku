@@ -161,7 +161,8 @@ class TransactionProvider extends ChangeNotifier {
 
   void selectBookPeriod(int? periodId) {
     if (periodId == null) {
-      _applySelectedBookPeriod();
+      _selectedBookPeriodId = null;
+      unawaited(_syncHomeBalanceWidget());
       notifyListeners();
       return;
     }
@@ -798,9 +799,14 @@ class TransactionProvider extends ChangeNotifier {
         _bookPeriods.any((item) => item.id == _selectedBookPeriodId);
     if (hasSelected) return;
 
+    final oldId = _selectedBookPeriodId;
     _selectedBookPeriodId =
         activeBookPeriod?.id ??
         (_bookPeriods.isNotEmpty ? _bookPeriods.first.id : null);
+    
+    if (oldId != _selectedBookPeriodId) {
+      unawaited(_syncHomeBalanceWidget());
+    }
   }
 
   DateTime _normalizeDate(DateTime value) {
