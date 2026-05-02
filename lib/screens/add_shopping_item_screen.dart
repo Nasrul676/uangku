@@ -332,6 +332,7 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
