@@ -18,7 +18,7 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
     if (intent.action == "ACTION_TOGGLE_VISIBILITY") {
-      val widgetData = HomeWidgetProvider.getWidgetData(context)
+      val widgetData = context.getSharedPreferences("HomeWidgetPicker", Context.MODE_PRIVATE)
       val currentHidden = widgetData.getBoolean("widget_balance_hidden", false)
       widgetData.edit().putBoolean("widget_balance_hidden", !currentHidden).commit()
 
