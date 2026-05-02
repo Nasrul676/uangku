@@ -116,10 +116,17 @@ class DatabaseHelper {
         }
 
         if (oldVersion < 7) {
-          await db.execute('''
-            ALTER TABLE $shoppingItemsTable
-            ADD COLUMN expense_transaction_id INTEGER
-          ''');
+          // Check if column already exists (added in version 6 in some builds)
+          var columns = await db.rawQuery('PRAGMA table_info($shoppingItemsTable)');
+          bool columnExists = columns.any((column) => column['name'] == 'expense_transaction_id');
+          
+          if (!columnExists) {
+            await db.execute('''
+              ALTER TABLE $shoppingItemsTable
+              ADD COLUMN expense_transaction_id INTEGER
+            ''');
+          }
+          
           await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
           );
