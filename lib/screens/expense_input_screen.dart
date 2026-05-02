@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../providers/transaction_provider.dart';
@@ -49,7 +50,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     final existing = widget.existingTransaction;
     if (existing != null) {
       _titleController.text = existing.title;
-      _amountController.text = NumberFormat.decimalPattern('id_ID').format(existing.amount);
+      _amountController.text = NumberFormat.decimalPattern(
+        'id_ID',
+      ).format(existing.amount);
       final parsedDate = DateTime.tryParse(existing.date);
       if (parsedDate != null) {
         _selectedDate = _normalizeDate(parsedDate);
@@ -58,7 +61,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
         final parts = existing.time!.split(':');
         if (parts.length == 2) {
           _selectedTime = TimeOfDay(
-            hour: int.tryParse(parts[0]) ?? 0, 
+            hour: int.tryParse(parts[0]) ?? 0,
             minute: int.tryParse(parts[1]) ?? 0,
           );
         }
@@ -84,10 +87,21 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   }
 
   DateTime _minimumExpenseDate(TransactionProvider provider) {
-    final activeBook = provider.activeBookPeriod;
-    final startDate = activeBook == null
+    final selectedBookId = provider.selectedBookPeriodId;
+    BookPeriod? selectedBook;
+    if (selectedBookId == null) {
+      selectedBook = provider.activeBookPeriod;
+    } else {
+      for (final item in provider.bookPeriods) {
+        if (item.id == selectedBookId) {
+          selectedBook = item;
+          break;
+        }
+      }
+    }
+    final startDate = selectedBook == null
         ? null
-        : DateTime.tryParse(activeBook.startDate);
+        : DateTime.tryParse(selectedBook.startDate);
     if (startDate == null) return DateTime(2020);
     return _normalizeDate(startDate);
   }
@@ -912,8 +926,8 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: selected ? const Color(0xFFA13A3A) : null,
-                      ),
+                    color: selected ? const Color(0xFFA13A3A) : null,
+                  ),
                 ),
               ],
             ),

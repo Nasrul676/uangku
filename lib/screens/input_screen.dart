@@ -313,6 +313,9 @@ class _InputScreenState extends State<InputScreen> {
                   ),
                 ),
               ),
+              const SizedBox(
+                height: 100,
+              ), // Transparent space for navbar clearance
             ],
           ),
         ),

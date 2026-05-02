@@ -6,6 +6,7 @@ import '../widgets/animated_bouncing_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
@@ -34,16 +35,22 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     super.initState();
     final existing = widget.existingTransaction;
     if (existing != null) {
-      _amountController.text = NumberFormat.decimalPattern('id_ID').format(existing.amount);
+      _amountController.text = NumberFormat.decimalPattern(
+        'id_ID',
+      ).format(existing.amount);
       final parsedDate = DateTime.tryParse(existing.date);
       if (parsedDate != null) {
-        _selectedDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+        _selectedDate = DateTime(
+          parsedDate.year,
+          parsedDate.month,
+          parsedDate.day,
+        );
       }
       if (existing.time != null && existing.time!.isNotEmpty) {
         final parts = existing.time!.split(':');
         if (parts.length == 2) {
           _selectedTime = TimeOfDay(
-            hour: int.tryParse(parts[0]) ?? 0, 
+            hour: int.tryParse(parts[0]) ?? 0,
             minute: int.tryParse(parts[1]) ?? 0,
           );
         }
@@ -58,16 +65,50 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     super.dispose();
   }
 
+  DateTime _normalizeDate(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTime _minimumIncomeDate(TransactionProvider provider) {
+    final selectedBookId = provider.selectedBookPeriodId;
+    BookPeriod? selectedBook;
+    if (selectedBookId == null) {
+      selectedBook = provider.activeBookPeriod;
+    } else {
+      for (final item in provider.bookPeriods) {
+        if (item.id == selectedBookId) {
+          selectedBook = item;
+          break;
+        }
+      }
+    }
+    final startDate = selectedBook == null
+        ? null
+        : DateTime.tryParse(selectedBook.startDate);
+    if (startDate == null) return DateTime(2020);
+    return _normalizeDate(startDate);
+  }
+
   Future<void> _pickDate() async {
+    final provider = context.read<TransactionProvider>();
+    final minDate = _minimumIncomeDate(provider);
+    final maxDate = DateTime(2030);
+    final normalizedSelected = _normalizeDate(_selectedDate);
+    final initialDate = normalizedSelected.isBefore(minDate)
+        ? minDate
+        : normalizedSelected.isAfter(maxDate)
+        ? maxDate
+        : normalizedSelected;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      initialDate: initialDate,
+      firstDate: minDate,
+      lastDate: maxDate,
     );
 
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() => _selectedDate = _normalizeDate(picked));
     }
   }
 
@@ -96,6 +137,21 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
   Future<void> _saveIncome() async {
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
+
+    final provider = context.read<TransactionProvider>();
+    final minDate = _minimumIncomeDate(provider);
+    final normalizedSelectedDate = _normalizeDate(_selectedDate);
+    if (normalizedSelectedDate.isBefore(minDate)) {
+      final minDateText = DateFormat('dd MMM yyyy', 'id').format(minDate);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Tanggal pemasukan belum bisa sebelum tanggal mulai buku ($minDateText).',
+          ),
+        ),
+      );
+      return;
+    }
 
     final isEdit = widget.existingTransaction != null;
 

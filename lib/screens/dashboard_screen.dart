@@ -135,26 +135,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_isSavingFinancialPlan) return;
 
     final provider = context.read<TransactionProvider>();
-    final selectedBookId = provider.selectedBookPeriodId;
-    if (selectedBookId == null) {
+    final openBooks = provider.bookPeriods
+        .where((b) => b.isOpen)
+        .toList(growable: false);
+
+    if (openBooks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pilih buku dulu ya sebelum menambah rencana.'),
+          content: Text(
+            'Pilih atau buka buku dulu ya sebelum menambah rencana.',
+          ),
         ),
       );
       return;
     }
 
-    DateTime? minTargetDate;
-    for (final book in provider.bookPeriods) {
-      if (book.id == selectedBookId) {
-        minTargetDate = DateTime.tryParse(book.startDate);
-        break;
-      }
-    }
+    final defaultBookId =
+        provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
 
     final draft = await _openFinancialPlanInputDialog(
-      minTargetDate: minTargetDate,
+      openBooks: openBooks,
+      defaultBookId: defaultBookId,
     );
     if (draft == null) return;
 
@@ -166,7 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: draft.title,
             targetAmount: draft.targetAmount,
             targetDate: draft.targetDate,
-            bookPeriodId: selectedBookId,
+            bookPeriodId: draft.targetBookId,
           )
           .timeout(const Duration(seconds: 12));
       if (!mounted) return;
@@ -194,18 +195,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<_FinancialPlanDraft?> _openFinancialPlanInputDialog({
     String title = 'Rencana Keuangan Baru',
-    DateTime? minTargetDate,
+    String actionLabel = 'Simpan',
+    required List<BookPeriod> openBooks,
+    int? defaultBookId,
+    FinancialPlan? initialPlan,
   }) async {
     return showDialog<_FinancialPlanDraft?>(
       context: context,
       builder: (dialogContext) {
         return _FinancialPlanInputDialog(
           title: title,
-          minTargetDate: minTargetDate,
+          actionLabel: actionLabel,
+          openBooks: openBooks,
+          defaultBookId: defaultBookId,
           parsePlanAmount: _parsePlanAmount,
+          initialPlan: initialPlan,
         );
       },
     );
+  }
+
+  Future<void> _openEditFinancialPlanDialog(FinancialPlan plan) async {
+    if (_isSavingFinancialPlan) return;
+
+    final provider = context.read<TransactionProvider>();
+    final openBooks = provider.bookPeriods
+        .where((b) => b.isOpen)
+        .toList(growable: false);
+
+    if (openBooks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada buku yang terbuka.')),
+      );
+      return;
+    }
+
+    final draft = await _openFinancialPlanInputDialog(
+      title: 'Edit Rencana Keuangan',
+      actionLabel: 'Update',
+      openBooks: openBooks,
+      defaultBookId: plan.bookPeriodId,
+      initialPlan: plan,
+    );
+    if (draft == null) return;
+
+    setState(() => _isSavingFinancialPlan = true);
+
+    try {
+      await provider
+          .updateFinancialPlan(
+            id: plan.id!,
+            title: draft.title,
+            targetAmount: draft.targetAmount,
+            targetDate: draft.targetDate,
+            bookPeriodId: draft.targetBookId,
+          )
+          .timeout(const Duration(seconds: 12));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rencana keuangan berhasil diubah ✨')),
+      );
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Proses simpan agak lama. Coba lagi ya.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isSavingFinancialPlan = false);
+    }
   }
 
   Future<void> _removeFinancialPlan(int id) async {
@@ -397,6 +460,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Buku "${book.label}" berhasil dihapus.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _reopenBookFlow(BookPeriod book) async {
+    final provider = context.read<TransactionProvider>();
+    if (provider.isRemovingBookPeriod) return;
+
+    final bookId = book.id;
+    if (bookId == null) return;
+
+    try {
+      await provider.reopenBook(bookId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Buku berhasil dibuka ulang.')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -653,6 +737,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   onCloseActiveBook: activeBook == null
                                       ? null
                                       : () => _closeActiveBookFlow(activeBook),
+                                  onReopenBook: _reopenBookFlow,
                                   onDeleteBook: _deleteBookFlow,
                                   onHideCard: () {
                                     setState(() => _isBookCardVisible = false);
@@ -858,6 +943,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           realizationByPlan: realizationByPlan,
           isSaving: _isSavingFinancialPlan,
           onAddPlan: _openAddFinancialPlanDialog,
+          onEditPlan: _openEditFinancialPlanDialog,
           onDeletePlan: _removeFinancialPlan,
         );
       default:
@@ -939,7 +1025,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 100), // Transparent space for navbar clearance
+              const SizedBox(
+                height: 100,
+              ), // Transparent space for navbar clearance
             ],
           ),
         );
@@ -988,7 +1076,9 @@ class _ExpandableQuickMenu extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(999),
-              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+              border: Theme.of(
+                context,
+              ).extension<AppThemeExtension>()?.cardBorder,
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x14000000),
@@ -1112,7 +1202,9 @@ class _QuickAddSheetItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(9),
-              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+              border: Theme.of(
+                context,
+              ).extension<AppThemeExtension>()?.cardBorder,
             ),
             child: Icon(icon, size: 18, color: iconColor),
           ),
@@ -1132,9 +1224,9 @@ class _QuickAddSheetItem extends StatelessWidget {
                 const SizedBox(height: 1),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: subtitleColor,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: subtitleColor),
                 ),
               ],
             ),
@@ -1198,10 +1290,7 @@ class _QuickNavItemState extends State<_QuickNavItem> {
                 decoration: BoxDecoration(
                   color: background,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: AppTheme.borderColor,
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: AppTheme.borderColor, width: 1.2),
                 ),
                 child: Icon(
                   widget.icon,
@@ -1225,6 +1314,7 @@ class _BookPeriodCard extends StatelessWidget {
     required this.onSelectPeriod,
     required this.onOpenBook,
     required this.onCloseActiveBook,
+    required this.onReopenBook,
     required this.onDeleteBook,
     required this.onHideCard,
   });
@@ -1235,6 +1325,7 @@ class _BookPeriodCard extends StatelessWidget {
   final ValueChanged<int?> onSelectPeriod;
   final Future<bool> Function() onOpenBook;
   final Future<void> Function()? onCloseActiveBook;
+  final Future<void> Function(BookPeriod period) onReopenBook;
   final Future<void> Function(BookPeriod period) onDeleteBook;
   final VoidCallback onHideCard;
 
@@ -1283,7 +1374,9 @@ class _BookPeriodCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+                  border: Theme.of(
+                    context,
+                  ).extension<AppThemeExtension>()?.cardBorder,
                 ),
                 child: Row(
                   children: [
@@ -1349,10 +1442,7 @@ class _BookPeriodCard extends StatelessWidget {
                         ? const Color(0xFFF7EECF)
                         : const Color(0xFFA4DBB2),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppTheme.borderColor,
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppTheme.borderColor, width: 1),
                   ),
                   child: Text(
                     selectedPeriod == null
@@ -1406,6 +1496,21 @@ class _BookPeriodCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
+            if (selectedPeriod != null && selectedPeriod.closed) ...[
+              SizedBox(
+                width: double.infinity,
+                child: _ActionButton(
+                  label: 'Buka Ulang Buku',
+                  icon: Icons.lock_open_rounded,
+                  background: const Color(0xFFD4BEF2),
+                  iconBackground: const Color(0xFFF5BB8A),
+                  onTap: () {
+                    onReopenBook(selectedPeriod!);
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             SizedBox(
               width: double.infinity,
               child: _ActionButton(
@@ -1549,7 +1654,9 @@ class _BookPeriodCollapsedBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FF),
                 borderRadius: BorderRadius.circular(8),
-                border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+                border: Theme.of(
+                  context,
+                ).extension<AppThemeExtension>()?.cardBorder,
               ),
               child: const Icon(Icons.menu_book_rounded, size: 16),
             ),
@@ -1650,10 +1757,7 @@ class _PeriodPickerItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF0C8C8),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppTheme.borderColor,
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppTheme.borderColor, width: 1),
                   ),
                   child: const Icon(
                     Icons.delete_outline_rounded,
@@ -1678,6 +1782,7 @@ class _FinancialPlanCard extends StatelessWidget {
     required this.realizationByPlan,
     required this.isSaving,
     required this.onAddPlan,
+    required this.onEditPlan,
     required this.onDeletePlan,
   });
 
@@ -1687,6 +1792,7 @@ class _FinancialPlanCard extends StatelessWidget {
   final Map<int, double> realizationByPlan;
   final bool isSaving;
   final Future<void> Function() onAddPlan;
+  final Future<void> Function(FinancialPlan plan) onEditPlan;
   final Future<void> Function(int id) onDeletePlan;
 
   @override
@@ -1730,6 +1836,7 @@ class _FinancialPlanCard extends StatelessWidget {
             else
               Expanded(
                 child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 100),
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
@@ -1751,6 +1858,7 @@ class _FinancialPlanCard extends StatelessWidget {
                       plan: plan,
                       progress: progress,
                       realizationAmount: realized,
+                      onEdit: () => onEditPlan(plan),
                       onDelete: () => onDeletePlan(planId),
                     );
                   },
@@ -1768,12 +1876,14 @@ class _FinancialPlanTile extends StatelessWidget {
     required this.plan,
     required this.progress,
     required this.realizationAmount,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final FinancialPlan plan;
   final double progress;
   final double realizationAmount;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -1810,7 +1920,9 @@ class _FinancialPlanTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF7EECF),
               borderRadius: BorderRadius.circular(8),
-              border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+              border: Theme.of(
+                context,
+              ).extension<AppThemeExtension>()?.cardBorder,
             ),
             child: const Icon(Icons.flag_rounded, size: 18),
           ),
@@ -1858,6 +1970,11 @@ class _FinancialPlanTile extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit rencana',
           ),
           IconButton(
             onPressed: onDelete,
@@ -1966,7 +2083,9 @@ class _BalanceCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Dompet Kamu',
-                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               IconButton(
@@ -2371,11 +2490,7 @@ class _GraphCard extends StatelessWidget {
                     onTap: () => onSelectRangeDays(30),
                   ),
                   const SizedBox(width: 10),
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: AppTheme.borderColor,
-                  ),
+                  Container(width: 1, height: 28, color: AppTheme.borderColor),
                   const SizedBox(width: 10),
                   _IconFilterButton(
                     icon: Icons.north_east_rounded,
@@ -2596,23 +2711,31 @@ class _FinancialPlanDraft {
     required this.title,
     required this.targetAmount,
     required this.targetDate,
+    required this.targetBookId,
   });
 
   final String title;
   final double targetAmount;
   final DateTime targetDate;
+  final int targetBookId;
 }
 
 class _FinancialPlanInputDialog extends StatefulWidget {
   const _FinancialPlanInputDialog({
     required this.title,
-    required this.minTargetDate,
+    required this.openBooks,
+    required this.defaultBookId,
     required this.parsePlanAmount,
+    this.actionLabel = 'Simpan',
+    this.initialPlan,
   });
 
   final String title;
-  final DateTime? minTargetDate;
+  final String actionLabel;
+  final List<BookPeriod> openBooks;
+  final int? defaultBookId;
   final double? Function(String input) parsePlanAmount;
+  final FinancialPlan? initialPlan;
 
   @override
   State<_FinancialPlanInputDialog> createState() =>
@@ -2623,16 +2746,62 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   late DateTime _selectedDate;
+  int? _selectedBookId;
+  DateTime? _minTargetDate;
   String? _validationMessage;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
-    _amountController = TextEditingController();
+    _titleController = TextEditingController(
+      text: widget.initialPlan?.title ?? '',
+    );
 
-    _selectedDate = DateTime.now();
-    final minDate = widget.minTargetDate;
+    final initialAmount = widget.initialPlan?.targetAmount;
+    _amountController = TextEditingController(
+      text: initialAmount != null
+          ? NumberFormat.currency(
+              locale: 'id_ID',
+              symbol: '',
+              decimalDigits: 0,
+            ).format(initialAmount).trim()
+          : '',
+    );
+
+    final defaultBookIdCandidate =
+        widget.initialPlan?.bookPeriodId ?? widget.defaultBookId;
+    if (defaultBookIdCandidate != null &&
+        widget.openBooks.any((b) => b.id == defaultBookIdCandidate)) {
+      _selectedBookId = defaultBookIdCandidate;
+    } else {
+      _selectedBookId = widget.openBooks.first.id;
+    }
+
+    _updateMinTargetDate();
+
+    if (widget.initialPlan != null) {
+      _selectedDate =
+          DateTime.tryParse(widget.initialPlan!.targetDate) ?? DateTime.now();
+      // Make sure we validate it vs min target date again just in case the book was changed
+      if (_minTargetDate != null && _selectedDate.isBefore(_minTargetDate!)) {
+        _selectedDate = _minTargetDate!;
+      }
+    } else {
+      _selectedDate = DateTime.now();
+      _adjustSelectedDateToMin();
+    }
+  }
+
+  void _updateMinTargetDate() {
+    final book = widget.openBooks.firstWhere(
+      (b) => b.id == _selectedBookId,
+      orElse: () => widget.openBooks.first,
+    );
+    _minTargetDate = DateTime.tryParse(book.startDate);
+  }
+
+  void _adjustSelectedDateToMin() {
+    final minDate = _minTargetDate;
     if (minDate != null && _selectedDate.isBefore(minDate)) {
       _selectedDate = DateTime(minDate.year, minDate.month, minDate.day);
     }
@@ -2649,7 +2818,7 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: widget.minTargetDate ?? DateTime(2020),
+      firstDate: _minTargetDate ?? DateTime(2020),
       lastDate: DateTime(2040),
       helpText: 'Target Tanggal',
     );
@@ -2669,7 +2838,12 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
       return;
     }
 
-    final minDate = widget.minTargetDate;
+    if (_selectedBookId == null) {
+      setState(() => _validationMessage = 'Pilih target buku dulu.');
+      return;
+    }
+
+    final minDate = _minTargetDate;
     if (minDate != null && _selectedDate.isBefore(minDate)) {
       setState(
         () => _validationMessage =
@@ -2684,6 +2858,7 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
         title: _titleController.text.trim(),
         targetAmount: amount,
         targetDate: _selectedDate,
+        targetBookId: _selectedBookId!,
       ),
     );
   }
@@ -2696,6 +2871,33 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (widget.openBooks.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: DropdownButtonFormField<int>(
+                  initialValue: _selectedBookId,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.book_rounded),
+                    hintText: 'Pilih Buku Target',
+                  ),
+                  items: widget.openBooks.map((book) {
+                    return DropdownMenuItem(
+                      value: book.id,
+                      child: Text(book.label),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _selectedBookId = value;
+                      _updateMinTargetDate();
+                      _adjustSelectedDateToMin();
+                      _validationMessage = null;
+                    });
+                  },
+                ),
+              ),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
@@ -2767,7 +2969,7 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
           onPressed: () => Navigator.pop(context, null),
           child: const Text('Batal'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Simpan')),
+        FilledButton(onPressed: _submit, child: Text(widget.actionLabel)),
       ],
     );
   }
@@ -2841,6 +3043,7 @@ class _TransactionsCardState extends State<_TransactionsCard> {
                   thumbVisibility: true,
                   child: ListView.separated(
                     controller: _scrollController,
+                    padding: const EdgeInsets.only(bottom: 100),
                     primary: false,
                     physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
@@ -2919,7 +3122,9 @@ class _TransactionTile extends StatelessWidget {
                 context: context,
                 builder: (dialogCtx) => AlertDialog(
                   title: const Text('Hapus Transaksi?'),
-                  content: const Text('Transaksi ini akan dihapus secara permanen.'),
+                  content: const Text(
+                    'Transaksi ini akan dihapus secara permanen.',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogCtx, false),
@@ -2940,13 +3145,21 @@ class _TransactionTile extends StatelessWidget {
               if (confirmed == true && context.mounted) {
                 final messenger = ScaffoldMessenger.of(context);
                 try {
-                  await context.read<TransactionProvider>().removeTransaction(item.id!);
+                  await context.read<TransactionProvider>().removeTransaction(
+                    item.id!,
+                  );
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Transaksi berhasil dihapus.')),
+                    const SnackBar(
+                      content: Text('Transaksi berhasil dihapus.'),
+                    ),
                   );
                 } catch (e) {
                   messenger.showSnackBar(
-                    SnackBar(content: Text('Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}')),
+                    SnackBar(
+                      content: Text(
+                        'Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}',
+                      ),
+                    ),
                   );
                 }
               }
@@ -2962,7 +3175,7 @@ class _TransactionTile extends StatelessWidget {
       child: AnimatedBouncingCard(
         isPressedEffect: true,
         onTap: () {
-          // If you want tap to do something, add it here. 
+          // If you want tap to do something, add it here.
           // For now just for the bounce effect.
         },
         padding: const EdgeInsets.all(10),
@@ -2978,7 +3191,9 @@ class _TransactionTile extends StatelessWidget {
                     ? const Color(0xFFA9DDB5)
                     : const Color(0xFFF0C8C8),
                 borderRadius: BorderRadius.circular(8),
-                border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+                border: Theme.of(
+                  context,
+                ).extension<AppThemeExtension>()?.cardBorder,
               ),
               child: Icon(
                 isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
@@ -3094,10 +3309,7 @@ class _FinancialPlanDueNoticeCard extends StatelessWidget {
                         ? const Color(0xFFF0C8C8)
                         : const Color(0xFFFFFFFF),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: AppTheme.borderColor,
-                      width: 1.1,
-                    ),
+                    border: Border.all(color: AppTheme.borderColor, width: 1.1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3254,7 +3466,9 @@ class _ActionButtonState extends State<_ActionButton> {
           decoration: BoxDecoration(
             color: widget.background,
             borderRadius: BorderRadius.circular(10),
-            border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+            border: Theme.of(
+              context,
+            ).extension<AppThemeExtension>()?.cardBorder,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -3274,7 +3488,9 @@ class _ActionButtonState extends State<_ActionButton> {
                 decoration: BoxDecoration(
                   color: widget.iconBackground,
                   borderRadius: BorderRadius.circular(4),
-                  border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+                  border: Theme.of(
+                    context,
+                  ).extension<AppThemeExtension>()?.cardBorder,
                 ),
                 child: Icon(widget.icon, size: 12, color: widget.iconColor),
               ),

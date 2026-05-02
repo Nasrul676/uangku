@@ -269,6 +269,16 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> reopenBookPeriod(int bookPeriodId) async {
+    final db = await database;
+    await db.update(
+      bookPeriodsTable,
+      {'end_date': null, 'is_closed': 0},
+      where: 'id = ?',
+      whereArgs: [bookPeriodId],
+    );
+  }
+
   Future<void> deleteBookPeriod(int bookPeriodId) async {
     final db = await database;
 
@@ -308,6 +318,16 @@ class DatabaseHelper {
       financialPlansTable,
       plan.toMap()..remove('id'),
       conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> updateFinancialPlan(FinancialPlan plan) async {
+    final db = await database;
+    await db.update(
+      financialPlansTable,
+      plan.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [plan.id],
     );
   }
 

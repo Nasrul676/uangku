@@ -183,13 +183,6 @@ class TransactionProvider extends ChangeNotifier {
     String? label,
     List<FinancialPlanInput> initialPlans = const [],
   }) async {
-    final openPeriod = await _databaseHelper.getOpenBookPeriod();
-    if (openPeriod != null) {
-      throw Exception(
-        'Masih ada buku yang aktif ya. Tutup dulu bukunya, lalu lanjut lagi.',
-      );
-    }
-
     final normalizedStart = _normalizeDate(startDate);
     final periodLabel = (label ?? '').trim().isEmpty
         ? 'Buku ${DateFormat('dd MMM yyyy', 'id').format(normalizedStart)}'
@@ -248,6 +241,25 @@ class TransactionProvider extends ChangeNotifier {
       endDate: DateFormat('yyyy-MM-dd').format(normalizedEnd),
     );
 
+    await loadBookPeriods();
+  }
+
+  Future<void> reopenBook(int bookPeriodId) async {
+    final active = activeBookPeriod;
+    if (active != null && active.id != bookPeriodId) {
+      throw Exception('Tutup dulu buku yang masih aktif sebelum membuka ulang buku lain.');
+    }
+
+    final target = _bookPeriods.where((item) => item.id == bookPeriodId);
+    if (target.isEmpty) {
+      throw Exception('Buku yang dipilih belum ketemu.');
+    }
+
+    if (target.first.isOpen) {
+      return; // Already open
+    }
+
+    await _databaseHelper.reopenBookPeriod(bookPeriodId);
     await loadBookPeriods();
   }
 
@@ -403,17 +415,25 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? financialPlanId,
   }) async {
-    final active = activeBookPeriod;
-    if (active == null || active.id == null) {
+    final selectedBookId = _currentTransactionScopeBookId;
+    if (selectedBookId == null) {
       throw Exception('Buka buku dulu yuk sebelum menambahkan transaksi.');
     }
 
+    final selectedBook = _bookPeriods.where(
+      (item) => item.id == selectedBookId,
+    );
+    if (selectedBook.isEmpty) {
+      throw Exception('Buku yang dipilih belum ketemu.');
+    }
+    final targetBook = selectedBook.first;
+
     final normalizedDate = _normalizeDate(date);
-    final activeStart = DateTime.tryParse(active.startDate);
+    final activeStart = DateTime.tryParse(targetBook.startDate);
     if (activeStart != null &&
         normalizedDate.isBefore(_normalizeDate(activeStart))) {
       throw Exception(
-        'Tanggal transaksi belum bisa sebelum tanggal buka buku aktif.',
+        'Tanggal transaksi belum bisa sebelum tanggal buka buku yang dipilih.',
       );
     }
 
@@ -425,15 +445,15 @@ class TransactionProvider extends ChangeNotifier {
         throw Exception('Rencana keuangan yang dipilih belum ketemu.');
       }
       final plan = targetPlan.first;
-      if (plan.bookPeriodId != active.id) {
+      if (plan.bookPeriodId != selectedBookId) {
         throw Exception(
-          'Rencana keuangan harus dari buku yang sedang aktif, ya.',
+          'Rencana keuangan harus dari buku yang sedang dipilih, ya.',
         );
       }
     }
 
     final tx = FinanceTransaction(
-      bookPeriodId: active.id,
+      bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
       title: title,
       amount: amount,
@@ -463,17 +483,25 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? financialPlanId,
   }) async {
-    final active = activeBookPeriod;
-    if (active == null || active.id == null) {
+    final selectedBookId = _currentTransactionScopeBookId;
+    if (selectedBookId == null) {
       throw Exception('Buka buku dulu yuk sebelum mengubah transaksi.');
     }
 
+    final selectedBook = _bookPeriods.where(
+      (item) => item.id == selectedBookId,
+    );
+    if (selectedBook.isEmpty) {
+      throw Exception('Buku yang dipilih belum ketemu.');
+    }
+    final targetBook = selectedBook.first;
+
     final normalizedDate = _normalizeDate(date);
-    final activeStart = DateTime.tryParse(active.startDate);
+    final activeStart = DateTime.tryParse(targetBook.startDate);
     if (activeStart != null &&
         normalizedDate.isBefore(_normalizeDate(activeStart))) {
       throw Exception(
-        'Tanggal transaksi belum bisa sebelum tanggal buka buku aktif.',
+        'Tanggal transaksi belum bisa sebelum tanggal buka buku yang dipilih.',
       );
     }
 
@@ -485,16 +513,16 @@ class TransactionProvider extends ChangeNotifier {
         throw Exception('Rencana keuangan yang dipilih belum ketemu.');
       }
       final plan = targetPlan.first;
-      if (plan.bookPeriodId != active.id) {
+      if (plan.bookPeriodId != selectedBookId) {
         throw Exception(
-          'Rencana keuangan harus dari buku yang sedang aktif, ya.',
+          'Rencana keuangan harus dari buku yang sedang dipilih, ya.',
         );
       }
     }
 
     final tx = FinanceTransaction(
       id: id,
-      bookPeriodId: active.id,
+      bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
       title: title,
       amount: amount,
@@ -568,6 +596,60 @@ class TransactionProvider extends ChangeNotifier {
         targetDate: targetDateString,
       ),
     ];
+    await _rescheduleFinancialPlanNotifications();
+    notifyListeners();
+  }
+
+  Future<void> updateFinancialPlan({
+    required int id,
+    required String title,
+    required double targetAmount,
+    required DateTime targetDate,
+    required int bookPeriodId,
+  }) async {
+    final targetTitle = title.trim();
+    if (targetTitle.isEmpty) {
+      throw Exception('Judul rencananya belum diisi.');
+    }
+    if (targetAmount <= 0) {
+      throw Exception('Target nominalnya belum valid.');
+    }
+
+    DateTime? selectedBookStart;
+    if (bookPeriodId != -1) {
+      final selectedBook = _bookPeriods.where(
+        (item) => item.id == bookPeriodId,
+      );
+      if (selectedBook.isEmpty) {
+        throw Exception('Buku yang dipilih belum ketemu.');
+      }
+      selectedBookStart = DateTime.tryParse(selectedBook.first.startDate);
+    }
+
+    final normalizedTargetDate = _normalizeDate(targetDate);
+    if (selectedBookStart != null &&
+        normalizedTargetDate.isBefore(_normalizeDate(selectedBookStart))) {
+      throw Exception('Tanggal target tidak boleh sebelum tanggal buka buku.');
+    }
+
+    final targetDateString = DateFormat(
+      'yyyy-MM-dd',
+    ).format(normalizedTargetDate);
+
+    final updatedPlan = FinancialPlan(
+      id: id,
+      bookPeriodId: bookPeriodId,
+      title: targetTitle,
+      targetAmount: targetAmount,
+      targetDate: targetDateString,
+    );
+
+    await _databaseHelper.updateFinancialPlan(updatedPlan);
+
+    final index = _allFinancialPlans.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      _allFinancialPlans[index] = updatedPlan;
+    }
     await _rescheduleFinancialPlanNotifications();
     notifyListeners();
   }
@@ -718,5 +800,8 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   int? get _currentPlanScopeBookId =>
+      _selectedBookPeriodId ?? activeBookPeriod?.id;
+
+  int? get _currentTransactionScopeBookId =>
       _selectedBookPeriodId ?? activeBookPeriod?.id;
 }
