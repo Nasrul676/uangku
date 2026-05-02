@@ -8,6 +8,7 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/shopping_provider.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
 import 'settings_screen.dart';
+import 'shopping_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -610,7 +612,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -691,6 +693,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                           ),
+                          Consumer<ShoppingProvider>(
+                            builder: (context, shoppingProvider, child) {
+                              final count = shoppingProvider.unboughtCount;
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  _CircleIconButton(
+                                    icon: Icons.shopping_cart_outlined,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const ShoppingListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (count > 0)
+                                    Positioned(
+                                      right: -2,
+                                      top: -2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFF9F1C),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: const Color(0xFF111111),
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            const BoxShadow(
+                                              color: Color(0xFF111111),
+                                              offset: Offset(1, 1),
+                                            ),
+                                          ],
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            count > 99 ? '99+' : count.toString(),
+                                            style: const TextStyle(
+                                              color: Color(0xFF111111),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w900,
+                                              height: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
                           _CircleIconButton(
                             icon: Icons.settings_rounded,
                             onTap: () {
@@ -865,6 +926,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Tambah Pemasukan',
                   subtitle: 'Catat uang yang masuk',
                   color: const Color(0xFFA4DBB2),
+                  iconColor: const Color(0xFF113311),
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _openIncomeInput();
@@ -876,10 +938,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Tambah Pengeluaran',
                   subtitle: 'Catat uang yang keluar',
                   color: const Color(0xFFF0C8C8),
-                  textColor: const Color(0xFFC24545),
-                  subtitleColor: const Color(0xFFA13A3A),
                   iconColor: const Color(0xFFC24545),
-                  trailingColor: const Color(0xFFC24545),
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _openExpenseInput();
@@ -1074,7 +1133,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
             width: maxWidth,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardTheme.color ?? Colors.white,
               borderRadius: BorderRadius.circular(999),
               border: Theme.of(
                 context,
@@ -1171,10 +1230,7 @@ class _QuickAddSheetItem extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
-    this.textColor = const Color(0xFF111111),
-    this.subtitleColor = const Color(0xFF555555),
-    this.iconColor = const Color(0xFF111111),
-    this.trailingColor = const Color(0xFF111111),
+    this.iconColor,
   });
 
   final IconData icon;
@@ -1182,17 +1238,17 @@ class _QuickAddSheetItem extends StatelessWidget {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
-  final Color textColor;
-  final Color subtitleColor;
-  final Color iconColor;
-  final Color trailingColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
+    final themeTextColor = Theme.of(context).textTheme.bodyMedium?.color;
+    final themeSubtitleColor = Theme.of(context).textTheme.bodySmall?.color;
+
     return AnimatedBouncingCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      color: Colors.white,
+      color: Theme.of(context).cardTheme.color ?? Colors.white,
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
@@ -1218,7 +1274,7 @@ class _QuickAddSheetItem extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: textColor,
+                    color: themeTextColor,
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -1226,12 +1282,12 @@ class _QuickAddSheetItem extends StatelessWidget {
                   subtitle,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: subtitleColor),
+                  ).textTheme.bodySmall?.copyWith(color: themeSubtitleColor),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded, color: trailingColor),
+          Icon(Icons.chevron_right_rounded, color: themeTextColor),
         ],
       ),
     );
@@ -1266,7 +1322,7 @@ class _QuickNavItemState extends State<_QuickNavItem> {
   Widget build(BuildContext context) {
     final Color background = widget.selected
         ? (widget.selectedBackground ?? const Color(0xFFD4BEF2))
-        : const Color(0xFFF5F7FF);
+        : Theme.of(context).cardTheme.color ?? Colors.white;
 
     return Expanded(
       child: Semantics(
@@ -1290,7 +1346,7 @@ class _QuickNavItemState extends State<_QuickNavItem> {
                 decoration: BoxDecoration(
                   color: background,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppTheme.borderColor, width: 1.2),
+                  border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1.2),
                 ),
                 child: Icon(
                   widget.icon,
@@ -1372,7 +1428,7 @@ class _BookPeriodCard extends StatelessWidget {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardTheme.color ?? Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Theme.of(
                     context,
@@ -1384,10 +1440,10 @@ class _BookPeriodCard extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FF),
+                        color: Theme.of(context).cardTheme.color ?? Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: AppTheme.borderColor,
+                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                           width: 1,
                         ),
                       ),
@@ -1437,12 +1493,12 @@ class _BookPeriodCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: selectedPeriod == null
-                        ? const Color(0xFFF1F1F1)
+                        ? Theme.of(context).colorScheme.surface
                         : selectedPeriod.closed
-                        ? const Color(0xFFF7EECF)
+                        ? Theme.of(context).colorScheme.secondaryContainer
                         : const Color(0xFFA4DBB2),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppTheme.borderColor, width: 1),
+                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1),
                   ),
                   child: Text(
                     selectedPeriod == null
@@ -1474,7 +1530,7 @@ class _BookPeriodCard extends StatelessWidget {
                   child: _ActionButton(
                     label: 'Buka Buku',
                     icon: Icons.menu_book_rounded,
-                    background: Colors.white,
+                    background: Theme.of(context).cardTheme.color ?? Colors.white,
                     iconBackground: const Color(0xFFF5BB8A),
                     onTap: () {
                       onOpenBook();
@@ -1487,9 +1543,11 @@ class _BookPeriodCard extends StatelessWidget {
                     label: 'Tutup Buku',
                     icon: Icons.bookmark_remove_rounded,
                     background: activePeriodId == null
-                        ? const Color(0xFFF1F1F1)
+                        ? Theme.of(context).colorScheme.surface
                         : const Color(0xFFD4BEF2),
                     iconBackground: const Color(0xFFF5BB8A),
+                    labelColor: activePeriodId == null ? null : const Color(0xFF111111),
+                    iconColor: activePeriodId == null ? null : const Color(0xFF111111),
                     onTap: onCloseActiveBook ?? () {},
                   ),
                 ),
@@ -1504,6 +1562,8 @@ class _BookPeriodCard extends StatelessWidget {
                   icon: Icons.lock_open_rounded,
                   background: const Color(0xFFD4BEF2),
                   iconBackground: const Color(0xFFF5BB8A),
+                  labelColor: const Color(0xFF111111),
+                  iconColor: const Color(0xFF111111),
                   onTap: () {
                     onReopenBook(selectedPeriod!);
                   },
@@ -1511,23 +1571,22 @@ class _BookPeriodCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            SizedBox(
-              width: double.infinity,
-              child: _ActionButton(
-                label: 'Hapus Buku',
-                icon: Icons.delete_outline_rounded,
-                background: selectedPeriod == null
-                    ? const Color(0xFFF1F1F1)
-                    : const Color(0xFFF0C8C8),
-                iconBackground: const Color(0xFFF5BB8A),
-                labelColor: const Color(0xFFC24545),
-                onTap: selectedPeriod == null
-                    ? () {}
-                    : () {
-                        onDeleteBook(selectedPeriod!);
-                      },
+            if (selectedPeriod != null && selectedPeriod.closed) ...[
+              SizedBox(
+                width: double.infinity,
+                child: _ActionButton(
+                  label: 'Hapus Buku',
+                  icon: Icons.delete_outline_rounded,
+                  background: const Color(0xFFC24545),
+                  iconBackground: const Color(0xFFF0C8C8),
+                  labelColor: Colors.white,
+                  iconColor: Colors.white,
+                  onTap: () {
+                    onDeleteBook(selectedPeriod!);
+                  },
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -1652,7 +1711,7 @@ class _BookPeriodCollapsedBar extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FF),
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Theme.of(
                   context,
@@ -1716,7 +1775,9 @@ class _PeriodPickerItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF7EECF) : Colors.white,
+          color: selected
+              ? Theme.of(context).colorScheme.secondaryContainer
+              : (Theme.of(context).cardTheme.color ?? Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -1728,7 +1789,12 @@ class _PeriodPickerItem extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selected
+                          ? Theme.of(context).colorScheme.onSecondaryContainer
+                          : Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   const SizedBox(height: 1),
                   Text(
@@ -1757,7 +1823,7 @@ class _PeriodPickerItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF0C8C8),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppTheme.borderColor, width: 1),
+                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1),
                   ),
                   child: const Icon(
                     Icons.delete_outline_rounded,
@@ -1908,7 +1974,7 @@ class _FinancialPlanTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -1918,7 +1984,7 @@ class _FinancialPlanTile extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFF7EECF),
+              color: Theme.of(context).colorScheme.secondaryContainer,
               borderRadius: BorderRadius.circular(8),
               border: Theme.of(
                 context,
@@ -1948,7 +2014,7 @@ class _FinancialPlanTile extends StatelessWidget {
                         child: LinearProgressIndicator(
                           minHeight: 6,
                           value: progress,
-                          backgroundColor: const Color(0xFFECECEC),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
                           color: const Color(0xFF1F5A62),
                         ),
                       ),
@@ -2071,7 +2137,7 @@ class _BalanceCard extends StatelessWidget {
     return AnimatedBouncingCard(
       isPressedEffect: true,
       padding: const EdgeInsets.all(14),
-      color: const Color(0xFFEDD07D),
+      color: Theme.of(context).colorScheme.primaryContainer,
       onTap: () {
         // Toggle visibility maybe?
       },
@@ -2147,7 +2213,7 @@ class _BalanceCard extends StatelessWidget {
                 child: _ActionButton(
                   label: 'Pemasukan',
                   icon: Icons.south_west_rounded,
-                  background: Colors.white,
+                  background: Theme.of(context).cardTheme.color ?? Colors.white,
                   iconBackground: const Color(0xFFA4DBB2),
                   onTap: onAddIncome,
                 ),
@@ -2490,7 +2556,7 @@ class _GraphCard extends StatelessWidget {
                     onTap: () => onSelectRangeDays(30),
                   ),
                   const SizedBox(width: 10),
-                  Container(width: 1, height: 28, color: AppTheme.borderColor),
+                  Container(width: 1, height: 28, color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D))),
                   const SizedBox(width: 10),
                   _IconFilterButton(
                     icon: Icons.north_east_rounded,
@@ -2577,10 +2643,10 @@ class _GraphCard extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7EECF),
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppTheme.borderColor,
+                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                           width: 1.1,
                         ),
                       ),
@@ -3179,7 +3245,7 @@ class _TransactionTile extends StatelessWidget {
           // For now just for the bounce effect.
         },
         padding: const EdgeInsets.all(10),
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
@@ -3271,7 +3337,7 @@ class _FinancialPlanDueNoticeCard extends StatelessWidget {
     final previewAlerts = alerts.take(3).toList(growable: false);
 
     return Card(
-      color: const Color(0xFFF7EECF),
+      color: Theme.of(context).colorScheme.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -3307,9 +3373,9 @@ class _FinancialPlanDueNoticeCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: alert.isOverdue
                         ? const Color(0xFFF0C8C8)
-                        : const Color(0xFFFFFFFF),
+                        : Theme.of(context).cardTheme.color ?? Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderColor, width: 1.1),
+                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1.1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3369,7 +3435,7 @@ class _FilterButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? (selectedColor ?? const Color(0xFFA4DBB2))
-              : Colors.white,
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -3378,7 +3444,9 @@ class _FilterButton extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: textColor,
+            color: selected 
+                ? (textColor ?? const Color(0xFF1F5A62)) 
+                : Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
       ),
@@ -3412,11 +3480,17 @@ class _IconFilterButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? (selectedColor ?? const Color(0xFFA4DBB2))
-              : Colors.white,
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
-        child: Icon(icon, size: 16, color: iconColor),
+        child: Icon(
+          icon,
+          size: 16,
+          color: selected 
+              ? (iconColor ?? const Color(0xFF1F5A62)) 
+              : Theme.of(context).iconTheme.color,
+        ),
       ),
     );
   }
@@ -3514,14 +3588,18 @@ class _CircleIconButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        width: 34,
-        height: 34,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
-        child: Icon(icon, size: 18),
+        child: Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).iconTheme.color,
+        ),
       ),
     );
   }
@@ -3609,7 +3687,9 @@ class _BarState extends State<_Bar> {
               fontWeight: FontWeight.w600,
               color: widget.selected
                   ? const Color(0xFF1F5A62)
-                  : const Color(0xFF3B3B55),
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : const Color(0xFF3B3B55)),
             ),
           ),
         ],

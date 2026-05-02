@@ -13,6 +13,7 @@ import '../models/financial_plan.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
+import 'shopping_list_screen.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
   const ExpenseInputScreen({super.key, this.existingTransaction});
@@ -562,7 +563,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -577,10 +578,22 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                           : 'Edit Pengeluaran',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 34,
-                        color: const Color(0xFFC24545),
+                        color: Theme.of(context).colorScheme.error,
                       ),
                     ),
                   ),
+                  _CircleButton(
+                    icon: Icons.shopping_cart_outlined,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ShoppingListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   _CircleButton(
                     icon: Icons.settings_rounded,
                     onTap: () {
@@ -619,7 +632,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               ),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AppTheme.borderColor,
+                                color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                                 width: 1.1,
                               ),
                             ),
@@ -632,14 +645,14 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                       : 'Edit Data',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontSize: 24,
-                                    color: const Color(0xFFC24545),
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Catat pengeluaran harian dengan cepat, datanya aman tersimpan di HP dulu.',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFFA13A3A),
+                                    color: Theme.of(context).colorScheme.onErrorContainer,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -648,7 +661,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontSize: 34,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color(0xFFC24545),
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
                                 ),
                               ],
@@ -714,7 +727,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             'Pilih Kategori',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontSize: 22,
-                              color: const Color(0xFFC24545),
+                              color: Theme.of(context).colorScheme.error,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -858,7 +871,7 @@ class _FinancialPlanSelectorField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -905,7 +918,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
     return AnimatedBouncingCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      color: selected ? const Color(0xFFF0C8C8) : Colors.white,
+      color: selected ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).cardTheme.color,
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
@@ -917,7 +930,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: selected ? const Color(0xFFC24545) : null,
+                    color: selected ? Theme.of(context).colorScheme.error : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -926,7 +939,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: selected ? const Color(0xFFA13A3A) : null,
+                    color: selected ? Theme.of(context).colorScheme.onErrorContainer : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
               ],
@@ -959,7 +972,7 @@ class _CircleButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -988,7 +1001,7 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF0C8C8) : Colors.white,
+          color: selected ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -997,7 +1010,7 @@ class _CategoryChip extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: selected ? const Color(0xFFC24545) : null,
+            color: selected ? Theme.of(context).colorScheme.error : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
           ),
         ),
       ),
@@ -1019,7 +1032,7 @@ class _AddCategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),

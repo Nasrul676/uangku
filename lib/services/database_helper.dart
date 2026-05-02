@@ -13,10 +13,11 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 7;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
+  static const shoppingItemsTable = 'shopping_items';
 
   Database? _database;
 
@@ -92,6 +93,37 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_financial_plans_book_period_id ON $financialPlansTable(book_period_id)',
           );
         }
+
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $shoppingItemsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              book_period_id INTEGER NOT NULL,
+              title TEXT NOT NULL,
+              amount REAL NOT NULL,
+              category TEXT NOT NULL,
+              date TEXT NOT NULL,
+              time TEXT,
+              quantity REAL NOT NULL,
+              unit TEXT NOT NULL,
+              is_bought INTEGER NOT NULL DEFAULT 0,
+              expense_transaction_id INTEGER
+            )
+          ''');
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_shopping_items_book_period_id ON $shoppingItemsTable(book_period_id)',
+          );
+        }
+
+        if (oldVersion < 7) {
+          await db.execute('''
+            ALTER TABLE $shoppingItemsTable
+            ADD COLUMN expense_transaction_id INTEGER
+          ''');
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
+          );
+        }
       },
     );
   }
@@ -132,11 +164,43 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE $shoppingItemsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_period_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        is_bought INTEGER NOT NULL DEFAULT 0,
+        expense_transaction_id INTEGER
+      )
+    ''');
+
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_book_period_id ON $transactionsTable(book_period_id)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_financial_plans_book_period_id ON $financialPlansTable(book_period_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shopping_items_book_period_id ON $shoppingItemsTable(book_period_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
+    );
+  }
+
+  Future<void> resetShoppingItemsByTransactionId(int transactionId) async {
+    final db = await database;
+    await db.update(
+      shoppingItemsTable,
+      {'is_bought': 0, 'amount': 0, 'expense_transaction_id': null},
+      where: 'expense_transaction_id = ?',
+      whereArgs: [transactionId],
     );
   }
 

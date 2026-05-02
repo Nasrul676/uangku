@@ -13,6 +13,11 @@ class RupiahInputFormatter extends TextInputFormatter {
     return double.tryParse(digits) ?? 0;
   }
 
+  static String format(double value) {
+    if (value <= 0) return '';
+    return NumberFormat.decimalPattern('id_ID').format(value.toInt());
+  }
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,

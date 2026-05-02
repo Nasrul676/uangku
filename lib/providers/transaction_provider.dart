@@ -247,7 +247,9 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> reopenBook(int bookPeriodId) async {
     final active = activeBookPeriod;
     if (active != null && active.id != bookPeriodId) {
-      throw Exception('Tutup dulu buku yang masih aktif sebelum membuka ulang buku lain.');
+      throw Exception(
+        'Tutup dulu buku yang masih aktif sebelum membuka ulang buku lain.',
+      );
     }
 
     final target = _bookPeriods.where((item) => item.id == bookPeriodId);
@@ -468,8 +470,56 @@ class TransactionProvider extends ChangeNotifier {
     await loadTransactions();
   }
 
+  Future<int> addTransactionForShopping({
+    required String title,
+    required double amount,
+    required String type,
+    required String category,
+    required DateTime date,
+    String? time,
+    int? bookId,
+  }) async {
+    final selectedBookId = bookId ?? _currentTransactionScopeBookId;
+    if (selectedBookId == null) {
+      throw Exception('Buka buku dulu yuk sebelum menambahkan transaksi.');
+    }
+
+    final selectedBook = _bookPeriods.where(
+      (item) => item.id == selectedBookId,
+    );
+    if (selectedBook.isEmpty) {
+      throw Exception('Buku yang dipilih belum ketemu.');
+    }
+    final targetBook = selectedBook.first;
+
+    final normalizedDate = _normalizeDate(date);
+    final activeStart = DateTime.tryParse(targetBook.startDate);
+    if (activeStart != null &&
+        normalizedDate.isBefore(_normalizeDate(activeStart))) {
+      throw Exception(
+        'Tanggal transaksi belum bisa sebelum tanggal buka buku yang dipilih.',
+      );
+    }
+
+    final tx = FinanceTransaction(
+      bookPeriodId: selectedBookId,
+      title: title,
+      amount: amount,
+      type: type,
+      category: category,
+      date: DateFormat('yyyy-MM-dd').format(normalizedDate),
+      time: time,
+      isSynced: 0,
+    );
+
+    final id = await _databaseHelper.insertTransaction(tx);
+    await loadTransactions();
+    return id;
+  }
+
   Future<void> removeTransaction(int id) async {
     await _databaseHelper.deleteTransaction(id);
+    await _databaseHelper.resetShoppingItemsByTransactionId(id);
     await loadTransactions();
   }
 

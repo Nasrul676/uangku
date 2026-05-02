@@ -11,6 +11,8 @@ import 'services/auth_service.dart';
 import 'services/home_balance_widget_service.dart';
 import 'services/app_settings_service.dart';
 
+import 'providers/shopping_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id', null);
@@ -114,7 +116,20 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()..init()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider(AppSettingsService())..init()),
+        ChangeNotifierProxyProvider<TransactionProvider, ShoppingProvider>(
+          create: (context) =>
+              ShoppingProvider(context.read<TransactionProvider>()),
+          update: (context, txProvider, previous) {
+            final provider = previous ?? ShoppingProvider(txProvider);
+            if (txProvider.selectedBookPeriodId != null) {
+              provider.loadItems(txProvider.selectedBookPeriodId!);
+            }
+            return provider;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ThemeProvider(AppSettingsService())..init(),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
@@ -123,7 +138,13 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
             title: 'uangku',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,
-            home: _initialHome ?? const Scaffold(body: Center(child: CircularProgressIndicator())),
+            darkTheme: themeProvider.darkThemeData,
+            themeMode: themeProvider.themeMode,
+            home:
+                _initialHome ??
+                const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
           );
         },
       ),

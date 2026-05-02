@@ -8,9 +8,14 @@ class ThemeProvider extends ChangeNotifier {
   final AppSettingsService _appSettingsService;
 
   AppThemeStyle _currentStyle = AppThemeStyle.classic;
+  ThemeMode _themeMode = ThemeMode.system;
 
   AppThemeStyle get currentStyle => _currentStyle;
+  ThemeMode get themeMode => _themeMode;
+
   ThemeData get themeData => AppTheme.getThemeData(_currentStyle);
+  ThemeData get darkThemeData =>
+      AppTheme.getThemeData(_currentStyle, brightness: Brightness.dark);
 
   Future<void> init() async {
     final styleString = await _appSettingsService.getAppTheme();
@@ -19,6 +24,13 @@ class ThemeProvider extends ChangeNotifier {
     } else {
       _currentStyle = AppThemeStyle.classic;
     }
+
+    final modeString = await _appSettingsService.getThemeMode();
+    _themeMode = ThemeMode.values.firstWhere(
+      (e) => e.name == modeString,
+      orElse: () => ThemeMode.system,
+    );
+
     notifyListeners();
   }
 
@@ -26,5 +38,11 @@ class ThemeProvider extends ChangeNotifier {
     _currentStyle = style;
     notifyListeners();
     await _appSettingsService.saveAppTheme(style.name);
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    await _appSettingsService.saveThemeMode(mode.name);
   }
 }

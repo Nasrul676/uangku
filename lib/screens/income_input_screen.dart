@@ -343,7 +343,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -522,7 +522,7 @@ class _CircleButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -548,11 +548,17 @@ class _CategoryChip extends StatelessWidget {
     return AnimatedBouncingCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: selected ? const Color(0xFFA4DBB2) : Colors.white,
+      color: selected ? Theme.of(context).colorScheme.tertiaryContainer : Theme.of(context).cardTheme.color,
       borderRadius: BorderRadius.circular(10),
       child: Text(
         label,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        style: TextStyle(
+          fontWeight: FontWeight.w700, 
+          fontSize: 12,
+          color: selected 
+              ? Theme.of(context).colorScheme.onTertiaryContainer
+              : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+        ),
       ),
     );
   }
@@ -569,7 +575,7 @@ class _AddCategoryChip extends StatelessWidget {
     return AnimatedBouncingCard(
       onTap: isLoading ? null : onTap,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Colors.white,
+      color: Theme.of(context).cardTheme.color ?? Colors.white,
       borderRadius: BorderRadius.circular(10),
       child: isLoading
           ? const SizedBox(

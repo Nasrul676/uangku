@@ -288,6 +288,27 @@ class _SettingsContentState extends State<SettingsContent> {
           isPressedEffect: false,
           padding: const EdgeInsets.all(12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mode Gelap',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              const _ThemeModeSelector(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -521,6 +542,98 @@ class _SettingsContentState extends State<SettingsContent> {
   }
 }
 
+class _ThemeModeSelector extends StatelessWidget {
+  const _ThemeModeSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final currentMode = themeProvider.themeMode;
+
+    return Row(
+      children: [
+        _buildModeOption(
+          context,
+          'Sistem',
+          Icons.brightness_auto_rounded,
+          ThemeMode.system,
+          currentMode == ThemeMode.system,
+        ),
+        const SizedBox(width: 8),
+        _buildModeOption(
+          context,
+          'Terang',
+          Icons.light_mode_rounded,
+          ThemeMode.light,
+          currentMode == ThemeMode.light,
+        ),
+        const SizedBox(width: 8),
+        _buildModeOption(
+          context,
+          'Gelap',
+          Icons.dark_mode_rounded,
+          ThemeMode.dark,
+          currentMode == ThemeMode.dark,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModeOption(
+    BuildContext context,
+    String label,
+    IconData icon,
+    ThemeMode mode,
+    bool isSelected,
+  ) {
+    final theme = Theme.of(context);
+    final themeProvider = context.read<ThemeProvider>();
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => themeProvider.setThemeMode(mode),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primary.withOpacity(0.1)
+                : Colors.transparent,
+            border: Border.all(
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.dividerColor.withOpacity(0.2),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.hintColor,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.hintColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ThemeSelectorRow extends StatelessWidget {
   const _ThemeSelectorRow();
 
@@ -536,7 +649,7 @@ class _ThemeSelectorRow extends StatelessWidget {
             title: 'Modern Minimalis',
             isSelected: currentTheme == AppThemeStyle.classic,
             onTap: () => themeProvider.setTheme(AppThemeStyle.classic),
-            previewWidget: _buildClassicPreview(),
+            previewWidget: _buildClassicPreview(context),
           ),
         ),
         const SizedBox(width: 12),
@@ -545,18 +658,19 @@ class _ThemeSelectorRow extends StatelessWidget {
             title: 'Neo-Brutalisme',
             isSelected: currentTheme == AppThemeStyle.neoBrutalism,
             onTap: () => themeProvider.setTheme(AppThemeStyle.neoBrutalism),
-            previewWidget: _buildNeoBrutalismPreview(),
+            previewWidget: _buildNeoBrutalismPreview(context),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildClassicPreview() {
+  Widget _buildClassicPreview(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppTheme.lightScaffold,
+        color: isDark ? AppTheme.darkScaffold : AppTheme.lightScaffold,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -574,9 +688,12 @@ class _ThemeSelectorRow extends StatelessWidget {
           Container(
             height: 30,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? AppTheme.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.classicBorder, width: 1.0),
+              border: Border.all(
+                color: isDark ? AppTheme.darkBorder : AppTheme.classicBorder,
+                width: 1.0,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
@@ -591,11 +708,12 @@ class _ThemeSelectorRow extends StatelessWidget {
     );
   }
 
-  Widget _buildNeoBrutalismPreview() {
+  Widget _buildNeoBrutalismPreview(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppTheme.neoScaffold,
+        color: isDark ? AppTheme.darkScaffold : AppTheme.neoScaffold,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -605,7 +723,7 @@ class _ThemeSelectorRow extends StatelessWidget {
             height: 12,
             width: 40,
             decoration: BoxDecoration(
-              color: AppTheme.borderColor,
+              color: isDark ? AppTheme.neoPaper : AppTheme.borderColor,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -613,11 +731,17 @@ class _ThemeSelectorRow extends StatelessWidget {
           Container(
             height: 30,
             decoration: BoxDecoration(
-              color: AppTheme.cream,
+              color: isDark ? AppTheme.darkCard : AppTheme.cream,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.borderColor, width: 1.2),
-              boxShadow: const [
-                BoxShadow(color: AppTheme.borderColor, offset: Offset(2, 2)),
+              border: Border.all(
+                color: isDark ? AppTheme.neoPaper : AppTheme.borderColor,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? AppTheme.neoPaper : AppTheme.borderColor,
+                  offset: const Offset(2, 2),
+                ),
               ],
             ),
           ),

@@ -74,60 +74,73 @@ class AppTheme {
   static const Color neoCoral = Color(0xFFFF9D8E);
   static const Color neoLavender = Color(0xFFC8B6FF);
 
-  static ThemeData getThemeData(AppThemeStyle style) {
+  static const Color darkScaffold = Color(0xFF121212);
+  static const Color darkCard = Color(0xFF1E1E1E);
+  static const Color darkBorder = Color(0xFF333333);
+  static const Color darkText = Color(0xFFF5F5F5);
+
+  static ThemeData getThemeData(AppThemeStyle style,
+      {Brightness brightness = Brightness.light}) {
     if (style == AppThemeStyle.neoBrutalism) {
-      return _buildNeoBrutalismTheme();
+      return _buildNeoBrutalismTheme(brightness);
     }
-    return _buildClassicTheme();
+    return _buildClassicTheme(brightness);
   }
 
-  static ThemeData _buildClassicTheme() {
+  static ThemeData _buildClassicTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final scaffoldBg = isDark ? darkScaffold : lightScaffold;
+    final cardBg = isDark ? darkCard : Colors.white;
+    final textCol = isDark ? darkText : borderColor;
+    final borderCol = isDark ? darkBorder : classicBorder;
+
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       fontFamily: 'DMSans',
-      scaffoldBackgroundColor: lightScaffold,
+      scaffoldBackgroundColor: scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFFEDD07D),
-        surface: Colors.white,
-        brightness: Brightness.light,
+        surface: cardBg,
+        brightness: brightness,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: cardBg,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: classicBorder, width: 1.0),
+          side: BorderSide(color: borderCol, width: 1.0),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: borderColor,
+      appBarTheme: AppBarTheme(
+        backgroundColor: cardBg,
+        foregroundColor: textCol,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
           fontFamily: 'DMSerifDisplay',
-          color: borderColor,
+          color: textCol,
           fontSize: 34,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: cardBg,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: classicBorder, width: 1.0),
+          borderSide: BorderSide(color: borderCol, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: classicBorder, width: 1.0),
+          borderSide: BorderSide(color: borderCol, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: borderColor, width: 1.5),
+          borderSide: BorderSide(color: isDark ? neoYellow : borderColor, width: 1.5),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -136,19 +149,19 @@ class AppTheme {
           foregroundColor: borderColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: classicBorder, width: 1.0),
+            side: BorderSide(color: borderCol, width: 1.0),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
-      textTheme: _textTheme(),
+      textTheme: _textTheme(textCol),
       extensions: [
         AppThemeExtension(
-          cardBorder: Border.all(color: classicBorder, width: 1.0),
-          buttonBorder: Border.all(color: classicBorder, width: 1.0),
+          cardBorder: Border.all(color: borderCol, width: 1.0),
+          buttonBorder: Border.all(color: borderCol, width: 1.0),
           cardShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.04),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -160,68 +173,74 @@ class AppTheme {
     );
   }
 
-  static ThemeData _buildNeoBrutalismTheme() {
-    const neoColorScheme = ColorScheme(
-      brightness: Brightness.light,
+  static ThemeData _buildNeoBrutalismTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final scaffoldBg = isDark ? darkScaffold : neoScaffold;
+    final paperCol = isDark ? darkCard : neoPaper;
+    final inkCol = isDark ? neoPaper : neoInk;
+
+    final neoColorScheme = ColorScheme(
+      brightness: brightness,
       primary: neoYellow,
       onPrimary: neoInk,
       secondary: neoBlue,
       onSecondary: neoInk,
-      error: Color(0xFFCC3A2B),
+      error: const Color(0xFFCC3A2B),
       onError: Colors.white,
-      surface: neoPaper,
-      onSurface: neoInk,
+      surface: paperCol,
+      onSurface: inkCol,
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       fontFamily: 'DMSans',
-      scaffoldBackgroundColor: neoScaffold,
+      scaffoldBackgroundColor: scaffoldBg,
       colorScheme: neoColorScheme,
-      iconTheme: const IconThemeData(color: neoInk, size: 22),
-      dividerTheme: const DividerThemeData(
-        color: neoInk,
+      iconTheme: IconThemeData(color: inkCol, size: 22),
+      dividerTheme: DividerThemeData(
+        color: inkCol,
         thickness: 2,
         space: 24,
       ),
       cardTheme: CardThemeData(
-        color: neoPaper,
+        color: paperCol,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: neoInk, width: 2),
+          side: BorderSide(color: inkCol, width: 2),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: neoPaper,
-        foregroundColor: neoInk,
+      appBarTheme: AppBarTheme(
+        backgroundColor: paperCol,
+        foregroundColor: inkCol,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
           fontFamily: 'DMSerifDisplay',
-          color: neoInk,
+          color: inkCol,
           fontSize: 34,
         ),
-        iconTheme: IconThemeData(color: neoInk, size: 22),
+        iconTheme: IconThemeData(color: inkCol, size: 22),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: neoPaper,
+        fillColor: paperCol,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: neoInk, width: 2),
+          borderSide: BorderSide(color: inkCol, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: neoInk, width: 2),
+          borderSide: BorderSide(color: inkCol, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: neoInk, width: 2.5),
+          borderSide: BorderSide(color: inkCol, width: 2.5),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -239,9 +258,9 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: neoInk,
-          backgroundColor: neoPaper,
-          side: const BorderSide(color: neoInk, width: 2),
+          foregroundColor: inkCol,
+          backgroundColor: paperCol,
+          side: BorderSide(color: inkCol, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -250,7 +269,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: neoInk,
+          foregroundColor: inkCol,
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
@@ -258,83 +277,83 @@ class AppTheme {
         backgroundColor: neoBlue,
         selectedColor: neoMint,
         disabledColor: const Color(0xFFE2E2E2),
-        deleteIconColor: neoInk,
-        labelStyle: const TextStyle(color: neoInk, fontWeight: FontWeight.w700),
+        deleteIconColor: inkCol,
+        labelStyle: TextStyle(color: neoInk, fontWeight: FontWeight.w700),
         secondaryLabelStyle: const TextStyle(
           color: neoInk,
           fontWeight: FontWeight.w700,
         ),
-        side: const BorderSide(color: neoInk, width: 2),
+        side: BorderSide(color: inkCol, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return neoInk;
-          return neoPaper;
+          if (states.contains(WidgetState.selected)) return isDark ? neoYellow : neoInk;
+          return paperCol;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return neoMint;
           return neoLavender;
         }),
-        trackOutlineColor: WidgetStateProperty.all(neoInk),
+        trackOutlineColor: WidgetStateProperty.all(inkCol),
         trackOutlineWidth: WidgetStateProperty.all(2),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return neoYellow;
-          return neoPaper;
+          return paperCol;
         }),
         checkColor: WidgetStateProperty.all(neoInk),
-        side: const BorderSide(color: neoInk, width: 2),
+        side: BorderSide(color: inkCol, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return neoCoral;
-          return neoInk;
+          return inkCol;
         }),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: neoCoral,
         foregroundColor: neoInk,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
-          side: BorderSide(color: neoInk, width: 2),
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          side: BorderSide(color: inkCol, width: 2),
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: neoInk,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: inkCol,
         contentTextStyle: TextStyle(
-          color: neoPaper,
+          color: paperCol,
           fontWeight: FontWeight.w600,
         ),
         behavior: SnackBarBehavior.floating,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: neoPaper,
+        backgroundColor: paperCol,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: neoInk, width: 2),
+          side: BorderSide(color: inkCol, width: 2),
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: neoPaper,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: paperCol,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          side: BorderSide(color: neoInk, width: 2),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          side: BorderSide(color: inkCol, width: 2),
         ),
       ),
-      textTheme: _textTheme(),
+      textTheme: _textTheme(inkCol),
       extensions: [
         AppThemeExtension(
-          cardBorder: Border.all(color: neoInk, width: 2),
+          cardBorder: Border.all(color: inkCol, width: 2),
           buttonBorder: Border.all(color: neoInk, width: 2),
-          cardShadow: const [
-            BoxShadow(color: neoInk, blurRadius: 0, offset: Offset(6, 6)),
+          cardShadow: [
+            BoxShadow(color: inkCol, blurRadius: 0, offset: const Offset(6, 6)),
           ],
           primaryActionColor: neoMint,
           negativeActionColor: neoCoral,
@@ -343,26 +362,29 @@ class AppTheme {
     );
   }
 
-  static TextTheme _textTheme() {
+  static TextTheme _textTheme(Color textColor) {
     return const TextTheme().copyWith(
-      headlineMedium: const TextStyle(
+      headlineMedium: TextStyle(
         fontFamily: 'DMSerifDisplay',
         fontSize: 32,
-        color: borderColor,
+        color: textColor,
         fontWeight: FontWeight.w400,
       ),
-      titleLarge: const TextStyle(
+      titleLarge: TextStyle(
         fontFamily: 'DMSerifDisplay',
         fontSize: 30,
-        color: borderColor,
+        color: textColor,
         fontWeight: FontWeight.w400,
       ),
-      titleMedium: const TextStyle(
+      titleMedium: TextStyle(
         fontFamily: 'DMSerifDisplay',
         fontSize: 22,
-        color: borderColor,
+        color: textColor,
         fontWeight: FontWeight.w400,
       ),
+      bodyLarge: TextStyle(color: textColor),
+      bodyMedium: TextStyle(color: textColor),
+      bodySmall: TextStyle(color: textColor.withOpacity(0.7)),
     );
   }
 }

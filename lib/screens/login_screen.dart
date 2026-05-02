@@ -99,10 +99,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 1.2,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.attach_money_rounded,
                         size: 12,
-                        color: Colors.white,
+                        color: Theme.of(context).cardTheme.color ?? Colors.white,
                       ),
                     ),
                     const SizedBox(height: 24),

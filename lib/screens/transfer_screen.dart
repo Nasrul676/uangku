@@ -37,7 +37,7 @@ class _TransferScreenState extends State<TransferScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -58,10 +58,10 @@ class _TransferScreenState extends State<TransferScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardTheme.color ?? Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppTheme.borderColor,
+                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                           width: 1.2,
                         ),
                       ),
@@ -81,10 +81,10 @@ class _TransferScreenState extends State<TransferScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardTheme.color ?? Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.borderColor,
+                              color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                               width: 1.2,
                             ),
                           ),
@@ -97,7 +97,7 @@ class _TransferScreenState extends State<TransferScreen> {
                                   color: const Color(0xFFF4D284),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: AppTheme.borderColor,
+                                    color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
                                     width: 1.2,
                                   ),
                                 ),
@@ -221,7 +221,7 @@ class _KeyButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Ink(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),

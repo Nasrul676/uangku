@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/transaction_provider.dart';
 import 'settings_screen.dart';
+import 'shopping_list_screen.dart';
 
 class InputScreen extends StatefulWidget {
   const InputScreen({super.key, this.initialType = 'EXPENSE'});
@@ -103,7 +104,7 @@ class _InputScreenState extends State<InputScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6EBFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -117,6 +118,18 @@ class _InputScreenState extends State<InputScreen> {
                       style: theme.textTheme.titleLarge?.copyWith(fontSize: 34),
                     ),
                   ),
+                  _CircleButton(
+                    icon: Icons.shopping_cart_outlined,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ShoppingListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   _CircleButton(
                     icon: Icons.settings_rounded,
                     onTap: () {
@@ -157,7 +170,7 @@ class _InputScreenState extends State<InputScreen> {
                                 child: _TypeToggle(
                                   label: 'Pemasukan',
                                   selected: _type == 'INCOME',
-                                  selectedColor: const Color(0xFFA4DBB2),
+                                  selectedColor: Theme.of(context).colorScheme.tertiaryContainer,
                                   onTap: () => setState(() => _type = 'INCOME'),
                                 ),
                               ),
@@ -166,8 +179,8 @@ class _InputScreenState extends State<InputScreen> {
                                 child: _TypeToggle(
                                   label: 'Pengeluaran',
                                   selected: _type == 'EXPENSE',
-                                  selectedColor: const Color(0xFFF0C8C8),
-                                  selectedTextColor: const Color(0xFFC24545),
+                                  selectedColor: Theme.of(context).colorScheme.errorContainer,
+                                  selectedTextColor: Theme.of(context).colorScheme.error,
                                   onTap: () =>
                                       setState(() => _type = 'EXPENSE'),
                                 ),
@@ -327,7 +340,7 @@ class _InputScreenState extends State<InputScreen> {
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon),
-      fillColor: Colors.white,
+      fillColor: Theme.of(context).cardTheme.color,
     );
   }
 }
@@ -357,8 +370,8 @@ class _TypeToggle extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
-              ? (selectedColor ?? const Color(0xFFA4DBB2))
-              : Colors.white,
+              ? (selectedColor ?? Theme.of(context).colorScheme.tertiaryContainer)
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -366,7 +379,7 @@ class _TypeToggle extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: selected ? selectedTextColor : null,
+            color: selected ? selectedTextColor : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
           ),
         ),
       ),
@@ -389,7 +402,7 @@ class _CircleButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
