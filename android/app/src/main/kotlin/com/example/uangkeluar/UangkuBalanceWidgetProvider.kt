@@ -18,7 +18,7 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
     if (intent.action == "ACTION_TOGGLE_VISIBILITY") {
-      val widgetData = context.getSharedPreferences("HomeWidgetPicker", Context.MODE_PRIVATE)
+      val widgetData = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
       val currentHidden = widgetData.getBoolean("widget_balance_hidden", false)
       widgetData.edit().putBoolean("widget_balance_hidden", !currentHidden).commit()
 
@@ -35,17 +35,19 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
     appWidgetIds: IntArray,
     widgetData: SharedPreferences,
   ) {
+    val data = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
     appWidgetIds.forEach { widgetId ->
       val views = RemoteViews(context.packageName, R.layout.uangku_balance_widget)
 
-      val isHidden = widgetData.getBoolean("widget_balance_hidden", false)
+      val isHidden = data.getBoolean("widget_balance_hidden", false)
       val totalIncomeText =
-        widgetData.getString("widget_total_income_text", "Rp 0") ?: "Rp 0"
+        data.getString("widget_total_income_text", "Rp 0") ?: "Rp 0"
       val totalExpenseText =
-        widgetData.getString("widget_total_expense_text", "Rp 0") ?: "Rp 0"
-      val balanceText = widgetData.getString("widget_balance_text", "Rp 0") ?: "Rp 0"
-      val netText = widgetData.getString("widget_net_text", balanceText) ?: balanceText
-      val isNetNegative = widgetData.getBoolean("widget_net_negative", false)
+        data.getString("widget_total_expense_text", "Rp 0") ?: "Rp 0"
+      val balanceText = data.getString("widget_balance_text", "Rp 0") ?: "Rp 0"
+      val netText = data.getString("widget_net_text", balanceText) ?: balanceText
+      val isNetNegative = data.getBoolean("widget_net_negative", false)
+      val lastUpdatedText = data.getString("widget_last_updated", "Belum diperbarui") ?: "Belum diperbarui"
       val masked = "Rp ••••••"
       val displayBalance = if (isHidden) masked else balanceText
       val displayIncome = if (isHidden) masked else totalIncomeText
@@ -66,6 +68,12 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
         views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundColor", Color.BLACK)
         views.setInt(R.id.widget_income_button, "setBackgroundColor", Color.BLACK)
         views.setInt(R.id.widget_expense_button, "setBackgroundColor", Color.BLACK)
+        views.setInt(R.id.widget_income_icon, "setColorFilter", Color.WHITE)
+        views.setInt(R.id.widget_expense_icon, "setColorFilter", Color.WHITE)
+      } else {
+        // Reset or set to default colors in light mode
+        views.setInt(R.id.widget_income_icon, "setColorFilter", Color.parseColor("#FF111111"))
+        views.setInt(R.id.widget_expense_icon, "setColorFilter", expenseColor)
       }
 
       views.setTextColor(R.id.widget_wallet_label, labelColor)
@@ -74,6 +82,8 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
       // "kecuali label total pengeluaran" -> use expense color or keep it distinct
       views.setTextColor(R.id.widget_expense_label, if (isDarkMode) Color.parseColor("#FFFF9D8E") else Color.parseColor("#FF2D2D2D"))
       views.setTextColor(R.id.widget_net_label, labelColor)
+      views.setTextColor(R.id.widget_last_updated, if (isDarkMode) Color.parseColor("#80FFFFFF") else Color.parseColor("#802D2D2D"))
+      views.setTextColor(R.id.widget_income_value, valueColor)
       views.setTextColor(R.id.widget_income_button_text, valueColor)
       views.setTextColor(R.id.widget_toggle_visibility_button, valueColor)
 
@@ -81,6 +91,7 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
       views.setTextViewText(R.id.widget_income_value, displayIncome)
       views.setTextViewText(R.id.widget_expense_value, displayExpense)
       views.setTextViewText(R.id.widget_net_value, displayNet)
+      views.setTextViewText(R.id.widget_last_updated, lastUpdatedText)
       views.setTextViewText(R.id.widget_toggle_visibility_button, visibilityButtonText)
       views.setTextViewCompoundDrawablesRelative(
         R.id.widget_toggle_visibility_button,
@@ -117,9 +128,9 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
       views.setTextColor(R.id.widget_expense_button_text, if (isDarkMode) Color.WHITE else expenseColor)
 
       val expenseLaunchUri =
-        widgetData.getString("widget_expense_launch_uri", "uangku://open-expense-input")
+        data.getString("widget_expense_launch_uri", "uangku://open-expense-input")
       val incomeLaunchUri =
-        widgetData.getString("widget_income_launch_uri", "uangku://open-income-input")
+        data.getString("widget_income_launch_uri", "uangku://open-income-input")
       val rootLaunchUri = "uangku://dashboard"
       
       val expensePendingIntent =

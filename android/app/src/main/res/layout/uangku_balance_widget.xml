@@ -171,6 +171,7 @@
             android:paddingBottom="6dp">
 
             <ImageView
+                android:id="@+id/widget_income_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_widget_income" />
@@ -201,6 +202,7 @@
             android:paddingBottom="6dp">
 
             <ImageView
+                android:id="@+id/widget_expense_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_widget_expense" />
@@ -216,5 +218,15 @@
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
+    
+    <TextView
+        android:id="@+id/widget_last_updated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Belum diperbarui"
+        android:textColor="#802D2D2D"
+        android:textSize="10sp" />
 
 </LinearLayout>

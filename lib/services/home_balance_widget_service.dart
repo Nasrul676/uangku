@@ -32,6 +32,10 @@ class HomeBalanceWidgetService {
     final netText = balance > 0
         ? '+${_currencyFormatter.format(balance)}'
         : _currencyFormatter.format(balance);
+    final now = DateTime.now();
+    final lastUpdated = DateFormat('dd MMM, HH:mm', 'id').format(now);
+    
+    await HomeWidget.saveWidgetData<String>('widget_last_updated', '$lastUpdated WIB');
     await HomeWidget.saveWidgetData<String>(
       'widget_total_income_text',
       totalIncomeText,
