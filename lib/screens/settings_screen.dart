@@ -5,6 +5,7 @@ import '../providers/transaction_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/backup_restore_tile.dart';
 import '../services/auth_service.dart';
 import 'onboarding_screen.dart';
 
@@ -456,6 +457,27 @@ class _SettingsContentState extends State<SettingsContent> {
                 ),
               ],
             ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Backup & Restore Data',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              const BackupRestoreTile(),
+            ],
+          ),
         ),
         const SizedBox(height: 10),
         AnimatedBouncingCard(

@@ -27,6 +27,13 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<void> closeDatabase() async {
+    if (_database != null && _database!.isOpen) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
   Future<Database> _initDatabase() async {
     String path;
     if (kIsWeb) {

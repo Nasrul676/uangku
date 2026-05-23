@@ -28,6 +28,12 @@
 	<true/>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Aplikasi menggunakan notifikasi untuk mengingatkan rencana keuangan sesuai jadwal.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Diperlukan untuk menyimpan file backup</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

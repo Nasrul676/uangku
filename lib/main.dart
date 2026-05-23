@@ -10,12 +10,14 @@ import 'screens/onboarding_screen.dart';
 import 'services/auth_service.dart';
 import 'services/home_balance_widget_service.dart';
 import 'services/app_settings_service.dart';
+import 'services/auto_backup_service.dart';
 
 import 'providers/shopping_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id', null);
+  await AutoBackupService.initialize();
   runApp(const UangKeluarApp());
 }
 
