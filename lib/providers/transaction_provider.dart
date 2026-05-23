@@ -58,6 +58,8 @@ class TransactionProvider extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  List<FinanceTransaction> get allTransactions => _allTransactions;
+
   List<BookPeriod> get bookPeriods => _bookPeriods;
   List<FinancialPlan> get financialPlans {
     final selectedId = _currentPlanScopeBookId;
@@ -803,7 +805,7 @@ class TransactionProvider extends ChangeNotifier {
     _selectedBookPeriodId =
         activeBookPeriod?.id ??
         (_bookPeriods.isNotEmpty ? _bookPeriods.first.id : null);
-    
+
     if (oldId != _selectedBookPeriodId) {
       unawaited(_syncHomeBalanceWidget());
     }

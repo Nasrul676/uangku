@@ -18,6 +18,7 @@ import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
+import 'book_period_recap_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -705,7 +706,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => const ShoppingListScreen(),
+                                          builder: (_) =>
+                                              const ShoppingListScreen(),
                                         ),
                                       );
                                     },
@@ -736,7 +738,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            count > 99 ? '99+' : count.toString(),
+                                            count > 99
+                                                ? '99+'
+                                                : count.toString(),
                                             style: const TextStyle(
                                               color: Color(0xFF111111),
                                               fontSize: 8,
@@ -748,6 +752,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                 ],
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _CircleIconButton(
+                            icon: Icons.receipt_long_rounded,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BookPeriodRecapScreen(),
+                                ),
                               );
                             },
                           ),
@@ -1346,7 +1362,16 @@ class _QuickNavItemState extends State<_QuickNavItem> {
                 decoration: BoxDecoration(
                   color: background,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1.2),
+                  border: Border.all(
+                    color:
+                        (Theme.of(context)
+                            .extension<AppThemeExtension>()
+                            ?.cardBorder
+                            ?.top
+                            .color ??
+                        const Color(0xFF2D2D2D)),
+                    width: 1.2,
+                  ),
                 ),
                 child: Icon(
                   widget.icon,
@@ -1440,10 +1465,17 @@ class _BookPeriodCard extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardTheme.color ?? Colors.white,
+                        color:
+                            Theme.of(context).cardTheme.color ?? Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
+                          color:
+                              (Theme.of(context)
+                                  .extension<AppThemeExtension>()
+                                  ?.cardBorder
+                                  ?.top
+                                  .color ??
+                              const Color(0xFF2D2D2D)),
                           width: 1,
                         ),
                       ),
@@ -1498,7 +1530,16 @@ class _BookPeriodCard extends StatelessWidget {
                         ? Theme.of(context).colorScheme.secondaryContainer
                         : const Color(0xFFA4DBB2),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1),
+                    border: Border.all(
+                      color:
+                          (Theme.of(context)
+                              .extension<AppThemeExtension>()
+                              ?.cardBorder
+                              ?.top
+                              .color ??
+                          const Color(0xFF2D2D2D)),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     selectedPeriod == null
@@ -1530,7 +1571,8 @@ class _BookPeriodCard extends StatelessWidget {
                   child: _ActionButton(
                     label: 'Buka Buku',
                     icon: Icons.menu_book_rounded,
-                    background: Theme.of(context).cardTheme.color ?? Colors.white,
+                    background:
+                        Theme.of(context).cardTheme.color ?? Colors.white,
                     iconBackground: const Color(0xFFF5BB8A),
                     onTap: () {
                       onOpenBook();
@@ -1546,8 +1588,12 @@ class _BookPeriodCard extends StatelessWidget {
                         ? Theme.of(context).colorScheme.surface
                         : const Color(0xFFD4BEF2),
                     iconBackground: const Color(0xFFF5BB8A),
-                    labelColor: activePeriodId == null ? null : const Color(0xFF111111),
-                    iconColor: activePeriodId == null ? null : const Color(0xFF111111),
+                    labelColor: activePeriodId == null
+                        ? null
+                        : const Color(0xFF111111),
+                    iconColor: activePeriodId == null
+                        ? null
+                        : const Color(0xFF111111),
                     onTap: onCloseActiveBook ?? () {},
                   ),
                 ),
@@ -1823,7 +1869,16 @@ class _PeriodPickerItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF0C8C8),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1),
+                    border: Border.all(
+                      color:
+                          (Theme.of(context)
+                              .extension<AppThemeExtension>()
+                              ?.cardBorder
+                              ?.top
+                              .color ??
+                          const Color(0xFF2D2D2D)),
+                      width: 1,
+                    ),
                   ),
                   child: const Icon(
                     Icons.delete_outline_rounded,
@@ -1901,37 +1956,153 @@ class _FinancialPlanCard extends StatelessWidget {
               )
             else
               Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  itemCount: plans.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final plan = plans[index];
-                    final planId = plan.id;
-                    if (planId == null) {
-                      return const SizedBox.shrink();
-                    }
-                    final realized = realizationByPlan[planId] ?? 0;
-                    final progress = plan.targetAmount <= 0
-                        ? 0.0
-                        : (realized / plan.targetAmount)
-                              .clamp(0.0, 1.0)
-                              .toDouble();
-                    return _FinancialPlanTile(
-                      plan: plan,
-                      progress: progress,
-                      realizationAmount: realized,
-                      onEdit: () => onEditPlan(plan),
-                      onDelete: () => onDeletePlan(planId),
-                    );
-                  },
+                child: Column(
+                  children: [
+                    _FinancialPlanSummaryCard(
+                      theme: theme,
+                      plans: plans,
+                      realizationByPlan: realizationByPlan,
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 100),
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        itemCount: plans.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final plan = plans[index];
+                          final planId = plan.id;
+                          if (planId == null) {
+                            return const SizedBox.shrink();
+                          }
+                          final realized = realizationByPlan[planId] ?? 0;
+                          final progress = plan.targetAmount <= 0
+                              ? 0.0
+                              : (realized / plan.targetAmount)
+                                    .clamp(0.0, 1.0)
+                                    .toDouble();
+                          return _FinancialPlanTile(
+                            plan: plan,
+                            progress: progress,
+                            realizationAmount: realized,
+                            onEdit: () => onEditPlan(plan),
+                            onDelete: () => onDeletePlan(planId),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FinancialPlanSummaryCard extends StatelessWidget {
+  const _FinancialPlanSummaryCard({
+    required this.theme,
+    required this.plans,
+    required this.realizationByPlan,
+  });
+
+  final ThemeData theme;
+  final List<FinancialPlan> plans;
+  final Map<int, double> realizationByPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    double totalTarget = 0;
+    double totalRealization = 0;
+
+    for (final plan in plans) {
+      final planId = plan.id;
+      if (planId == null) continue;
+      totalTarget += plan.targetAmount;
+      totalRealization += realizationByPlan[planId] ?? 0;
+    }
+
+    final percentageText = totalTarget > 0
+        ? '${((totalRealization / totalTarget) * 100).toStringAsFixed(0)}%'
+        : '0%';
+
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.secondaryContainer.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.calculate_rounded, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Rencana Keuangan',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Target: ${formatter.format(totalTarget)}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        Text(
+                          'Realisasi: ${formatter.format(totalRealization)}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          percentageText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2014,7 +2185,9 @@ class _FinancialPlanTile extends StatelessWidget {
                         child: LinearProgressIndicator(
                           minHeight: 6,
                           value: progress,
-                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surface,
                           color: const Color(0xFF1F5A62),
                         ),
                       ),
@@ -2556,7 +2729,17 @@ class _GraphCard extends StatelessWidget {
                     onTap: () => onSelectRangeDays(30),
                   ),
                   const SizedBox(width: 10),
-                  Container(width: 1, height: 28, color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D))),
+                  Container(
+                    width: 1,
+                    height: 28,
+                    color:
+                        (Theme.of(context)
+                            .extension<AppThemeExtension>()
+                            ?.cardBorder
+                            ?.top
+                            .color ??
+                        const Color(0xFF2D2D2D)),
+                  ),
                   const SizedBox(width: 10),
                   _IconFilterButton(
                     icon: Icons.north_east_rounded,
@@ -2646,7 +2829,13 @@ class _GraphCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
+                          color:
+                              (Theme.of(context)
+                                  .extension<AppThemeExtension>()
+                                  ?.cardBorder
+                                  ?.top
+                                  .color ??
+                              const Color(0xFF2D2D2D)),
                           width: 1.1,
                         ),
                       ),
@@ -3375,7 +3564,16 @@ class _FinancialPlanDueNoticeCard extends StatelessWidget {
                         ? const Color(0xFFF0C8C8)
                         : Theme.of(context).cardTheme.color ?? Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)), width: 1.1),
+                    border: Border.all(
+                      color:
+                          (Theme.of(context)
+                              .extension<AppThemeExtension>()
+                              ?.cardBorder
+                              ?.top
+                              .color ??
+                          const Color(0xFF2D2D2D)),
+                      width: 1.1,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3444,8 +3642,8 @@ class _FilterButton extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: selected 
-                ? (textColor ?? const Color(0xFF1F5A62)) 
+            color: selected
+                ? (textColor ?? const Color(0xFF1F5A62))
                 : Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
@@ -3487,8 +3685,8 @@ class _IconFilterButton extends StatelessWidget {
         child: Icon(
           icon,
           size: 16,
-          color: selected 
-              ? (iconColor ?? const Color(0xFF1F5A62)) 
+          color: selected
+              ? (iconColor ?? const Color(0xFF1F5A62))
               : Theme.of(context).iconTheme.color,
         ),
       ),
@@ -3595,11 +3793,7 @@ class _CircleIconButton extends StatelessWidget {
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: Theme.of(context).iconTheme.color,
-        ),
+        child: Icon(icon, size: 16, color: Theme.of(context).iconTheme.color),
       ),
     );
   }
@@ -3688,8 +3882,8 @@ class _BarState extends State<_Bar> {
               color: widget.selected
                   ? const Color(0xFF1F5A62)
                   : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white70
-                      : const Color(0xFF3B3B55)),
+                        ? Colors.white70
+                        : const Color(0xFF3B3B55)),
             ),
           ),
         ],
