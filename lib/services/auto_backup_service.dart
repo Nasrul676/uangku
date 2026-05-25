@@ -5,16 +5,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path/path.dart' as p;
 
 import 'backup_service.dart';
+import 'database_helper.dart';
 
 const int _autoBackupAlarmId = 1001;
 
 @pragma('vm:entry-point')
 Future<void> callbackDispatcher() async {
-  WidgetsFlutterBinding.ensureInitialized();
   try {
     final prefs = await SharedPreferences.getInstance();
     final isEnabled = prefs.getBool('auto_backup_enabled') ?? false;
-    
+
     if (!isEnabled) {
       return;
     }
@@ -25,28 +25,55 @@ Future<void> callbackDispatcher() async {
     }
 
     final usePassword = prefs.getBool('auto_backup_use_password') ?? false;
-    final password = usePassword ? prefs.getString('auto_backup_password') : null;
-    
+    final password = usePassword
+        ? prefs.getString('auto_backup_password')
+        : null;
+
+    // Pastikan koneksi database ditutup sebelum backup
+    await DatabaseHelper.instance.checkpointDatabase();
+    await DatabaseHelper.instance.closeDatabase();
+
     final zipFile = await BackupService.createBackup(password: password);
-    
+
+    // Copy to destination
     final fileName = p.basename(zipFile.path);
     final destPath = p.join(destFolder, fileName);
     await zipFile.copy(destPath);
-    
+
+    // Hapus file temp
     if (await zipFile.exists()) {
       await zipFile.delete();
     }
 
+    final successNotification = {
+      'title': 'Auto Backup Berhasil',
+      'subtitle': 'Data berhasil dibackup ke: $fileName',
+      'type': 'BACKUP_SUCCESS',
+      'is_read': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    await DatabaseHelper.instance.insertNotification(successNotification);
+
     await AutoBackupService.showNotification(
-      'Auto Backup Berhasil', 
-      'Data berhasil dibackup ke: $fileName'
+      'Auto Backup Berhasil',
+      'Data berhasil dibackup ke: $fileName',
     );
-    
+
   } catch (e) {
     debugPrint('Auto Backup Error: $e');
+    
+    final errorNotification = {
+      'title': 'Auto Backup Gagal',
+      'subtitle': 'Terjadi kesalahan saat membackup data.',
+      'type': 'BACKUP_FAILED',
+      'is_read': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    await DatabaseHelper.instance.insertNotification(errorNotification);
+
     await AutoBackupService.showNotification(
-      'Auto Backup Gagal', 
-      'Terjadi kesalahan saat membackup data.'
+      'Auto Backup Gagal',
+      'Terjadi kesalahan saat membackup data.',
     );
   }
 }
@@ -57,7 +84,12 @@ class AutoBackupService {
 
   static Future<void> initialize() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
+    const iosInit = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+      macOS: iosInit,
+    );
     await _notificationsPlugin.initialize(initSettings);
 
     await AndroidAlarmManager.initialize();
@@ -71,7 +103,12 @@ class AutoBackupService {
       importance: Importance.high,
       priority: Priority.high,
     );
-    const details = NotificationDetails(android: androidDetails);
+    const iosDetails = DarwinNotificationDetails();
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+      macOS: iosDetails,
+    );
     await _notificationsPlugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,

@@ -19,6 +19,11 @@ class HomeBalanceWidgetService {
     decimalDigits: 0,
   );
 
+  Future<void> initialize() async {
+    if (kIsWeb) return;
+    await HomeWidget.setAppGroupId('group.com.example.uangkeluar');
+  }
+
   Future<void> syncBalance({
     required double totalIncome,
     required double totalExpense,
@@ -26,6 +31,8 @@ class HomeBalanceWidgetService {
     required bool isHidden,
   }) async {
     if (kIsWeb) return;
+
+
     final totalIncomeText = _currencyFormatter.format(totalIncome);
     final totalExpenseText = _currencyFormatter.format(totalExpense);
     final balanceText = _currencyFormatter.format(balance);
@@ -60,7 +67,13 @@ class HomeBalanceWidgetService {
       'widget_toggle_visibility_launch_uri',
       widgetToggleVisibilityLaunchUri,
     );
-    await HomeWidget.updateWidget(androidName: widgetProviderName);
+    await HomeWidget.updateWidget(
+      androidName: widgetProviderName,
+      iOSName: 'UangkuWidget',
+    );
+    await HomeWidget.updateWidget(
+      androidName: 'UangkuBalanceWidgetV2Provider',
+    );
   }
 
   Future<Uri?> getInitialLaunchUri() {

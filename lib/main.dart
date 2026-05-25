@@ -18,6 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id', null);
   await AutoBackupService.initialize();
+  await HomeBalanceWidgetService.instance.initialize();
   runApp(const UangKeluarApp());
 }
 

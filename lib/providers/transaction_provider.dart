@@ -6,6 +6,8 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan_input.dart';
 import '../models/financial_plan.dart';
+import '../models/pocket.dart';
+import '../models/app_notification.dart';
 import '../services/app_settings_service.dart';
 import '../services/database_helper.dart';
 import '../services/home_balance_widget_service.dart';
@@ -37,6 +39,8 @@ class TransactionProvider extends ChangeNotifier {
   List<FinanceTransaction> _allTransactions = [];
   List<BookPeriod> _bookPeriods = [];
   List<FinancialPlan> _allFinancialPlans = [];
+  List<Pocket> _allPockets = [];
+  List<AppNotification> _persistentNotifications = [];
   int? _selectedBookPeriodId;
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -55,6 +59,14 @@ class TransactionProvider extends ChangeNotifier {
     if (selectedId == null) return _allTransactions;
     return _allTransactions
         .where((tx) => tx.bookPeriodId == selectedId)
+        .toList(growable: false);
+  }
+
+  List<Pocket> get pockets {
+    final selectedId = _currentPlanScopeBookId;
+    if (selectedId == null) return const [];
+    return _allPockets
+        .where((p) => p.bookPeriodId == selectedId)
         .toList(growable: false);
   }
 
@@ -119,6 +131,8 @@ class TransactionProvider extends ChangeNotifier {
     await loadSettings();
     await loadBookPeriods();
     await loadFinancialPlans();
+    await loadPockets();
+    await loadNotifications();
     await loadTransactions();
   }
 
@@ -159,6 +173,144 @@ class TransactionProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  Future<void> loadPockets() async {
+    try {
+      _allPockets = await _databaseHelper.getAllPockets();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadNotifications() async {
+    try {
+      final rawNotifications = await _databaseHelper.getAllNotifications();
+      _persistentNotifications = rawNotifications.map((map) => AppNotification.fromMap(map)).toList();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> insertNotification(AppNotification notification) async {
+    try {
+      await _databaseHelper.insertNotification(notification.toMap()..remove('id'));
+      await loadNotifications();
+    } catch (e) {
+      debugPrint('Error inserting notification: $e');
+    }
+  }
+
+  Future<void> markNotificationAsRead(int id) async {
+    try {
+      await _databaseHelper.markNotificationAsRead(id);
+      await loadNotifications();
+    } catch (e) {
+      debugPrint('Error marking notification as read: $e');
+    }
+  }
+
+  Future<void> clearNotifications() async {
+    try {
+      await _databaseHelper.clearNotifications();
+      await loadNotifications();
+    } catch (e) {
+      debugPrint('Error clearing notifications: $e');
+    }
+  }
+
+  final Set<String> _dismissedDynamicNotifications = {};
+
+  Future<void> removeNotification(AppNotification notification) async {
+    if (notification.id != null) {
+      try {
+        await _databaseHelper.deleteNotification(notification.id!);
+        await loadNotifications();
+      } catch (e) {
+        debugPrint('Error removing persistent notification: $e');
+      }
+    } else {
+      final key = notification.payload?.toString();
+      if (key != null) {
+        _dismissedDynamicNotifications.add(key);
+        notifyListeners();
+      }
+    }
+  }
+
+  List<AppNotification> get appNotifications {
+    final List<AppNotification> dynamicNotifications = [];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    // 1. Dynamic Plan Due Alerts
+    final realizationByPlan = <int, double>{};
+    for (final tx in _allTransactions) {
+      final planId = tx.financialPlanId;
+      if (tx.type != 'EXPENSE' || planId == null) continue;
+      realizationByPlan[planId] = (realizationByPlan[planId] ?? 0) + tx.amount;
+    }
+
+    for (final plan in _allFinancialPlans) {
+      final planId = plan.id;
+      if (planId == null) continue;
+
+      final parsedDate = DateTime.tryParse(plan.targetDate);
+      if (parsedDate == null) continue;
+      final targetDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+
+      if (targetDate.isAfter(today)) continue;
+
+      final realization = realizationByPlan[planId] ?? 0;
+      if (realization >= plan.targetAmount) continue;
+
+      final isOverdue = targetDate.isBefore(today);
+      final overdueDays = isOverdue ? today.difference(targetDate).inDays : 0;
+      
+      final payloadKey = {'planId': planId}.toString();
+      if (_dismissedDynamicNotifications.contains(payloadKey)) continue;
+
+      dynamicNotifications.add(AppNotification(
+        title: plan.title,
+        subtitle: '${isOverdue ? 'Terlambat $overdueDays hari' : 'Jatuh tempo hari ini'} • Target ${formatter.format(plan.targetAmount)}',
+        type: isOverdue ? 'PLAN_DUE' : 'PLAN_WARNING',
+        isRead: false,
+        createdAt: targetDate, // Uses target date as sort order
+        payload: {'planId': planId},
+      ));
+    }
+
+    // 2. Dynamic Pockets Over Budget
+    for (final pocket in pockets) {
+      final effectiveBalance = getPocketEffectiveBalance(pocket.id!);
+      if (effectiveBalance < 0) {
+        final payloadKey = {'pocketId': pocket.id}.toString();
+        if (_dismissedDynamicNotifications.contains(payloadKey)) continue;
+
+        dynamicNotifications.add(AppNotification(
+          title: pocket.name,
+          subtitle: 'Kantong Over Budget ${formatter.format(effectiveBalance.abs())}',
+          type: 'POCKET_OVER_BUDGET',
+          isRead: false,
+          createdAt: now,
+          payload: {'pocketId': pocket.id},
+        ));
+      }
+    }
+
+    // Combine dynamic and persistent
+    final combined = [...dynamicNotifications, ..._persistentNotifications];
+    combined.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return combined;
+  }
+
+  int get unreadNotificationCount {
+    return appNotifications.where((n) => !n.isRead).length;
   }
 
   void selectBookPeriod(int? periodId) {
@@ -419,6 +571,7 @@ class TransactionProvider extends ChangeNotifier {
     required DateTime date,
     String? time,
     int? financialPlanId,
+    int? pocketId,
   }) async {
     final selectedBookId = _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -460,6 +613,7 @@ class TransactionProvider extends ChangeNotifier {
     final tx = FinanceTransaction(
       bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
+      pocketId: pocketId,
       title: title,
       amount: amount,
       type: type,
@@ -481,6 +635,7 @@ class TransactionProvider extends ChangeNotifier {
     required DateTime date,
     String? time,
     int? bookId,
+    int? pocketId,
   }) async {
     final selectedBookId = bookId ?? _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -506,6 +661,7 @@ class TransactionProvider extends ChangeNotifier {
 
     final tx = FinanceTransaction(
       bookPeriodId: selectedBookId,
+      pocketId: pocketId,
       title: title,
       amount: amount,
       type: type,
@@ -535,6 +691,7 @@ class TransactionProvider extends ChangeNotifier {
     required DateTime date,
     String? time,
     int? financialPlanId,
+    int? pocketId,
   }) async {
     final selectedBookId = _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -577,6 +734,7 @@ class TransactionProvider extends ChangeNotifier {
       id: id,
       bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
+      pocketId: pocketId,
       title: title,
       amount: amount,
       type: type,
@@ -855,6 +1013,75 @@ class TransactionProvider extends ChangeNotifier {
         isHidden: _isBalanceHidden,
       );
     } catch (_) {}
+  }
+
+  // --- POCKET LOGIC ---
+
+  Future<void> addPocket({
+    required int bookPeriodId,
+    required String name,
+    required String icon,
+    required String allocationType,
+    required double allocationValue,
+  }) async {
+    final pocket = Pocket(
+      bookPeriodId: bookPeriodId,
+      name: name,
+      icon: icon,
+      allocationType: allocationType,
+      allocationValue: allocationValue,
+      currentBalance: 0,
+    );
+    await _databaseHelper.insertPocket(pocket);
+    await loadPockets();
+  }
+
+  Future<void> updatePocket(Pocket pocket) async {
+    await _databaseHelper.updatePocket(pocket);
+    await loadPockets();
+  }
+
+  Future<void> deletePocket(int id) async {
+    await _databaseHelper.deletePocket(id);
+    await loadPockets();
+  }
+
+  double getPocketRealization(int pocketId) {
+    // Sum of all EXPENSE transactions linked to this pocket
+    return _allTransactions
+        .where((tx) => tx.pocketId == pocketId && tx.type == 'EXPENSE')
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+  }
+
+  double getPocketEffectiveBalance(int pocketId) {
+    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    return pocket.currentBalance - getPocketRealization(pocketId);
+  }
+
+  Future<void> calculatePocketAllocation(int pocketId) async {
+    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    
+    double newBalance = 0;
+    if (pocket.allocationType == 'PERCENTAGE') {
+      // Calculate total income for the book period
+      final totalIncome = _allTransactions
+          .where((tx) => tx.bookPeriodId == pocket.bookPeriodId && tx.type == 'INCOME')
+          .fold(0.0, (sum, tx) => sum + tx.amount);
+      
+      newBalance = totalIncome * (pocket.allocationValue / 100);
+    } else {
+      // NOMINAL
+      newBalance = pocket.allocationValue;
+    }
+
+    final updatedPocket = pocket.copyWith(currentBalance: newBalance);
+    await updatePocket(updatedPocket);
+  }
+
+  Future<void> addCustomAmountToPocket(int pocketId, double amount) async {
+    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    final updatedPocket = pocket.copyWith(currentBalance: pocket.currentBalance + amount);
+    await updatePocket(updatedPocket);
   }
 
   int? get _currentPlanScopeBookId =>

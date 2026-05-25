@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
+import '../models/pocket.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -13,11 +14,13 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 7;
+  static const _dbVersion = 9;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
   static const shoppingItemsTable = 'shopping_items';
+  static const pocketsTable = 'pockets';
+  static const notificationsTable = 'notifications';
 
   Database? _database;
 
@@ -25,6 +28,13 @@ class DatabaseHelper {
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
+  }
+
+  Future<void> checkpointDatabase() async {
+    if (_database != null && _database!.isOpen) {
+      // Gunakan rawQuery, BUKAN execute, untuk PRAGMA yang mengembalikan nilai
+      await _database!.rawQuery('PRAGMA wal_checkpoint(FULL)');
+    }
   }
 
   Future<void> closeDatabase() async {
@@ -138,6 +148,42 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
           );
         }
+
+        if (oldVersion < 8) {
+          await db.execute('''
+            ALTER TABLE $transactionsTable
+            ADD COLUMN pocket_id INTEGER
+          ''');
+
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $pocketsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              book_period_id INTEGER NOT NULL,
+              name TEXT NOT NULL,
+              icon TEXT NOT NULL,
+              allocation_type TEXT NOT NULL,
+              allocation_value REAL NOT NULL,
+              current_balance REAL NOT NULL DEFAULT 0
+            )
+          ''');
+          
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
+          );
+        }
+
+        if (oldVersion < 9) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $notificationsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              subtitle TEXT NOT NULL,
+              type TEXT NOT NULL,
+              is_read INTEGER NOT NULL DEFAULT 0,
+              created_at TEXT NOT NULL
+            )
+          ''');
+        }
       },
     );
   }
@@ -148,6 +194,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         book_period_id INTEGER,
         financial_plan_id INTEGER,
+        pocket_id INTEGER,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
         type TEXT NOT NULL,
@@ -194,6 +241,29 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE $pocketsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_period_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        allocation_type TEXT NOT NULL,
+        allocation_value REAL NOT NULL,
+        current_balance REAL NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $notificationsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        subtitle TEXT NOT NULL,
+        type TEXT NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_book_period_id ON $transactionsTable(book_period_id)',
     );
@@ -205,6 +275,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
     );
   }
 
@@ -374,6 +447,12 @@ class DatabaseHelper {
       );
 
       await txn.delete(
+        pocketsTable,
+        where: 'book_period_id = ?',
+        whereArgs: [bookPeriodId],
+      );
+
+      await txn.delete(
         bookPeriodsTable,
         where: 'id = ?',
         whereArgs: [bookPeriodId],
@@ -412,5 +491,69 @@ class DatabaseHelper {
   Future<void> deleteFinancialPlan(int id) async {
     final db = await database;
     await db.delete(financialPlansTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Pocket>> getAllPockets() async {
+    final db = await database;
+    final result = await db.query(pocketsTable, orderBy: 'id ASC');
+    return result.map(Pocket.fromMap).toList();
+  }
+
+  Future<int> insertPocket(Pocket pocket) async {
+    final db = await database;
+    return db.insert(
+      pocketsTable,
+      pocket.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> updatePocket(Pocket pocket) async {
+    final db = await database;
+    await db.update(
+      pocketsTable,
+      pocket.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [pocket.id],
+    );
+  }
+
+  Future<void> deletePocket(int id) async {
+    final db = await database;
+    await db.delete(pocketsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Map<String, dynamic>>> getAllNotifications() async {
+    final db = await database;
+    return await db.query(notificationsTable, orderBy: 'created_at DESC');
+  }
+
+  Future<int> insertNotification(Map<String, dynamic> notification) async {
+    final db = await database;
+    return await db.insert(
+      notificationsTable,
+      notification,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> markNotificationAsRead(int id) async {
+    final db = await database;
+    await db.update(
+      notificationsTable,
+      {'is_read': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> clearNotifications() async {
+    final db = await database;
+    await db.delete(notificationsTable);
+  }
+
+  Future<void> deleteNotification(int id) async {
+    final db = await database;
+    await db.delete(notificationsTable, where: 'id = ?', whereArgs: [id]);
   }
 }

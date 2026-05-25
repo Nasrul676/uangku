@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
+import '../models/pocket.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
@@ -36,6 +37,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   TimeOfDay? _selectedTime;
   String _category = 'Pengeluaran';
   int? _selectedFinancialPlanId;
+  int? _selectedPocketId;
   bool _isSaving = false;
   bool _isAddingCategory = false;
 
@@ -69,6 +71,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       }
       _category = existing.category;
       _selectedFinancialPlanId = existing.financialPlanId;
+      _selectedPocketId = existing.pocketId;
     }
   }
 
@@ -311,6 +314,80 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     return '${plan.title} • ${formatter.format(plan.targetAmount)}';
   }
 
+  Future<void> _openPocketPicker(List<Pocket> pockets) async {
+    final selected = await showModalBottomSheet<int?>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pilih Kantong',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _FinancialPlanSheetItem(
+                  title: 'Tanpa Kantong',
+                  subtitle: 'Pengeluaran ini tidak memotong kantong',
+                  selected: _selectedPocketId == null,
+                  onTap: () => Navigator.pop(sheetContext, null),
+                ),
+                const SizedBox(height: 4),
+                Flexible(
+                  child: pockets.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 18),
+                            child: Text('Kantong belum ada.'),
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: pockets.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 4),
+                          itemBuilder: (context, index) {
+                            final pocket = pockets[index];
+                            final pocketId = pocket.id;
+                            if (pocketId == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return _FinancialPlanSheetItem(
+                              title: pocket.name,
+                              subtitle: pocket.allocationType == 'PERCENTAGE' 
+                                ? 'Alokasi: ${pocket.allocationValue.toInt()}%'
+                                : 'Alokasi: Rp ${NumberFormat.decimalPattern('id_ID').format(pocket.allocationValue)}',
+                              selected: _selectedPocketId == pocketId,
+                              onTap: () => Navigator.pop(sheetContext, pocketId),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (selected != _selectedPocketId) {
+      setState(() {
+        _selectedPocketId = selected;
+      });
+    }
+  }
+
   Future<void> _openAddCategoryDialog() async {
     if (_isAddingCategory) return;
 
@@ -479,6 +556,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                   ? null
                   : _formatTimeForStorage(_selectedTime!),
               financialPlanId: selectedPlanId,
+              pocketId: _selectedPocketId,
             )
             .timeout(const Duration(seconds: 10));
       } else {
@@ -494,6 +572,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                   ? null
                   : _formatTimeForStorage(_selectedTime!),
               financialPlanId: selectedPlanId,
+              pocketId: _selectedPocketId,
             )
             .timeout(const Duration(seconds: 10));
       }
@@ -542,7 +621,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
         ? ['Pengeluaran', 'Tabungan/Investasi', 'Needs']
         : provider.expenseCategories;
     final financialPlans = provider.financialPlans;
+    final pockets = provider.pockets;
     String selectedPlanText = 'Tanpa Rencana Keuangan';
+    String selectedPocketText = 'Tanpa Kantong';
 
     if (_selectedFinancialPlanId != null &&
         !financialPlans.any((item) => item.id == _selectedFinancialPlanId)) {
@@ -553,6 +634,20 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       for (final plan in financialPlans) {
         if (plan.id == _selectedFinancialPlanId) {
           selectedPlanText = _planLabel(plan);
+          break;
+        }
+      }
+    }
+
+    if (_selectedPocketId != null &&
+        !pockets.any((item) => item.id == _selectedPocketId)) {
+      _selectedPocketId = null;
+    }
+
+    if (_selectedPocketId != null) {
+      for (final pocket in pockets) {
+        if (pocket.id == _selectedPocketId) {
+          selectedPocketText = pocket.name;
           break;
         }
       }
@@ -757,6 +852,12 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             selectedText: selectedPlanText,
                           ),
                           const SizedBox(height: 10),
+                          _PocketSelectorField(
+                            selectedPocketId: _selectedPocketId,
+                            onTap: () => _openPocketPicker(pockets),
+                            selectedText: selectedPocketText,
+                          ),
+                          const SizedBox(height: 10),
                           TextFormField(
                             controller: _titleController,
                             decoration: const InputDecoration(
@@ -883,6 +984,51 @@ class _FinancialPlanSelectorField extends StatelessWidget {
           child: Row(
             children: [
               const Icon(Icons.flag_rounded, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.expand_more_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PocketSelectorField extends StatelessWidget {
+  const _PocketSelectorField({
+    required this.selectedPocketId,
+    required this.selectedText,
+    required this.onTap,
+  });
+
+  final int? selectedPocketId;
+  final String selectedText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_rounded, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

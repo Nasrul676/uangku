@@ -9,6 +9,9 @@ import '../services/database_helper.dart';
 import '../services/backup_service.dart';
 import '../services/auto_backup_service.dart';
 import 'auto_backup_settings_sheet.dart';
+import 'package:provider/provider.dart';
+import '../providers/transaction_provider.dart';
+import '../models/app_notification.dart';
 
 // ─── Progress Model ──────────────────────────────────────────────────────────
 
@@ -351,6 +354,8 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
       Future(() async {
         try {
+          await DatabaseHelper.instance.checkpointDatabase();
+          await DatabaseHelper.instance.closeDatabase();
           zipFile = await BackupService.createBackup(password: password);
         } catch (e) {
           caughtError = e;
@@ -372,11 +377,31 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
     setState(() => _isBackingUp = false);
 
     if (caughtError != null) {
+      if (mounted) {
+        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+          AppNotification(
+            title: 'Backup Manual Gagal',
+            subtitle: 'Terjadi kesalahan saat membuat backup.',
+            type: 'BACKUP_FAILED',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
       _showSnackBar('Backup gagal: $caughtError');
       return;
     }
 
     if (zipFile != null) {
+      if (mounted) {
+        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+          AppNotification(
+            title: 'Backup Manual Berhasil',
+            subtitle: 'File backup telah berhasil dibuat.',
+            type: 'BACKUP_SUCCESS',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
       await AutoBackupService.showNotification(
         'Backup Berhasil', 
         'File backup telah berhasil dibuat secara manual.'
@@ -699,8 +724,29 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
     setState(() => _isRestoring = false);
 
     if (caughtError != null) {
+      if (mounted) {
+        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+          AppNotification(
+            title: 'Restore Gagal',
+            subtitle: 'Terjadi kesalahan saat memulihkan data.',
+            type: 'RESTORE_FAILED',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
       _showSnackBar('Restore gagal: $caughtError');
       return;
+    }
+
+    if (mounted) {
+      await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+        AppNotification(
+          title: 'Restore Berhasil',
+          subtitle: 'Data berhasil dipulihkan dari file backup.',
+          type: 'RESTORE_SUCCESS',
+          createdAt: DateTime.now(),
+        ),
+      );
     }
 
     ScaffoldMessenger.of(context).showSnackBar(

@@ -3,6 +3,7 @@ class FinanceTransaction {
     this.id,
     this.bookPeriodId,
     this.financialPlanId,
+    this.pocketId,
     required this.title,
     required this.amount,
     required this.type,
@@ -15,6 +16,7 @@ class FinanceTransaction {
   final int? id;
   final int? bookPeriodId;
   final int? financialPlanId;
+  final int? pocketId;
   final String title;
   final double amount;
   final String type;
@@ -29,6 +31,7 @@ class FinanceTransaction {
     int? id,
     int? bookPeriodId,
     int? financialPlanId,
+    int? pocketId,
     String? title,
     double? amount,
     String? type,
@@ -41,6 +44,7 @@ class FinanceTransaction {
       id: id ?? this.id,
       bookPeriodId: bookPeriodId ?? this.bookPeriodId,
       financialPlanId: financialPlanId ?? this.financialPlanId,
+      pocketId: pocketId ?? this.pocketId,
       title: title ?? this.title,
       amount: amount ?? this.amount,
       type: type ?? this.type,
@@ -56,6 +60,7 @@ class FinanceTransaction {
       'id': id,
       'book_period_id': bookPeriodId,
       'financial_plan_id': financialPlanId,
+      'pocket_id': pocketId,
       'title': title,
       'amount': amount,
       'type': type,
@@ -71,6 +76,7 @@ class FinanceTransaction {
       id: map['id'] as int?,
       bookPeriodId: (map['book_period_id'] as num?)?.toInt(),
       financialPlanId: (map['financial_plan_id'] as num?)?.toInt(),
+      pocketId: (map['pocket_id'] as num?)?.toInt(),
       title: map['title'] as String? ?? '',
       amount: (map['amount'] as num?)?.toDouble() ?? 0,
       type: map['type'] as String? ?? 'EXPENSE',
@@ -86,6 +92,7 @@ class FinanceTransaction {
       keyMapping['id'] ?? 'id': id,
       keyMapping['book_period_id'] ?? 'book_period_id': bookPeriodId,
       keyMapping['financial_plan_id'] ?? 'financial_plan_id': financialPlanId,
+      keyMapping['pocket_id'] ?? 'pocket_id': pocketId,
       keyMapping['title'] ?? 'title': title,
       keyMapping['amount'] ?? 'amount': amount,
       keyMapping['type'] ?? 'type': type,
