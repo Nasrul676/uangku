@@ -27,6 +27,13 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<void> checkpointDatabase() async {
+    if (_database != null && _database!.isOpen) {
+      // Gunakan rawQuery, BUKAN execute, untuk PRAGMA yang mengembalikan nilai
+      await _database!.rawQuery('PRAGMA wal_checkpoint(FULL)');
+    }
+  }
+
   Future<void> closeDatabase() async {
     if (_database != null && _database!.isOpen) {
       await _database!.close();

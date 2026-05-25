@@ -29,6 +29,7 @@ void callbackDispatcher() {
       final password = usePassword ? prefs.getString('auto_backup_password') : null;
 
       // Pastikan koneksi database ditutup sebelum backup
+      await DatabaseHelper.instance.checkpointDatabase();
       await DatabaseHelper.instance.closeDatabase();
       
       final zipFile = await BackupService.createBackup(password: password);
