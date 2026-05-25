@@ -31,6 +31,7 @@ void callbackDispatcher() {
           : null;
 
       // Pastikan koneksi database ditutup sebelum backup
+      await DatabaseHelper.instance.checkpointDatabase();
       await DatabaseHelper.instance.closeDatabase();
 
       final zipFile = await BackupService.createBackup(password: password);

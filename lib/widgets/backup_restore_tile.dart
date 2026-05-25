@@ -354,6 +354,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
       Future(() async {
         try {
+          await DatabaseHelper.instance.checkpointDatabase();
           await DatabaseHelper.instance.closeDatabase();
           zipFile = await BackupService.createBackup(password: password);
         } catch (e) {
