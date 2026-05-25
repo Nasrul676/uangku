@@ -15,7 +15,7 @@ void callbackDispatcher() {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isEnabled = prefs.getBool('auto_backup_enabled') ?? false;
-      
+
       if (!isEnabled) {
         return true;
       }
@@ -26,34 +26,55 @@ void callbackDispatcher() {
       }
 
       final usePassword = prefs.getBool('auto_backup_use_password') ?? false;
-      final password = usePassword ? prefs.getString('auto_backup_password') : null;
+      final password = usePassword
+          ? prefs.getString('auto_backup_password')
+          : null;
 
       // Pastikan koneksi database ditutup sebelum backup
       await DatabaseHelper.instance.closeDatabase();
-      
+
       final zipFile = await BackupService.createBackup(password: password);
-      
+
       // Copy to destination
       final fileName = p.basename(zipFile.path);
       final destPath = p.join(destFolder, fileName);
       await zipFile.copy(destPath);
-      
+
       // Hapus file temp
       if (await zipFile.exists()) {
         await zipFile.delete();
       }
 
+      final successNotification = {
+        'title': 'Auto Backup Berhasil',
+        'subtitle': 'Data berhasil dibackup ke: $fileName',
+        'type': 'BACKUP_SUCCESS',
+        'is_read': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      await DatabaseHelper.instance.insertNotification(successNotification);
+
       await AutoBackupService.showNotification(
-        'Auto Backup Berhasil', 
-        'Data berhasil dibackup ke: $fileName'
+        'Auto Backup Berhasil',
+        'Data berhasil dibackup ke: $fileName',
       );
-      
+
       return true;
     } catch (e) {
       debugPrint('Auto Backup Error: $e');
+      
+      final errorNotification = {
+        'title': 'Auto Backup Gagal',
+        'subtitle': 'Terjadi kesalahan saat membackup data.',
+        'type': 'BACKUP_FAILED',
+        'is_read': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      await DatabaseHelper.instance.insertNotification(errorNotification);
+
       await AutoBackupService.showNotification(
-        'Auto Backup Gagal', 
-        'Terjadi kesalahan saat membackup data.'
+        'Auto Backup Gagal',
+        'Terjadi kesalahan saat membackup data.',
       );
       return false;
     }
@@ -67,13 +88,16 @@ class AutoBackupService {
   static Future<void> initialize() async {
     // Notifikasi
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
+    const iosInit = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+      macOS: iosInit,
+    );
     await _notificationsPlugin.initialize(initSettings);
 
     // Workmanager
-    await Workmanager().initialize(
-      callbackDispatcher,
-    );
+    await Workmanager().initialize(callbackDispatcher);
   }
 
   static Future<void> showNotification(String title, String body) async {
@@ -84,7 +108,12 @@ class AutoBackupService {
       importance: Importance.high,
       priority: Priority.high,
     );
-    const details = NotificationDetails(android: androidDetails);
+    const iosDetails = DarwinNotificationDetails();
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+      macOS: iosDetails,
+    );
     await _notificationsPlugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
@@ -93,7 +122,10 @@ class AutoBackupService {
     );
   }
 
-  static Future<void> scheduleBackup(Duration frequency, {Duration? initialDelay}) async {
+  static Future<void> scheduleBackup(
+    Duration frequency, {
+    Duration? initialDelay,
+  }) async {
     await Workmanager().registerPeriodicTask(
       _autoBackupTask,
       _autoBackupTask,

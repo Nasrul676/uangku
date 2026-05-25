@@ -19,6 +19,10 @@ import 'income_input_screen.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 import 'book_period_recap_screen.dart';
+import 'pocket_list_screen.dart';
+import 'pocket_detail_screen.dart';
+import 'pocket_form_screen.dart';
+import '../utils/icon_picker_utils.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -48,7 +52,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late String _userName;
   bool _isOpeningInput = false;
   bool _isSavingFinancialPlan = false;
-  bool _isBookCardVisible = true;
   _ChartDetail? _selectedChartDetail;
 
   @override
@@ -87,52 +90,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return amount;
   }
 
-  List<_PlanDueAlert> _buildDuePlanAlerts({
-    required List<FinancialPlan> financialPlans,
-    required List<FinanceTransaction> allTransactions,
-  }) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final realizationByPlan = <int, double>{};
-
-    for (final tx in allTransactions) {
-      final planId = tx.financialPlanId;
-      if (tx.type != 'EXPENSE' || planId == null) continue;
-      realizationByPlan[planId] = (realizationByPlan[planId] ?? 0) + tx.amount;
-    }
-
-    final alerts = <_PlanDueAlert>[];
-    for (final plan in financialPlans) {
-      final planId = plan.id;
-      if (planId == null) continue;
-
-      final parsedDate = DateTime.tryParse(plan.targetDate);
-      if (parsedDate == null) continue;
-      final targetDate = DateTime(
-        parsedDate.year,
-        parsedDate.month,
-        parsedDate.day,
-      );
-
-      if (targetDate.isAfter(today)) continue;
-
-      final realization = realizationByPlan[planId] ?? 0;
-      if (realization >= plan.targetAmount) continue;
-
-      alerts.add(
-        _PlanDueAlert(
-          plan: plan,
-          isOverdue: targetDate.isBefore(today),
-          overdueDays: targetDate.isBefore(today)
-              ? today.difference(targetDate).inDays
-              : 0,
-        ),
-      );
-    }
-
-    alerts.sort((a, b) => a.plan.targetDate.compareTo(b.plan.targetDate));
-    return alerts;
-  }
 
   Future<void> _openAddFinancialPlanDialog() async {
     if (_isSavingFinancialPlan) return;
@@ -608,6 +565,355 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return result;
   }
 
+  void _showNotificationsBottomSheet(BuildContext context, TransactionProvider initialProvider, ThemeData theme) {
+    // Mark persistent ones as read
+    for (final alert in initialProvider.appNotifications) {
+      if (alert.id != null && !alert.isRead) {
+        initialProvider.markNotificationAsRead(alert.id!);
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer<TransactionProvider>(
+          builder: (context, provider, _) {
+            final alerts = provider.appNotifications;
+
+            if (alerts.isEmpty) {
+              return SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tidak ada notifikasi baru.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_active_rounded,
+                          size: 24,
+                          color: theme.brightness == Brightness.dark
+                              ? Colors.white
+                              : const Color(0xFF111111),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Notifikasi',
+                          style: theme.textTheme.titleMedium?.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: alerts.length,
+                        separatorBuilder: (context, index) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final alert = alerts[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: alert.backgroundColor,
+                              child: Icon(alert.icon, color: alert.iconColor),
+                            ),
+                            title: Text(alert.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(
+                              alert.subtitle,
+                              style: TextStyle(
+                                color: alert.iconColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              color: Colors.grey,
+                              onPressed: () {
+                                provider.removeNotification(alert);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+  Future<void> _showBookManagerBottomSheet(BuildContext context, TransactionProvider provider) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final periods = provider.bookPeriods;
+            final currentId = provider.selectedBookPeriodId;
+            final activeBook = provider.activeBookPeriod;
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Buku Pengeluaran',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    if (activeBook != null && activeBook.id != currentId) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            provider.selectBookPeriod(activeBook.id);
+                            setState(() {
+                              _selectedChartDetail = null;
+                            });
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.check_circle_outline, color: Color(0xFF0066FF)),
+                          label: const Text('Pilih Buku Aktif', style: TextStyle(color: Color(0xFF0066FF))),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: Color(0xFF0066FF)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Flexible(
+                      child: periods.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text(
+                                  'Belum ada buku. Buka buku pertama untuk mulai mencatat.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: periods.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final period = periods[index];
+                                final isSelected = period.id == currentId;
+                                final isActive = period.isOpen;
+                                
+                                String subtitle = 'Dari ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.startDate))}';
+                                if (!isActive && period.endDate != null) {
+                                  subtitle += ' smp ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.endDate!))}';
+                                } else {
+                                  subtitle += ' (Sedang Berjalan)';
+                                }
+
+                                return InkWell(
+                                  onTap: () {
+                                    provider.selectBookPeriod(period.id);
+                                    setState(() {
+                                      _selectedChartDetail = null;
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? const Color(0xFFE5F0FF) : Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected ? const Color(0xFF0066FF) : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: isSelected ? const Color(0xFF0066FF) : const Color(0xFFF0F0F0),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            isActive ? Icons.menu_book_rounded : Icons.lock_outline_rounded,
+                                            color: isSelected ? Colors.white : Colors.grey.shade600,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                period.label,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isSelected ? const Color(0xFF0066FF) : const Color(0xFF111111),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                subtitle,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          const Icon(Icons.check_circle, color: Color(0xFF0066FF)),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _openBookFlow();
+                            },
+                            icon: const Icon(Icons.add_box_rounded),
+                            label: const Text('Buka Buku'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2A9D50),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: activeBook == null
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                    _closeActiveBookFlow(activeBook);
+                                  },
+                            icon: const Icon(Icons.bookmark_remove_rounded),
+                            label: const Text('Tutup Buku'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFC24545),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (currentId != null) ...[
+                      Builder(builder: (context) {
+                        final currentPeriod = periods.firstWhere((p) => p.id == currentId, orElse: () => periods.first);
+                        if (!currentPeriod.isOpen) {
+                          return Column(
+                            children: [
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _reopenBookFlow(currentPeriod);
+                                  },
+                                  icon: const Icon(Icons.lock_open_rounded, color: Color(0xFF6B3076)),
+                                  label: const Text('Buka Ulang Buku', style: TextStyle(color: Color(0xFF6B3076))),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    side: const BorderSide(color: Color(0xFF6B3076)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _deleteBookFlow(currentPeriod);
+                                  },
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFC24545)),
+                                  label: const Text('Hapus Buku Terpilih', style: TextStyle(color: Color(0xFFC24545))),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    side: const BorderSide(color: Color(0xFFC24545)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        return const SizedBox();
+                      }),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -622,10 +928,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final allTransactions = provider.transactions;
               final bookPeriods = provider.bookPeriods;
               final financialPlans = provider.financialPlans;
-              final duePlanAlerts = _buildDuePlanAlerts(
-                financialPlans: financialPlans,
-                allTransactions: allTransactions,
-              );
               final selectedBookId = provider.selectedBookPeriodId;
               final activeBook = provider.activeBookPeriod;
               final chartBookId = selectedBookId ?? activeBook?.id;
@@ -756,6 +1058,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
                           const SizedBox(width: 8),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              _CircleIconButton(
+                                icon: Icons.notifications_none_rounded,
+                                onTap: () {
+                                  _showNotificationsBottomSheet(context, provider, theme);
+                                },
+                              ),
+                              if (provider.unreadNotificationCount > 0)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE53935),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
                           _CircleIconButton(
                             icon: Icons.receipt_long_rounded,
                             onTap: () {
@@ -765,6 +1093,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   builder: (_) => const BookPeriodRecapScreen(),
                                 ),
                               );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _CircleIconButton(
+                            icon: Icons.menu_book_rounded,
+                            onTap: () {
+                              _showBookManagerBottomSheet(context, provider);
                             },
                           ),
                           const SizedBox(width: 8),
@@ -782,56 +1117,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 280),
-                        reverseDuration: const Duration(milliseconds: 220),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SizeTransition(
-                              sizeFactor: animation,
-                              axisAlignment: -1,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: _isBookCardVisible
-                            ? KeyedSubtree(
-                                key: const ValueKey('book-card-visible'),
-                                child: _BookPeriodCard(
-                                  periods: bookPeriods,
-                                  selectedPeriodId: selectedBookId,
-                                  activePeriodId: activeBook?.id,
-                                  onSelectPeriod: (value) {
-                                    provider.selectBookPeriod(value);
-                                    setState(() {
-                                      _selectedChartDetail = null;
-                                    });
-                                  },
-                                  onOpenBook: _openBookFlow,
-                                  onCloseActiveBook: activeBook == null
-                                      ? null
-                                      : () => _closeActiveBookFlow(activeBook),
-                                  onReopenBook: _reopenBookFlow,
-                                  onDeleteBook: _deleteBookFlow,
-                                  onHideCard: () {
-                                    setState(() => _isBookCardVisible = false);
-                                  },
-                                ),
-                              )
-                            : KeyedSubtree(
-                                key: const ValueKey('book-card-collapsed'),
-                                child: _BookPeriodCollapsedBar(
-                                  activeBook: activeBook,
-                                  onShowCard: () {
-                                    setState(() => _isBookCardVisible = true);
-                                  },
-                                ),
-                              ),
-                      ),
-                      const SizedBox(height: 0),
                       Expanded(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
@@ -891,7 +1176,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               totalIncome: totalIncome,
                               totalExpense: totalExpense,
                               netBalance: netBalance,
-                              duePlanAlerts: duePlanAlerts,
                               onAddIncome: _openIncomeInput,
                               onAddExpense: _openExpenseInput,
                             ),
@@ -980,7 +1264,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required double totalIncome,
     required double totalExpense,
     required double netBalance,
-    required List<_PlanDueAlert> duePlanAlerts,
     required VoidCallback onAddIncome,
     required VoidCallback onAddExpense,
   }) {
@@ -1040,13 +1323,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onAddIncome: onAddIncome,
                 onAddExpense: onAddExpense,
               ),
-              if (duePlanAlerts.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _FinancialPlanDueNoticeCard(
-                  theme: theme,
-                  alerts: duePlanAlerts,
-                ),
-              ],
+              const SizedBox(height: 10),
+              _DashboardPocketSection(
+                provider: provider,
+              ),
               const SizedBox(height: 10),
               _GraphCard(
                 theme: theme,
@@ -3507,103 +3787,196 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
-class _FinancialPlanDueNoticeCard extends StatelessWidget {
-  const _FinancialPlanDueNoticeCard({
-    required this.theme,
-    required this.alerts,
-  });
-
-  final ThemeData theme;
-  final List<_PlanDueAlert> alerts;
+class _DashboardPocketSection extends StatelessWidget {
+  final TransactionProvider provider;
+  
+  const _DashboardPocketSection({required this.provider});
+  
+  static const List<Color> _cardColors = [
+    Color(0xFFFFF9E6), // Soft Yellow
+    Color(0xFFF0F4C3), // Soft Lime
+    Color(0xFFE8F5E9), // Soft Green
+    Color(0xFFE0F7FA), // Soft Cyan
+    Color(0xFFE3F2FD), // Soft Blue
+    Color(0xFFF3E5F5), // Soft Purple
+    Color(0xFFFFEBEE), // Soft Red
+    Color(0xFFFFF3E0), // Soft Orange
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(
+    final pockets = provider.pockets;
+    if (pockets.isEmpty) return const SizedBox();
+
+    final NumberFormat currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    final previewAlerts = alerts.take(3).toList(growable: false);
 
-    return Card(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.notifications_active_rounded, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Notifikasi Rencana',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 22),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            'Kantong Kamu',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 6),
-            Text(
-              alerts.length == 1
-                  ? 'Ada 1 rencana yang sudah mencapai tanggal target.'
-                  : 'Ada ${alerts.length} rencana yang sudah mencapai tanggal target.',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            ...previewAlerts.map(
-              (alert) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: alert.isOverdue
-                        ? const Color(0xFFF0C8C8)
-                        : Theme.of(context).cardTheme.color ?? Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color:
-                          (Theme.of(context)
-                              .extension<AppThemeExtension>()
-                              ?.cardBorder
-                              ?.top
-                              .color ??
-                          const Color(0xFF2D2D2D)),
-                      width: 1.1,
+          ),
+        ),
+        SizedBox(
+          height: 145,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: pockets.length + 1,
+            itemBuilder: (context, index) {
+              if (index == pockets.length) {
+                return Container(
+                  width: 140,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Card(
+                    elevation: 0,
+                    color: const Color(0xFFFDF0FC), // Light purple
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Colors.purple.shade50),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        alert.plan.title,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${alert.isOverdue ? 'Terlambat ${alert.overdueDays} hari' : 'Jatuh tempo hari ini'} • Target ${formatter.format(alert.plan.targetAmount)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: alert.isOverdue
-                              ? const Color(0xFFA13A3A)
-                              : const Color(0xFF444444),
+                    margin: EdgeInsets.zero,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PocketFormScreen(),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF6B3076), // Dark purple circle
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Buat Kantong',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF111111),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                );
+              }
+
+              final pocket = pockets[index];
+              final effectiveBalance = provider.getPocketEffectiveBalance(pocket.id!);
+              final isNegative = effectiveBalance < 0;
+              final cardColor = _cardColors[index % _cardColors.length];
+
+              return Container(
+                width: 140,
+                margin: const EdgeInsets.only(right: 12),
+                child: Card(
+                  elevation: 0,
+                  color: cardColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PocketDetailScreen(pocketId: pocket.id!),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: const Color(0xFFE5F0FF),
+                            child: Icon(
+                              IconPickerUtils.getIconData(pocket.icon),
+                              color: const Color(0xFF0066FF),
+                              size: 20,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            pocket.name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF111111),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            currencyFormatter.format(effectiveBalance),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: isNegative ? const Color(0xFFE53935) : const Color(0xFF111111),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            pocket.allocationType == 'PERCENTAGE'
+                                ? '${pocket.allocationValue.toInt()}% Pemasukan'
+                                : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF666666),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            if (alerts.length > previewAlerts.length)
-              Text(
-                '+${alerts.length - previewAlerts.length} rencana lainnya.',
-                style: theme.textTheme.bodySmall,
-              ),
-          ],
+              );
+            },
+          ),
         ),
-      ),
+      ],
     );
   }
 }
