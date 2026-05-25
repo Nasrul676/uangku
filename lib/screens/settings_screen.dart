@@ -264,284 +264,194 @@ class _SettingsContentState extends State<SettingsContent> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
+        _SectionCard(
+          title: 'Tampilan Tema',
+          subtitle: 'Pilih gaya desain yang paling nyaman buatmu.',
+          child: const _ThemeSelectorRow(),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: 'Mode Gelap',
+          subtitle: 'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
+          child: const _ThemeModeSelector(),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: 'Akun yang Sedang Dipakai',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Tampilan Tema',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              Row(
+                children: [
+                  const Icon(Icons.person_rounded),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentUserName.isEmpty
+                          ? 'Nama akun belum tersedia'
+                          : _currentUserName,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
-              Text(
-                'Pilih gaya desain yang paling nyaman buatmu.',
-                style: theme.textTheme.bodySmall,
+              Row(
+                children: [
+                  const Icon(Icons.email_rounded),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentUserEmail.isEmpty
+                          ? 'Email akun belum tersedia'
+                          : _currentUserEmail,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              const _ThemeSelectorRow(),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
+        _SectionCard(
+          title: 'Notifikasi Rencana Keuangan',
+          subtitle:
+              'Atur jam notifikasi saat rencana keuangan mencapai tanggal target.',
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Mode Gelap',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              InkWell(
+                onTap: _pickNotificationTime,
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    hintText: 'Jam notifikasi',
+                    prefixIcon: Icon(Icons.access_time_rounded),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(_notificationTimeLabel())),
+                      const Icon(Icons.expand_more_rounded),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
-                style: theme.textTheme.bodySmall,
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 46,
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _isSavingNotificationTime
+                      ? null
+                      : _saveNotificationTime,
+                  child: _isSavingNotificationTime
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Simpan Jam Notifikasi'),
+                ),
               ),
-              const SizedBox(height: 12),
-              const _ThemeModeSelector(),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 46,
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: _isSendingNotificationDemo
+                      ? null
+                      : _sendNotificationDemo,
+                  child: _isSendingNotificationDemo
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Kirim Notifikasi Demo'),
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
+        _SectionCard(
+          title: 'Atur Kategori',
+          subtitle: 'Pisahkan antar kategori pakai koma (,).',
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Akun yang Sedang Dipakai',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.person_rounded),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _currentUserName.isEmpty
-                            ? 'Nama akun belum tersedia'
-                            : _currentUserName,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.email_rounded),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _currentUserEmail.isEmpty
-                            ? 'Email akun belum tersedia'
-                            : _currentUserEmail,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-        ),
-        const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Notifikasi Rencana Keuangan',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Atur jam notifikasi saat rencana keuangan mencapai tanggal target.',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 10),
-                InkWell(
-                  onTap: _pickNotificationTime,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      hintText: 'Jam notifikasi',
-                      prefixIcon: Icon(Icons.access_time_rounded),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(_notificationTimeLabel())),
-                        const Icon(Icons.expand_more_rounded),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 46,
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isSavingNotificationTime
-                        ? null
-                        : _saveNotificationTime,
-                    child: _isSavingNotificationTime
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Simpan Jam Notifikasi'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 46,
-                  width: double.infinity,
-                  child: FilledButton.tonal(
-                    onPressed: _isSendingNotificationDemo
-                        ? null
-                        : _sendNotificationDemo,
-                    child: _isSendingNotificationDemo
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Kirim Notifikasi Demo'),
-                  ),
-                ),
-              ],
-            ),
-        ),
-        const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Atur Kategori',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Pisahkan antar kategori pakai koma (,).',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _incomeCategoriesController,
-                  decoration: const InputDecoration(
-                    hintText:
-                        'Kategori pemasukan (contoh: Gaji, Bonus, Jualan)',
-                    prefixIcon: Icon(Icons.trending_up_rounded),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _expenseCategoriesController,
-                  decoration: const InputDecoration(
-                    hintText:
-                        'Kategori pengeluaran (contoh: Belanja, Makan, Tagihan)',
-                    prefixIcon: Icon(
-                      Icons.trending_down_rounded,
-                      color: Color(0xFFC24545),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-        ),
-        const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Backup & Restore Data',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              TextField(
+                controller: _incomeCategoriesController,
+                decoration: const InputDecoration(
+                  hintText: 'Kategori pemasukan (contoh: Gaji, Bonus, Jualan)',
+                  prefixIcon: Icon(Icons.trending_up_rounded),
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
-                style: theme.textTheme.bodySmall,
+              const SizedBox(height: 10),
+              TextField(
+                controller: _expenseCategoriesController,
+                decoration: const InputDecoration(
+                  hintText:
+                      'Kategori pengeluaran (contoh: Belanja, Makan, Tagihan)',
+                  prefixIcon: Icon(
+                    Icons.trending_down_rounded,
+                    color: Color(0xFFC24545),
+                  ),
+                ),
               ),
-              const SizedBox(height: 4),
-              const BackupRestoreTile(),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Koneksi Google Apps Script',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _urlController,
-                  decoration: const InputDecoration(
-                    hintText: 'URL Web App',
-                    prefixIcon: Icon(Icons.link_rounded),
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _payloadRootController,
-                  decoration: const InputDecoration(
-                    hintText: 'Kunci root payload (contoh: transaksi)',
-                    prefixIcon: Icon(Icons.data_object_rounded),
-                  ),
-                ),
-              ],
-            ),
+        _SectionCard(
+          title: 'Backup & Restore Data',
+          subtitle:
+              'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
+          child: const BackupRestoreTile(),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
-          padding: const EdgeInsets.all(12),
+        _SectionCard(
+          title: 'Koneksi Google Apps Script',
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pemetaan Data JSON',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+            children: [
+              TextField(
+                controller: _urlController,
+                decoration: const InputDecoration(
+                  hintText: 'URL Web App',
+                  prefixIcon: Icon(Icons.link_rounded),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Samakan dengan nama kolom di Google Sheets kamu.',
-                  style: theme.textTheme.bodySmall,
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _payloadRootController,
+                decoration: const InputDecoration(
+                  hintText: 'Kunci root payload (contoh: transaksi)',
+                  prefixIcon: Icon(Icons.data_object_rounded),
                 ),
-                const SizedBox(height: 10),
-                ..._mappingControllers.entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextField(
-                      controller: entry.value,
-                      decoration: InputDecoration(
-                        hintText: entry.key,
-                        prefixIcon: const Icon(Icons.tune_rounded),
-                        labelText: entry.key,
-                      ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: 'Pemetaan Data JSON',
+          subtitle: 'Samakan dengan nama kolom di Google Sheets kamu.',
+          child: Column(
+            children: [
+              ..._mappingControllers.entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TextField(
+                    controller: entry.value,
+                    decoration: InputDecoration(
+                      hintText: entry.key,
+                      prefixIcon: const Icon(Icons.tune_rounded),
+                      labelText: entry.key,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -633,9 +543,7 @@ class _ThemeModeSelector extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.hintColor,
+                color: isSelected ? theme.colorScheme.primary : theme.hintColor,
               ),
               const SizedBox(height: 4),
               Text(
@@ -651,6 +559,46 @@ class _ThemeModeSelector extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    this.subtitle,
+    required this.child,
+    this.padding = const EdgeInsets.all(12),
+    this.isPressedEffect = false,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget child;
+  final EdgeInsets padding;
+  final bool isPressedEffect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBouncingCard(
+      isPressedEffect: isPressedEffect,
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(fontSize: 22),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(subtitle!, style: theme.textTheme.bodySmall),
+          ],
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
@@ -721,7 +669,7 @@ class _ThemeSelectorRow extends StatelessWidget {
                   color: Colors.black.withOpacity(0.04),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
-                )
+                ),
               ],
             ),
           ),
@@ -812,7 +760,9 @@ class _ThemePreviewOption extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.black.withOpacity(0.1) : Colors.transparent,
+              color: isSelected
+                  ? Colors.black.withOpacity(0.1)
+                  : Colors.transparent,
               border: Border.all(
                 color: isSelected ? AppTheme.borderColor : Colors.grey.shade400,
               ),

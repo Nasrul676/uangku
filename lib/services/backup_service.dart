@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'database_helper.dart';
 
 class BackupService {
   static const String _dbName = 'uangkeluar.db';
@@ -23,7 +24,12 @@ class BackupService {
   /// Menggunakan in-memory ZIP (Archive + ZipEncoder) agar reliable di Android.
   /// Mengembalikan [File] objek yang mengarah ke file ZIP di direktori temp.
   static Future<File> createBackup({String? password}) async {
-    final dbPath = await _getDbPath();
+    final db = await DatabaseHelper.instance.database;
+    final dbPath = db.path;
+
+    // Flush WAL (Write-Ahead Log) ke file database utama agar data utuh saat di-copy
+    await db.execute('PRAGMA wal_checkpoint(FULL)');
+
     final dbFile = File(dbPath);
 
     if (!await dbFile.exists()) {
@@ -33,8 +39,8 @@ class BackupService {
     // 1. Baca binary database
     final dbBytes = await dbFile.readAsBytes();
 
-    // 2. Generate SQL dump (koneksi read-only setelah DB helper ditutup)
-    final sqlContent = await _generateSqlDump(dbPath);
+    // 2. Generate SQL dump menggunakan instance database yang sudah terbuka
+    final sqlContent = await _generateSqlDump(db);
     final sqlBytes = utf8.encode(sqlContent);
 
     // 3. Buat archive dalam memori
@@ -139,12 +145,9 @@ class BackupService {
     await File(dbPath).writeAsBytes(dbEntry.content as List<int>);
   }
 
-  /// Membuat SQL dump dari database SQLite.
-  /// Membuka koneksi read-only baru (database utama sudah ditutup sebelumnya).
-  static Future<String> _generateSqlDump(String dbPath) async {
-    final db = await openDatabase(dbPath, readOnly: true);
-    try {
-      final buffer = StringBuffer();
+  /// Membuat SQL dump dari database SQLite menggunakan koneksi yang sudah ada.
+  static Future<String> _generateSqlDump(Database db) async {
+    final buffer = StringBuffer();
       buffer.writeln('-- ================================================');
       buffer.writeln('-- UangKu Database SQL Dump');
       buffer.writeln('-- Generated : ${DateTime.now().toIso8601String()}');
@@ -193,8 +196,5 @@ class BackupService {
       buffer.writeln('PRAGMA foreign_keys = ON;');
 
       return buffer.toString();
-    } finally {
-      await db.close();
-    }
   }
 }

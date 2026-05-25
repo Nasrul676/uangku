@@ -87,20 +87,19 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
 
     if (_isEnabled) {
       Duration frequency = Duration(days: _intervalDays);
-      Duration? initialDelay;
+      DateTime? startAt;
 
       if (_intervalDays == 1 && _dailyTime != null) {
         final now = DateTime.now();
-        var scheduledDate = DateTime(
+        startAt = DateTime(
           now.year, now.month, now.day, _dailyTime!.hour, _dailyTime!.minute,
         );
-        if (scheduledDate.isBefore(now)) {
-          scheduledDate = scheduledDate.add(const Duration(days: 1));
+        if (startAt.isBefore(now)) {
+          startAt = startAt.add(const Duration(days: 1));
         }
-        initialDelay = scheduledDate.difference(now);
       }
 
-      await AutoBackupService.scheduleBackup(frequency, initialDelay: initialDelay);
+      await AutoBackupService.scheduleBackup(frequency, startAt: startAt);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -244,6 +243,20 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                 ),
               
               const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: () async {
+                    await AutoBackupService.testBackupNow();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Test Auto Backup sedang berjalan di background...')),
+                    );
+                  },
+                  child: const Text('Jalankan Auto Backup Sekarang (Tes)'),
+                ),
+              ),
+              const SizedBox(height: 12),
             ],
 
             SizedBox(
