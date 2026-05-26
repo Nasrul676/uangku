@@ -6,6 +6,7 @@
     <title>UangKu - Kelola Keuangan Jadi Menyenangkan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-bold-rounded/css/uicons-bold-rounded.css'>
     <script>
         tailwind.config = {
             theme: {
@@ -86,7 +87,7 @@
             <a href="#fitur" class="hover:text-neo-coral transition-colors">Fitur</a>
             <a href="#cara-kerja" class="hover:text-neo-coral transition-colors">Cara Kerja</a>
             <a href="https://trakteer.id/nasrul676" target="_blank" rel="noopener noreferrer" class="hover:text-neo-coral transition-colors flex items-center gap-1">
-                ☕ Trakteer
+                ☕ Dukung Saya
             </a>
         </div>
         <a href="#download" class="neo-button bg-neo-mint px-5 py-2 text-neo-ink inline-block">Mulai Sekarang</a>
@@ -112,31 +113,38 @@
                 </a>
             </div>
         </div>
-        <div class="lg:w-1/2 relative fade-in" style="transition-delay: 0.2s;">
+        <div class="lg:w-1/2 relative fade-in flex justify-center items-center" style="transition-delay: 0.2s;">
             <!-- Decorative blobs -->
-            <div class="absolute -top-10 -left-10 w-32 h-32 bg-neo-coral rounded-full border-3 border-neo-ink shadow-neo -z-10 hidden md:block"></div>
-            <div class="absolute -bottom-10 -right-10 w-24 h-24 bg-neo-blue rounded-lg border-3 border-neo-ink shadow-neo -z-10 hidden md:block rotate-12"></div>
+            <div class="absolute -top-10 left-0 w-32 h-32 bg-neo-coral rounded-full border-3 border-neo-ink shadow-neo -z-10 hidden md:block"></div>
+            <div class="absolute -bottom-10 right-0 w-24 h-24 bg-neo-blue rounded-lg border-3 border-neo-ink shadow-neo -z-10 hidden md:block rotate-12"></div>
             
-            <div class="bg-neo-mint border-3 border-neo-ink rounded-[2rem] p-4 shadow-[8px_8px_0px_#121212] rotate-2 hover:rotate-0 transition-transform duration-300 mx-auto max-w-xs md:max-w-sm">
-                <!-- Using the uploaded screenshot -->
-                <img src="assets/screenshot.png" alt="UangKu App Screenshot" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover bg-white" onerror="this.src='https://placehold.co/400x800/white/121212?text=App+Screenshot'">
+            <div class="flex justify-center items-center relative w-full max-w-lg mt-8 md:mt-0">
+                <!-- Dark mode screenshot (offset right, behind) -->
+                <div class="hidden sm:block absolute right-4 md:-right-4 top-8 bg-[#2A2A2A] border-3 border-neo-ink rounded-[2rem] p-4 shadow-[8px_8px_0px_#121212] rotate-6 hover:rotate-12 transition-transform duration-300 w-56 lg:w-60 z-0">
+                    <img src="assets/home-scree-dark-mode.png" alt="UangKu Dark Mode Screenshot" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover bg-[#121212]" onerror="this.src='https://placehold.co/400x800/1e1e1e/white?text=Dark+Mode'">
+                </div>
+                
+                <!-- Light mode screenshot (front, slightly left) -->
+                <div class="bg-neo-mint border-3 border-neo-ink rounded-[2rem] p-4 shadow-[8px_8px_0px_#121212] -rotate-3 hover:-rotate-1 transition-transform duration-300 w-64 lg:w-72 z-10 relative sm:-translate-x-12">
+                    <img src="assets/screenshot.png" alt="UangKu App Screenshot" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover bg-white" onerror="this.src='https://placehold.co/400x800/white/121212?text=App+Screenshot'">
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Marquee Banner -->
     <div class="bg-neo-ink text-neo-paper py-4 border-y-3 border-neo-ink overflow-hidden flex whitespace-nowrap">
-        <div class="animate-marquee inline-block font-bold text-xl uppercase tracking-wider">
-            <span>✨ 100% GRATIS</span> <span class="mx-8">•</span>
-            <span>📱 DESAIN MODERN</span> <span class="mx-8">•</span>
-            <span>🔒 DATA AMAN</span> <span class="mx-8">•</span>
-            <span>🎯 CAPAI TARGET FINANSIAL</span> <span class="mx-8">•</span>
-            <span>🛒 DAFTAR BELANJA PINTAR</span> <span class="mx-8">•</span>
-            <span>✨ 100% GRATIS</span> <span class="mx-8">•</span>
-            <span>📱 DESAIN MODERN</span> <span class="mx-8">•</span>
-            <span>🔒 DATA AMAN</span> <span class="mx-8">•</span>
-            <span>🎯 CAPAI TARGET FINANSIAL</span> <span class="mx-8">•</span>
-            <span>🛒 DAFTAR BELANJA PINTAR</span> <span class="mx-8">•</span>
+        <div class="animate-marquee inline-block font-bold text-xl uppercase tracking-wider flex items-center">
+            <span class="flex items-center gap-2"><i class="fi fi-br-star"></i> 100% GRATIS</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-smartphone"></i> DESAIN MODERN</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-lock"></i> DATA AMAN</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-bullseye"></i> CAPAI TARGET FINANSIAL</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-shopping-cart"></i> DAFTAR BELANJA PINTAR</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-star"></i> 100% GRATIS</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-smartphone"></i> DESAIN MODERN</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-lock"></i> DATA AMAN</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-bullseye"></i> CAPAI TARGET FINANSIAL</span> <span class="mx-8">•</span>
+            <span class="flex items-center gap-2"><i class="fi fi-br-shopping-cart"></i> DAFTAR BELANJA PINTAR</span> <span class="mx-8">•</span>
         </div>
     </div>
     <style>
@@ -159,8 +167,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <!-- Feature 1 -->
             <div class="neo-card bg-neo-yellow p-8 fade-in">
-                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-3xl">
-                    📊
+                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-2xl">
+                    <i class="fi fi-br-stats"></i>
                 </div>
                 <h3 class="text-2xl font-bold mb-3">Dashboard Interaktif</h3>
                 <p class="font-medium text-neo-ink/80">Pantau arus kas masuk dan keluar secara real-time. Ketahui ke mana uangmu pergi bulan ini dengan ringkasan laporan kas yang mudah dibaca.</p>
@@ -168,8 +176,8 @@
 
             <!-- Feature 2 -->
             <div class="neo-card bg-neo-blue p-8 fade-in" style="transition-delay: 0.1s;">
-                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-3xl">
-                    📔
+                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-2xl">
+                    <i class="fi fi-br-book"></i>
                 </div>
                 <h3 class="text-2xl font-bold mb-3">Sistem Buku (Periode)</h3>
                 <p class="font-medium text-neo-ink/80">Pisahkan pencatatan berdasarkan periode dengan fitur "Buka Buku Baru". Arsip keuangan bulan lalu tetap tersimpan rapi dan tidak bercampur!</p>
@@ -177,8 +185,8 @@
 
             <!-- Feature 3 -->
             <div class="neo-card bg-neo-mint p-8 fade-in" style="transition-delay: 0.2s;">
-                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-3xl">
-                    🎯
+                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-2xl">
+                    <i class="fi fi-br-bullseye"></i>
                 </div>
                 <h3 class="text-2xl font-bold mb-3">Rencana Keuangan</h3>
                 <p class="font-medium text-neo-ink/80">Punya target nabung buat beli gadget impian? Tetapkan rencana, pantau progresnya dengan animasi bar yang halus, dan raih kebebasan finansialmu.</p>
@@ -186,8 +194,8 @@
 
             <!-- Feature 4 -->
             <div class="neo-card bg-neo-coral p-8 fade-in">
-                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-3xl">
-                    🛒
+                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-2xl">
+                    <i class="fi fi-br-shopping-cart"></i>
                 </div>
                 <h3 class="text-2xl font-bold mb-3">Daftar Belanja Pintar</h3>
                 <p class="font-medium text-neo-ink/80">Cegah kalap saat belanja! Buat list belanjaanmu, estimasi total harganya, dan ceklis barang yang sudah masuk keranjang agar pengeluaran lebih terukur.</p>
@@ -195,8 +203,8 @@
 
             <!-- Feature 5 -->
             <div class="neo-card bg-neo-lavender p-8 fade-in" style="transition-delay: 0.1s;">
-                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-3xl">
-                    🔒
+                <div class="w-14 h-14 bg-white border-2 border-neo-ink rounded-xl flex items-center justify-center mb-6 shadow-neo text-2xl">
+                    <i class="fi fi-br-cloud-upload"></i>
                 </div>
                 <h3 class="text-2xl font-bold mb-3">Backup ke Google Drive</h3>
                 <p class="font-medium text-neo-ink/80">Gak perlu takut data hilang kalau ganti HP. Backup data keuanganmu secara lokal maupun sinkronisasi otomatis ke Google Drive dengan aman.</p>
@@ -206,6 +214,70 @@
             <div class="neo-card bg-white p-8 fade-in flex flex-col justify-center items-center text-center" style="transition-delay: 0.2s;">
                 <h3 class="text-2xl font-bold mb-4">Dan masih banyak lagi...</h3>
                 <a href="#download" class="neo-button bg-neo-ink text-white px-6 py-3 w-full hover:bg-gray-800">Coba Sendiri Sekarang!</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cara Kerja / Showcase Section -->
+    <section id="cara-kerja" class="py-24 px-6 md:px-12 max-w-7xl mx-auto overflow-hidden">
+        <div class="text-center mb-20 fade-in">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-4">Kenapa Harus UangKu?</h2>
+            <p class="text-lg font-medium text-gray-600 max-w-2xl mx-auto">Kami mendesain ulang cara kamu berinteraksi dengan uangmu. Lebih visual, lebih rapi, dan jauh lebih asyik.</p>
+        </div>
+
+        <div class="space-y-32">
+            <!-- Showcase 1 -->
+            <div class="flex flex-col md:flex-row items-center gap-12 fade-in">
+                <div class="md:w-1/2">
+                    <div class="bg-neo-blue border-3 border-neo-ink rounded-[2rem] p-2 shadow-[8px_8px_0px_#121212] rotate-2 hover:rotate-0 transition-transform duration-300 mx-auto max-w-sm">
+                        <img src="assets/Halaman transaksi buku.png" alt="Sistem Buku" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover">
+                    </div>
+                </div>
+                <div class="md:w-1/2 space-y-6">
+                    <div class="w-16 h-16 bg-neo-yellow border-3 border-neo-ink rounded-2xl flex items-center justify-center text-3xl shadow-[4px_4px_0px_#121212]">
+                        <i class="fi fi-br-book"></i>
+                    </div>
+                    <h3 class="text-3xl md:text-4xl font-extrabold">Catatan Terpisah Tiap Bulan</h3>
+                    <p class="text-xl font-medium text-gray-800 leading-relaxed">
+                        Dengan fitur <strong>Buka Buku Baru</strong>, kamu bisa memisahkan catatan pengeluaran tiap bulan atau tiap acara. Riwayat bulan lalu tersimpan dengan rapi tanpa tercampur dengan bulan ini!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Showcase 2 -->
+            <div class="flex flex-col md:flex-row-reverse items-center gap-12 fade-in">
+                <div class="md:w-1/2">
+                    <div class="bg-neo-coral border-3 border-neo-ink rounded-[2rem] p-2 shadow-[8px_8px_0px_#121212] -rotate-2 hover:rotate-0 transition-transform duration-300 mx-auto max-w-sm">
+                        <img src="assets/screenshot.png" alt="Fitur Dompet" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover">
+                    </div>
+                </div>
+                <div class="md:w-1/2 space-y-6">
+                    <div class="w-16 h-16 bg-neo-mint border-3 border-neo-ink rounded-2xl flex items-center justify-center text-3xl shadow-[4px_4px_0px_#121212]">
+                        <i class="fi fi-br-wallet"></i>
+                    </div>
+                    <h3 class="text-3xl md:text-4xl font-extrabold">Kelola Banyak Dompet Sekaligus</h3>
+                    <p class="text-xl font-medium text-gray-800 leading-relaxed">
+                        Punya uang tunai, rekening bank, dan e-wallet? Pisahkan saldo masing-masing ke dalam <strong>Dompet</strong> yang berbeda agar pencatatan arus kasmu lebih akurat dan terstruktur rapi!
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Showcase 3 -->
+            <div class="flex flex-col md:flex-row items-center gap-12 fade-in">
+                <div class="md:w-1/2">
+                    <div class="bg-neo-lavender border-3 border-neo-ink rounded-[2rem] p-2 shadow-[8px_8px_0px_#121212] rotate-2 hover:rotate-0 transition-transform duration-300 mx-auto max-w-sm">
+                        <img src="assets/Halaman Daftar Belanja.png" alt="Daftar Belanja" class="rounded-[1.5rem] border-2 border-neo-ink w-full h-auto object-cover">
+                    </div>
+                </div>
+                <div class="md:w-1/2 space-y-6">
+                    <div class="w-16 h-16 bg-neo-coral border-3 border-neo-ink rounded-2xl flex items-center justify-center text-3xl shadow-[4px_4px_0px_#121212]">
+                        <i class="fi fi-br-shopping-cart"></i>
+                    </div>
+                    <h3 class="text-3xl md:text-4xl font-extrabold">Belanja Sesuai Estimasi</h3>
+                    <p class="text-xl font-medium text-gray-800 leading-relaxed">
+                        Tulis daftar belanjamu sebelum ke supermarket. Masukkan estimasi harga, lalu centang barang yang sudah masuk keranjang. Selamat tinggal pengeluaran bocor karena kalap!
+                    </p>
+                </div>
             </div>
         </div>
     </section>
@@ -247,7 +319,7 @@
             </p>
             <div class="flex gap-4">
                 <a href="https://trakteer.id/nasrul676" target="_blank" rel="noopener noreferrer" aria-label="Trakteer" class="px-4 h-10 rounded-full border-2 border-neo-ink flex items-center justify-center bg-[#be1e2d] text-white hover:bg-neo-coral hover:text-neo-ink transition-colors font-bold text-sm">
-                    ☕ Trakteer
+                    ☕ Dukung Saya
                 </a>
                 <a href="#" aria-label="Instagram" class="w-10 h-10 rounded-full border-2 border-neo-ink flex items-center justify-center bg-white hover:bg-neo-mint transition-colors">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm3.98-10.822a1.44 1.44 0 11-2.88 0 1.44 1.44 0 012.88 0z"/></svg>
