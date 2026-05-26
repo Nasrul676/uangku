@@ -8,12 +8,14 @@ import '../models/finance_transaction.dart';
 import 'book_cashflow_detail_screen.dart';
 
 class BookPeriodRecapScreen extends StatelessWidget {
-  const BookPeriodRecapScreen({super.key});
+  const BookPeriodRecapScreen({super.key, this.isEmbedded = false});
+  final bool isEmbedded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rekap Cashflow per Buku')),
+      backgroundColor: isEmbedded ? Colors.transparent : null,
+      appBar: isEmbedded ? null : AppBar(title: const Text('Rekap Cashflow per Buku')),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
           final bookPeriods = provider.bookPeriods.toList();

@@ -548,14 +548,16 @@ class _CategoryChip extends StatelessWidget {
     return AnimatedBouncingCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: selected ? Theme.of(context).colorScheme.tertiaryContainer : Theme.of(context).cardTheme.color,
+      color: selected
+          ? Theme.of(context).colorScheme.tertiaryContainer
+          : Theme.of(context).cardTheme.color,
       borderRadius: BorderRadius.circular(10),
       child: Text(
         label,
         style: TextStyle(
-          fontWeight: FontWeight.w700, 
+          fontWeight: FontWeight.w700,
           fontSize: 12,
-          color: selected 
+          color: selected
               ? Theme.of(context).colorScheme.onTertiaryContainer
               : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
         ),

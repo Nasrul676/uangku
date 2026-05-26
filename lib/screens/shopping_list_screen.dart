@@ -12,7 +12,9 @@ import '../widgets/animated_bouncing_card.dart';
 import 'add_shopping_item_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
-  const ShoppingListScreen({Key? key}) : super(key: key);
+  const ShoppingListScreen({Key? key, this.isEmbedded = false})
+    : super(key: key);
+  final bool isEmbedded;
 
   @override
   _ShoppingListScreenState createState() => _ShoppingListScreenState();
@@ -106,68 +108,93 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Belanja')),
+      backgroundColor: widget.isEmbedded ? Colors.transparent : null,
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(title: const Text('Daftar Belanja')),
       body: Consumer<ShoppingProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (provider.items.isEmpty) {
-            return const Center(child: Text('Belum ada daftar belanja.'));
-          }
-
-          final unboughtItems = provider.items.where((i) => i.isBought == 0).toList();
-          final estimatedTotal = unboughtItems.fold(0.0, (sum, item) => sum + item.amount);
+          final unboughtItems = provider.items
+              .where((i) => i.isBought == 0)
+              .toList();
+          final estimatedTotal = unboughtItems.fold(
+            0.0,
+            (sum, item) => sum + item.amount,
+          );
 
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _EstimationSummary(
-                  total: estimatedTotal,
-                  itemsCount: unboughtItems.length,
+                padding: const EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddShoppingItemScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_box_rounded, color: Color(0xFF2A9D50)),
+                    label: const Text('Tambah Belanja', style: TextStyle(color: Color(0xFF2A9D50))),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF2A9D50)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              Expanded(
-                child: ListView.separated(
-            itemCount: provider.items.length,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final item = provider.items[index];
-              return _ShoppingItemTile(
-                item: item,
-                onEdit: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddShoppingItemScreen(item: item),
-                    ),
-                  );
-                },
-                onDelete: () => provider.deleteItem(item),
-                onBuy: () => _showBuyDialog(item),
-                onUndo: () =>
-                    context.read<ShoppingProvider>().cancelBought(item),
-              );
-            },
-          ),
-              ),
+              if (provider.items.isEmpty)
+                const Expanded(
+                  child: Center(child: Text('Belum ada daftar belanja.')),
+                )
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: _EstimationSummary(
+                    total: estimatedTotal,
+                    itemsCount: unboughtItems.length,
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: provider.items.length,
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final item = provider.items[index];
+                      return _ShoppingItemTile(
+                        item: item,
+                        onEdit: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AddShoppingItemScreen(item: item),
+                            ),
+                          );
+                        },
+                        onDelete: () => provider.deleteItem(item),
+                        onBuy: () => _showBuyDialog(item),
+                        onUndo: () =>
+                            context.read<ShoppingProvider>().cancelBought(item),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddShoppingItemScreen(),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -208,9 +235,7 @@ class _ShoppingItemTile extends StatelessWidget {
     final totalAmount = item.amount;
     final amountText = item.bought
         ? rupiahFormatter.format(totalAmount)
-        : (totalAmount > 0
-            ? '${rupiahFormatter.format(totalAmount)}'
-            : 'Rp 0');
+        : (totalAmount > 0 ? '${rupiahFormatter.format(totalAmount)}' : 'Rp 0');
 
     return Slidable(
       key: ValueKey(item.id),
@@ -388,7 +413,10 @@ class _EstimationSummary extends StatelessWidget {
               ),
               Text(
                 '',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),
