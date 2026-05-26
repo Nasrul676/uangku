@@ -79,8 +79,10 @@ class AppTheme {
   static const Color darkBorder = Color(0xFF333333);
   static const Color darkText = Color(0xFFF5F5F5);
 
-  static ThemeData getThemeData(AppThemeStyle style,
-      {Brightness brightness = Brightness.light}) {
+  static ThemeData getThemeData(
+    AppThemeStyle style, {
+    Brightness brightness = Brightness.light,
+  }) {
     if (style == AppThemeStyle.neoBrutalism) {
       return _buildNeoBrutalismTheme(brightness);
     }
@@ -140,7 +142,10 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? neoYellow : borderColor, width: 1.5),
+          borderSide: BorderSide(
+            color: isDark ? neoYellow : borderColor,
+            width: 1.5,
+          ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -161,7 +166,9 @@ class AppTheme {
           buttonBorder: Border.all(color: borderCol, width: 1.0),
           cardShadow: [
             BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.04),
+              color: isDark
+                  ? Colors.black.withOpacity(0.2)
+                  : Colors.black.withOpacity(0.04),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -198,11 +205,7 @@ class AppTheme {
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: neoColorScheme,
       iconTheme: IconThemeData(color: inkCol, size: 22),
-      dividerTheme: DividerThemeData(
-        color: inkCol,
-        thickness: 2,
-        space: 24,
-      ),
+      dividerTheme: DividerThemeData(color: inkCol, thickness: 2, space: 24),
       cardTheme: CardThemeData(
         color: paperCol,
         elevation: 0,
@@ -289,7 +292,8 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return isDark ? neoYellow : neoInk;
+          if (states.contains(WidgetState.selected))
+            return isDark ? neoYellow : neoInk;
           return paperCol;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {

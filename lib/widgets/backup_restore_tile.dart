@@ -26,10 +26,7 @@ class _ProgressData {
 class _PasswordDialog extends StatefulWidget {
   final bool isRestore;
   final bool forcePassword; // Jika true, paksa user isi password (hide switch)
-  const _PasswordDialog({
-    required this.isRestore,
-    this.forcePassword = false,
-  });
+  const _PasswordDialog({required this.isRestore, this.forcePassword = false});
 
   @override
   State<_PasswordDialog> createState() => _PasswordDialogState();
@@ -72,12 +69,13 @@ class _PasswordDialogState extends State<_PasswordDialog> {
                 labelText: 'Password',
                 errorText: _errorText,
                 suffixIcon: IconButton(
-                  icon:
-                      Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    _obscure ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
-            )
+            ),
         ],
       ),
       actions: [
@@ -94,7 +92,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
             Navigator.pop(context, _usePassword ? _pwdCtrl.text : '');
           },
           child: const Text('Lanjut'),
-        )
+        ),
       ],
     );
   }
@@ -129,9 +127,10 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 0.88, end: 1.12).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
+    _pulse = Tween<double>(
+      begin: 0.88,
+      end: 1.12,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -378,7 +377,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
     if (caughtError != null) {
       if (mounted) {
-        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+        await Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        ).insertNotification(
           AppNotification(
             title: 'Backup Manual Gagal',
             subtitle: 'Terjadi kesalahan saat membuat backup.',
@@ -393,7 +395,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
     if (zipFile != null) {
       if (mounted) {
-        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+        await Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        ).insertNotification(
           AppNotification(
             title: 'Backup Manual Berhasil',
             subtitle: 'File backup telah berhasil dibuat.',
@@ -403,8 +408,8 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
         );
       }
       await AutoBackupService.showNotification(
-        'Backup Berhasil', 
-        'File backup telah berhasil dibuat secara manual.'
+        'Backup Berhasil',
+        'File backup telah berhasil dibuat secara manual.',
       );
       await _showBackupOptionsSheet(zipFile!);
     }
@@ -441,17 +446,14 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                         children: [
                           Text(
                             'Backup Siap!',
-                            style: Theme.of(sheetCtx)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(sheetCtx).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
                             fileName,
-                            style: Theme.of(sheetCtx)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.grey),
+                            style: Theme.of(
+                              sheetCtx,
+                            ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -463,9 +465,9 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                 const SizedBox(height: 20),
                 Text(
                   'Pilih cara menyimpan:',
-                  style: Theme.of(sheetCtx).textTheme.labelLarge?.copyWith(
-                        color: Colors.grey,
-                      ),
+                  style: Theme.of(
+                    sheetCtx,
+                  ).textTheme.labelLarge?.copyWith(color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
 
@@ -475,10 +477,9 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(sheetCtx)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        sheetCtx,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -487,8 +488,9 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                     ),
                   ),
                   title: const Text('Simpan ke Folder'),
-                  subtitle:
-                      const Text('Pilih lokasi penyimpanan di perangkat Anda'),
+                  subtitle: const Text(
+                    'Pilih lokasi penyimpanan di perangkat Anda',
+                  ),
                   onTap: () {
                     Navigator.pop(sheetCtx);
                     _saveToFolder(zipFile);
@@ -501,10 +503,9 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(sheetCtx)
-                          .colorScheme
-                          .secondaryContainer
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        sheetCtx,
+                      ).colorScheme.secondaryContainer.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -513,13 +514,14 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                     ),
                   ),
                   title: const Text('Bagikan File'),
-                  subtitle: const Text('Kirim via WhatsApp, Google Drive, dll.'),
+                  subtitle: const Text(
+                    'Kirim via WhatsApp, Google Drive, dll.',
+                  ),
                   onTap: () async {
                     Navigator.pop(sheetCtx);
-                    await Share.shareXFiles(
-                      [XFile(zipFile.path)],
-                      subject: 'Backup UangKu',
-                    );
+                    await Share.shareXFiles([
+                      XFile(zipFile.path),
+                    ], subject: 'Backup UangKu');
                   },
                 ),
 
@@ -620,16 +622,14 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
       bool isPasswordValid = false;
       while (!isPasswordValid) {
         if (!mounted) return;
-        
+
         // Tanyakan password jika terenkripsi
         final passwordResult = await showDialog<String>(
           context: context,
-          builder: (_) => const _PasswordDialog(
-            isRestore: true,
-            forcePassword: true,
-          ),
+          builder: (_) =>
+              const _PasswordDialog(isRestore: true, forcePassword: true),
         );
-        
+
         if (passwordResult == null) return; // User membatalkan
         password = passwordResult.isEmpty ? null : passwordResult;
 
@@ -637,10 +637,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
         // Cek apakah password benar
         isPasswordValid = await BackupService.verifyZipPassword(
-          selectedFile, 
+          selectedFile,
           password,
         );
-        
+
         if (!mounted) return;
 
         if (!isPasswordValid) {
@@ -700,10 +700,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
       Future(() async {
         try {
           await DatabaseHelper.instance.closeDatabase();
-          await BackupService.restoreBackup(
-            selectedFile,
-            password: password,
-          );
+          await BackupService.restoreBackup(selectedFile, password: password);
         } catch (e) {
           caughtError = e;
         }
@@ -725,7 +722,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
     if (caughtError != null) {
       if (mounted) {
-        await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+        await Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        ).insertNotification(
           AppNotification(
             title: 'Restore Gagal',
             subtitle: 'Terjadi kesalahan saat memulihkan data.',
@@ -739,7 +739,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
     }
 
     if (mounted) {
-      await Provider.of<TransactionProvider>(context, listen: false).insertNotification(
+      await Provider.of<TransactionProvider>(
+        context,
+        listen: false,
+      ).insertNotification(
         AppNotification(
           title: 'Restore Berhasil',
           subtitle: 'Data berhasil dipulihkan dari file backup.',
@@ -768,17 +771,15 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
     List<(double, double, String)> stages,
   ) async {
     for (final (delaySec, progress, status) in stages) {
-      await Future.delayed(
-        Duration(milliseconds: (delaySec * 1000).round()),
-      );
+      await Future.delayed(Duration(milliseconds: (delaySec * 1000).round()));
       notifier.value = _ProgressData(progress, status);
     }
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────────

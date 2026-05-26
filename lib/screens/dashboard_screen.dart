@@ -11,6 +11,7 @@ import '../providers/transaction_provider.dart';
 import '../providers/shopping_provider.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_transitions.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/animated_bouncing_card.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -90,7 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return amount;
   }
 
-
   Future<void> _openAddFinancialPlanDialog() async {
     if (_isSavingFinancialPlan) return;
 
@@ -160,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     int? defaultBookId,
     FinancialPlan? initialPlan,
   }) async {
-    return showDialog<_FinancialPlanDraft?>(
+    return showZoomDialog<_FinancialPlanDraft?>(
       context: context,
       builder: (dialogContext) {
         return _FinancialPlanInputDialog(
@@ -288,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final provider = context.read<TransactionProvider>();
     if (provider.hasOpenBook) return true;
 
-    final shouldOpen = await showDialog<bool>(
+    final shouldOpen = await showZoomDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -456,7 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool isSubmitting = false;
     String? validationMessage;
 
-    final result = await showDialog<String?>(
+    final result = await showZoomDialog<String?>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
@@ -565,7 +565,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return result;
   }
 
-  void _showNotificationsBottomSheet(BuildContext context, TransactionProvider initialProvider, ThemeData theme) {
+  void _showNotificationsBottomSheet(
+    BuildContext context,
+    TransactionProvider initialProvider,
+    ThemeData theme,
+  ) {
     // Mark persistent ones as read
     for (final alert in initialProvider.appNotifications) {
       if (alert.id != null && !alert.isRead) {
@@ -590,7 +594,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[400]),
+                      Icon(
+                        Icons.notifications_off_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Tidak ada notifikasi baru.',
@@ -602,7 +610,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               );
             }
-            
+
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -622,7 +630,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 8),
                         Text(
                           'Notifikasi',
-                          style: theme.textTheme.titleMedium?.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -640,7 +651,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               backgroundColor: alert.backgroundColor,
                               child: Icon(alert.icon, color: alert.iconColor),
                             ),
-                            title: Text(alert.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(
+                              alert.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             subtitle: Text(
                               alert.subtitle,
                               style: TextStyle(
@@ -670,8 +686,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-  Future<void> _showBookManagerBottomSheet(BuildContext context, TransactionProvider provider) async {
+  Future<void> _showBookManagerBottomSheet(
+    BuildContext context,
+    TransactionProvider provider,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -697,7 +715,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: EdgeInsets.only(bottom: 16),
                       child: Text(
                         'Buku Pengeluaran',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (activeBook != null && activeBook.id != currentId) ...[
@@ -711,8 +732,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             });
                             Navigator.pop(context);
                           },
-                          icon: const Icon(Icons.check_circle_outline, color: Color(0xFF0066FF)),
-                          label: const Text('Pilih Buku Aktif', style: TextStyle(color: Color(0xFF0066FF))),
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            color: Color(0xFF0066FF),
+                          ),
+                          label: const Text(
+                            'Pilih Buku Aktif',
+                            style: TextStyle(color: Color(0xFF0066FF)),
+                          ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             side: const BorderSide(color: Color(0xFF0066FF)),
@@ -739,15 +766,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : ListView.separated(
                               shrinkWrap: true,
                               itemCount: periods.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 final period = periods[index];
                                 final isSelected = period.id == currentId;
                                 final isActive = period.isOpen;
-                                
-                                String subtitle = 'Dari ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.startDate))}';
+
+                                String subtitle =
+                                    'Dari ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.startDate))}';
                                 if (!isActive && period.endDate != null) {
-                                  subtitle += ' smp ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.endDate!))}';
+                                  subtitle +=
+                                      ' smp ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.endDate!))}';
                                 } else {
                                   subtitle += ' (Sedang Berjalan)';
                                 }
@@ -762,12 +792,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   },
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFFE5F0FF) : Colors.white,
+                                      color: isSelected
+                                          ? const Color(0xFFE5F0FF)
+                                          : Colors.white,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: isSelected ? const Color(0xFF0066FF) : Colors.grey.shade300,
+                                        color: isSelected
+                                            ? const Color(0xFF0066FF)
+                                            : Colors.grey.shade300,
                                       ),
                                     ),
                                     child: Row(
@@ -776,26 +813,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           width: 40,
                                           height: 40,
                                           decoration: BoxDecoration(
-                                            color: isSelected ? const Color(0xFF0066FF) : const Color(0xFFF0F0F0),
+                                            color: isSelected
+                                                ? const Color(0xFF0066FF)
+                                                : const Color(0xFFF0F0F0),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
-                                            isActive ? Icons.menu_book_rounded : Icons.lock_outline_rounded,
-                                            color: isSelected ? Colors.white : Colors.grey.shade600,
+                                            isActive
+                                                ? Icons.menu_book_rounded
+                                                : Icons.lock_outline_rounded,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey.shade600,
                                             size: 20,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 period.label,
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
-                                                  color: isSelected ? const Color(0xFF0066FF) : const Color(0xFF111111),
+                                                  color: isSelected
+                                                      ? const Color(0xFF0066FF)
+                                                      : const Color(0xFF111111),
                                                 ),
                                               ),
                                               const SizedBox(height: 2),
@@ -810,7 +856,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                         ),
                                         if (isSelected)
-                                          const Icon(Icons.check_circle, color: Color(0xFF0066FF)),
+                                          const Icon(
+                                            Icons.check_circle,
+                                            color: Color(0xFF0066FF),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -833,7 +882,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               backgroundColor: const Color(0xFF2A9D50),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
@@ -852,57 +903,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               backgroundColor: const Color(0xFFC24545),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                     if (currentId != null) ...[
-                      Builder(builder: (context) {
-                        final currentPeriod = periods.firstWhere((p) => p.id == currentId, orElse: () => periods.first);
-                        if (!currentPeriod.isOpen) {
-                          return Column(
-                            children: [
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _reopenBookFlow(currentPeriod);
-                                  },
-                                  icon: const Icon(Icons.lock_open_rounded, color: Color(0xFF6B3076)),
-                                  label: const Text('Buka Ulang Buku', style: TextStyle(color: Color(0xFF6B3076))),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: const BorderSide(color: Color(0xFF6B3076)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _deleteBookFlow(currentPeriod);
-                                  },
-                                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFC24545)),
-                                  label: const Text('Hapus Buku Terpilih', style: TextStyle(color: Color(0xFFC24545))),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: const BorderSide(color: Color(0xFFC24545)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                            ],
+                      Builder(
+                        builder: (context) {
+                          final currentPeriod = periods.firstWhere(
+                            (p) => p.id == currentId,
+                            orElse: () => periods.first,
                           );
-                        }
-                        return const SizedBox();
-                      }),
+                          if (!currentPeriod.isOpen) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _reopenBookFlow(currentPeriod);
+                                    },
+                                    icon: const Icon(
+                                      Icons.lock_open_rounded,
+                                      color: Color(0xFF6B3076),
+                                    ),
+                                    label: const Text(
+                                      'Buka Ulang Buku',
+                                      style: TextStyle(
+                                        color: Color(0xFF6B3076),
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      side: const BorderSide(
+                                        color: Color(0xFF6B3076),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _deleteBookFlow(currentPeriod);
+                                    },
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Color(0xFFC24545),
+                                    ),
+                                    label: const Text(
+                                      'Hapus Buku Terpilih',
+                                      style: TextStyle(
+                                        color: Color(0xFFC24545),
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      side: const BorderSide(
+                                        color: Color(0xFFC24545),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
                     ],
                   ],
                 ),
@@ -960,11 +1046,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final netBalance = totalIncome - totalExpense;
               final currentTabKey = ValueKey(_currentIndex);
               final currentTitle = _currentIndex == 1
-                  ? 'Pemasukan'
+                  ? ''
                   : _currentIndex == 2
-                  ? 'Pengeluaran'
+                  ? ''
                   : _currentIndex == 3
-                  ? 'Rencana Keuangan'
+                  ? ''
                   : '';
               final userName = _userName;
               final greeting = userName.isEmpty ? 'Hai,' : 'Hai, $userName';
@@ -974,149 +1060,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  greeting,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontSize: 36,
-                                  ),
-                                ),
-                                if (currentTitle.isNotEmpty)
+                      if (_currentIndex == 0) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    currentTitle,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontSize: 28,
+                                    greeting,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontSize: 36,
                                     ),
                                   ),
-                              ],
+                                  if (currentTitle.isNotEmpty)
+                                    Text(
+                                      currentTitle,
+                                      style: theme.textTheme.titleLarge?.copyWith(
+                                        fontSize: 28,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Consumer<ShoppingProvider>(
-                            builder: (context, shoppingProvider, child) {
-                              final count = shoppingProvider.unboughtCount;
-                              return Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  _CircleIconButton(
-                                    icon: Icons.shopping_cart_outlined,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ShoppingListScreen(),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  if (count > 0)
-                                    Positioned(
-                                      right: -2,
-                                      top: -2,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(3),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFF9F1C),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: const Color(0xFF111111),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            const BoxShadow(
-                                              color: Color(0xFF111111),
-                                              offset: Offset(1, 1),
+                            Consumer<ShoppingProvider>(
+                              builder: (context, shoppingProvider, child) {
+                                final count = shoppingProvider.unboughtCount;
+                                return Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    if (count > 0)
+                                      Positioned(
+                                        right: -2,
+                                        top: -2,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFF9F1C),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: const Color(0xFF111111),
+                                              width: 1.5,
                                             ),
-                                          ],
-                                        ),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 16,
-                                          minHeight: 16,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            count > 99
-                                                ? '99+'
-                                                : count.toString(),
-                                            style: const TextStyle(
-                                              color: Color(0xFF111111),
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w900,
-                                              height: 1.0,
+                                            boxShadow: [
+                                              const BoxShadow(
+                                                color: Color(0xFF111111),
+                                                offset: Offset(1, 1),
+                                              ),
+                                            ],
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              count > 99
+                                                  ? '99+'
+                                                  : count.toString(),
+                                              style: const TextStyle(
+                                                color: Color(0xFF111111),
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.w900,
+                                                height: 1.0,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              _CircleIconButton(
-                                icon: Icons.notifications_none_rounded,
-                                onTap: () {
-                                  _showNotificationsBottomSheet(context, provider, theme);
-                                },
-                              ),
-                              if (provider.unreadNotificationCount > 0)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE53935),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 1.5),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                _CircleIconButton(
+                                  icon: Icons.notifications_none_rounded,
+                                  onTap: () {
+                                    _showNotificationsBottomSheet(
+                                      context,
+                                      provider,
+                                      theme,
+                                    );
+                                  },
+                                ),
+                                if (provider.unreadNotificationCount > 0)
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE53935),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                          _CircleIconButton(
-                            icon: Icons.receipt_long_rounded,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const BookPeriodRecapScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _CircleIconButton(
-                            icon: Icons.menu_book_rounded,
-                            onTap: () {
-                              _showBookManagerBottomSheet(context, provider);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _CircleIconButton(
-                            icon: Icons.settings_rounded,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SettingsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       Expanded(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
@@ -1269,41 +1321,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     switch (_currentIndex) {
       case 1:
-        return _TransactionsCard(
+        return _buildTransactionsTabScreen(
           theme: theme,
-          title: 'Transaksi Pemasukan',
-          transactions: incomeTransactions,
-          isLoading: provider.isLoading,
-          emptyText: 'Belum ada data pemasukan.',
+          provider: provider,
+          allTransactions: allTransactions,
+          financialPlans: financialPlans,
+          incomeTransactions: incomeTransactions,
+          expenseTransactions: expenseTransactions,
         );
       case 2:
-        return _TransactionsCard(
-          theme: theme,
-          title: 'Transaksi Pengeluaran',
-          titleColor: const Color(0xFFC24545),
-          transactions: expenseTransactions,
-          isLoading: provider.isLoading,
-          emptyText: 'Belum ada data pengeluaran.',
-        );
+        return const ShoppingListScreen(isEmbedded: true);
       case 3:
-        final realizationByPlan = <int, double>{};
-        for (final tx in allTransactions) {
-          final planId = tx.financialPlanId;
-          if (tx.type != 'EXPENSE' || planId == null) continue;
-          realizationByPlan[planId] =
-              (realizationByPlan[planId] ?? 0) + tx.amount;
-        }
-
-        return _FinancialPlanCard(
-          theme: theme,
-          plans: financialPlans,
-          isLoading: provider.isLoading,
-          realizationByPlan: realizationByPlan,
-          isSaving: _isSavingFinancialPlan,
-          onAddPlan: _openAddFinancialPlanDialog,
-          onEditPlan: _openEditFinancialPlanDialog,
-          onDeletePlan: _removeFinancialPlan,
-        );
+        return const SettingsScreen(isEmbedded: true);
       default:
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(
@@ -1324,9 +1353,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onAddExpense: onAddExpense,
               ),
               const SizedBox(height: 10),
-              _DashboardPocketSection(
-                provider: provider,
-              ),
+              _DashboardPocketSection(provider: provider),
               const SizedBox(height: 10),
               _GraphCard(
                 theme: theme,
@@ -1387,6 +1414,278 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
     }
+  }
+
+  Widget _buildTransactionsTabScreen({
+    required ThemeData theme,
+    required TransactionProvider provider,
+    required List<FinanceTransaction> allTransactions,
+    required List<FinancialPlan> financialPlans,
+    required List<FinanceTransaction> incomeTransactions,
+    required List<FinanceTransaction> expenseTransactions,
+  }) {
+    final realizationByPlan = <int, double>{};
+    for (final tx in allTransactions) {
+      final planId = tx.financialPlanId;
+      if (tx.type != 'EXPENSE' || planId == null) continue;
+      realizationByPlan[planId] = (realizationByPlan[planId] ?? 0) + tx.amount;
+    }
+
+    return DefaultTabController(
+      length: 5,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: theme.colorScheme.primary,
+            tabs: const [
+              Tab(text: 'Buku'),
+              Tab(text: 'Pengeluaran'),
+              Tab(text: 'Pemasukan'),
+              Tab(text: 'Rencana Keuangan'),
+              Tab(text: 'Laporan'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildBookManagerTab(provider),
+                _TransactionsCard(
+                  theme: theme,
+                  title: '',
+                  titleColor: const Color(0xFFC24545),
+                  transactions: expenseTransactions,
+                  isLoading: provider.isLoading,
+                  emptyText: 'Belum ada data pengeluaran.',
+                ),
+                _TransactionsCard(
+                  theme: theme,
+                  title: '',
+                  transactions: incomeTransactions,
+                  isLoading: provider.isLoading,
+                  emptyText: 'Belum ada data pemasukan.',
+                ),
+                _FinancialPlanCard(
+                  theme: theme,
+                  plans: financialPlans,
+                  isLoading: provider.isLoading,
+                  realizationByPlan: realizationByPlan,
+                  isSaving: _isSavingFinancialPlan,
+                  onAddPlan: _openAddFinancialPlanDialog,
+                  onEditPlan: _openEditFinancialPlanDialog,
+                  onDeletePlan: _removeFinancialPlan,
+                ),
+                const BookPeriodRecapScreen(isEmbedded: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookManagerTab(TransactionProvider provider) {
+    final periods = provider.bookPeriods;
+    final currentId = provider.selectedBookPeriodId;
+    final activeBook = provider.activeBookPeriod;
+
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _openBookFlow,
+              icon: const Icon(Icons.add_box_rounded, color: Color(0xFF2A9D50)),
+              label: const Text('Buka Buku Baru', style: TextStyle(color: Color(0xFF2A9D50))),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: Color(0xFF2A9D50)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: periods.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        'Belum ada buku. Buka buku pertama untuk mulai mencatat.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: periods.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final period = periods[index];
+                      final isSelected = period.id == currentId;
+                      final isActive = period.isOpen;
+
+                      String subtitle =
+                          'Dari ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.startDate))}';
+                      if (!isActive && period.endDate != null) {
+                        subtitle +=
+                            ' smp ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.endDate!))}';
+                      } else {
+                        subtitle += ' (Sedang Berjalan)';
+                      }
+
+                      return Slidable(
+                        key: ValueKey(period.id),
+                        startActionPane: ActionPane(
+                          motion: const ScrollMotion(),
+                          children: [
+                            if (isActive)
+                              SlidableAction(
+                                onPressed: (_) {
+                                  _closeActiveBookFlow(period);
+                                },
+                                backgroundColor: const Color(0xFFC24545),
+                                foregroundColor: Colors.white,
+                                icon: Icons.bookmark_remove_rounded,
+                                label: 'Tutup',
+                                borderRadius: BorderRadius.circular(12),
+                              )
+                            else
+                              SlidableAction(
+                                onPressed: (_) {
+                                  _reopenBookFlow(period);
+                                },
+                                backgroundColor: const Color(0xFF2A9D50),
+                                foregroundColor: Colors.white,
+                                icon: Icons.restore_rounded,
+                                label: 'Buka Lagi',
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                          ],
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            provider.selectBookPeriod(period.id);
+                            setState(() {
+                              _selectedChartDetail = null;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFE5F0FF)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF0066FF)
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF0066FF)
+                                        : const Color(0xFFF0F0F0),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isActive
+                                        ? Icons.menu_book_rounded
+                                        : Icons.lock_outline_rounded,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.grey.shade600,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        period.label,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected
+                                              ? const Color(0xFF0066FF)
+                                              : const Color(0xFF111111),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        subtitle,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected) ...[
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF0066FF),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Icon(
+                                  Icons.swipe_right_rounded,
+                                  color: Colors.grey.shade400,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 12),
+          if (activeBook != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _closeActiveBookFlow(activeBook);
+                },
+                icon: const Icon(Icons.bookmark_remove_rounded),
+                label: const Text('Tutup Buku'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade200,
+                  foregroundColor: Colors.grey.shade800,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1451,25 +1750,23 @@ class _ExpandableQuickMenu extends StatelessWidget {
                   onTap: () => onMenuTap(0),
                 ),
                 _QuickNavItem(
-                  icon: Icons.flag_rounded,
-                  semanticLabel: 'Rencana',
-                  selected: selectedIndex == 3,
-                  onTap: () => onMenuTap(3),
+                  icon: Icons.swap_horiz_rounded,
+                  semanticLabel: 'Transaksi',
+                  selected: selectedIndex == 1,
+                  onTap: () => onMenuTap(1),
                 ),
                 const SizedBox(width: 74),
                 _QuickNavItem(
-                  icon: Icons.north_east_rounded,
-                  semanticLabel: 'Pengeluaran',
+                  icon: Icons.shopping_cart_outlined,
+                  semanticLabel: 'Daftar Belanja',
                   selected: selectedIndex == 2,
-                  selectedBackground: const Color(0xFFF0C8C8),
-                  iconColor: const Color(0xFFC24545),
                   onTap: () => onMenuTap(2),
                 ),
                 _QuickNavItem(
-                  icon: Icons.south_west_rounded,
-                  semanticLabel: 'Pemasukan',
-                  selected: selectedIndex == 1,
-                  onTap: () => onMenuTap(1),
+                  icon: Icons.settings_outlined,
+                  semanticLabel: 'Pengaturan',
+                  selected: selectedIndex == 3,
+                  onTap: () => onMenuTap(3),
                 ),
               ],
             ),
@@ -2198,87 +2495,83 @@ class _FinancialPlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Rencana Keuangan',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-                const Spacer(),
-                _CircleIconButton(
-                  icon: isSaving
-                      ? Icons.hourglass_top_rounded
-                      : Icons.add_rounded,
-                  onTap: () {
-                    if (isSaving) return;
-                    onAddPlan();
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Catat target finansialmu agar lebih terarah.',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 10),
-            if (isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (plans.isEmpty)
-              const Expanded(
-                child: Center(child: Text('Belum ada rencana keuangan.')),
-              )
-            else
-              Expanded(
-                child: Column(
-                  children: [
-                    _FinancialPlanSummaryCard(
-                      theme: theme,
-                      plans: plans,
-                      realizationByPlan: realizationByPlan,
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 100),
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        itemCount: plans.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final plan = plans[index];
-                          final planId = plan.id;
-                          if (planId == null) {
-                            return const SizedBox.shrink();
-                          }
-                          final realized = realizationByPlan[planId] ?? 0;
-                          final progress = plan.targetAmount <= 0
-                              ? 0.0
-                              : (realized / plan.targetAmount)
-                                    .clamp(0.0, 1.0)
-                                    .toDouble();
-                          return _FinancialPlanTile(
-                            plan: plan,
-                            progress: progress,
-                            realizationAmount: realized,
-                            onEdit: () => onEditPlan(plan),
-                            onDelete: () => onDeletePlan(planId),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: isSaving ? null : onAddPlan,
+              icon: Icon(
+                isSaving ? Icons.hourglass_top_rounded : Icons.add_box_rounded,
+                color: const Color(0xFF2A9D50),
+              ),
+              label: Text(
+                isSaving ? 'Tunggu Sebentar...' : 'Buat Rencana Baru',
+                style: const TextStyle(color: Color(0xFF2A9D50)),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: Color(0xFF2A9D50)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (isLoading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (plans.isEmpty)
+            const Expanded(
+              child: Center(child: Text('Belum ada rencana keuangan.')),
+            )
+          else
+            Expanded(
+              child: Column(
+                children: [
+                  _FinancialPlanSummaryCard(
+                    theme: theme,
+                    plans: plans,
+                    realizationByPlan: realizationByPlan,
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      itemCount: plans.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final plan = plans[index];
+                        final planId = plan.id;
+                        if (planId == null) {
+                          return const SizedBox.shrink();
+                        }
+                        final realized = realizationByPlan[planId] ?? 0;
+                        final progress = plan.targetAmount <= 0
+                            ? 0.0
+                            : (realized / plan.targetAmount)
+                                  .clamp(0.0, 1.0)
+                                  .toDouble();
+                        return _FinancialPlanTile(
+                          plan: plan,
+                          progress: progress,
+                          realizationAmount: realized,
+                          onEdit: () => onEditPlan(plan),
+                          onDelete: () => onDeletePlan(planId),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -2462,13 +2755,16 @@ class _FinancialPlanTile extends StatelessWidget {
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(999),
-                        child: LinearProgressIndicator(
-                          minHeight: 6,
-                          value: progress,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surface,
-                          color: const Color(0xFF1F5A62),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 1000),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) => LinearProgressIndicator(
+                            minHeight: 6,
+                            value: value,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            color: const Color(0xFF1F5A62),
+                          ),
                         ),
                       ),
                     ),
@@ -2523,40 +2819,40 @@ class _RecentSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Transaksi Terbaru',
-                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            headerBottom,
-            const SizedBox(height: 10),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (transactions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('Belum ada transaksi dulu nih.'),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: transactions.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) =>
-                    _TransactionTile(item: transactions[index], theme: theme),
-              ),
+            // Row(
+            //   children: [
+            //     Text(
+            //       'Transaksi Terbaru',
+            //       style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 8),
+            // headerBottom,
+            // const SizedBox(height: 10),
+            // if (isLoading)
+            //   const Padding(
+            //     padding: EdgeInsets.symmetric(vertical: 32),
+            //     child: Center(child: CircularProgressIndicator()),
+            //   )
+            // else if (transactions.isEmpty)
+            //   const Padding(
+            //     padding: EdgeInsets.symmetric(vertical: 12),
+            //     child: Text('Belum ada transaksi dulu nih.'),
+            //   )
+            // else
+            //   ListView.separated(
+            //     shrinkWrap: true,
+            //     physics: const NeverScrollableScrollPhysics(),
+            //     itemCount: transactions.length,
+            //     separatorBuilder: (context, index) => const SizedBox(height: 8),
+            //     itemBuilder: (context, index) =>
+            //         _TransactionTile(item: transactions[index], theme: theme),
+            //   ),
           ],
         ),
       ),
@@ -3548,12 +3844,12 @@ class _TransactionsCardState extends State<_TransactionsCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.title.isNotEmpty) ...[
             Row(
               children: [
                 Text(
@@ -3567,34 +3863,34 @@ class _TransactionsCardState extends State<_TransactionsCard> {
               ],
             ),
             const SizedBox(height: 10),
-            if (widget.isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (widget.transactions.isEmpty)
-              Expanded(child: Center(child: Text(widget.emptyText)))
-            else
-              Expanded(
-                child: Scrollbar(
+          ],
+          if (widget.isLoading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (widget.transactions.isEmpty)
+            Expanded(child: Center(child: Text(widget.emptyText)))
+          else
+            Expanded(
+              child: Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                child: ListView.separated(
                   controller: _scrollController,
-                  thumbVisibility: true,
-                  child: ListView.separated(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.only(bottom: 100),
-                    primary: false,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    itemCount: widget.transactions.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) => _TransactionTile(
-                      item: widget.transactions[index],
-                      theme: widget.theme,
-                    ),
+                  padding: const EdgeInsets.only(bottom: 100),
+                  primary: false,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  itemCount: widget.transactions.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) => _TransactionTile(
+                    item: widget.transactions[index],
+                    theme: widget.theme,
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -3653,7 +3949,7 @@ class _TransactionTile extends StatelessWidget {
         children: [
           SlidableAction(
             onPressed: (slidableCtx) async {
-              final confirmed = await showDialog<bool>(
+              final confirmed = await showZoomDialog<bool>(
                 context: context,
                 builder: (dialogCtx) => AlertDialog(
                   title: const Text('Hapus Transaksi?'),
@@ -3789,9 +4085,9 @@ class _TransactionTile extends StatelessWidget {
 
 class _DashboardPocketSection extends StatelessWidget {
   final TransactionProvider provider;
-  
+
   const _DashboardPocketSection({required this.provider});
-  
+
   static const List<Color> _cardColors = [
     Color(0xFFFFF9E6), // Soft Yellow
     Color(0xFFF0F4C3), // Soft Lime
@@ -3893,7 +4189,9 @@ class _DashboardPocketSection extends StatelessWidget {
               }
 
               final pocket = pockets[index];
-              final effectiveBalance = provider.getPocketEffectiveBalance(pocket.id!);
+              final effectiveBalance = provider.getPocketEffectiveBalance(
+                pocket.id!,
+              );
               final isNegative = effectiveBalance < 0;
               final cardColor = _cardColors[index % _cardColors.length];
 
@@ -3914,7 +4212,8 @@ class _DashboardPocketSection extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PocketDetailScreen(pocketId: pocket.id!),
+                          builder: (context) =>
+                              PocketDetailScreen(pocketId: pocket.id!),
                         ),
                       );
                     },
@@ -3949,7 +4248,9 @@ class _DashboardPocketSection extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
-                              color: isNegative ? const Color(0xFFE53935) : const Color(0xFF111111),
+                              color: isNegative
+                                  ? const Color(0xFFE53935)
+                                  : const Color(0xFF111111),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

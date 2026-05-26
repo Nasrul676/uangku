@@ -10,13 +10,15 @@ import '../services/auth_service.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.isEmbedded = false});
+
+  final bool isEmbedded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text('Setelan Aplikasi')),
+      backgroundColor: isEmbedded ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
+      appBar: isEmbedded ? null : AppBar(title: const Text('Setelan Aplikasi')),
       body: const SettingsContent(),
     );
   }
@@ -264,23 +266,59 @@ class _SettingsContentState extends State<SettingsContent> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _SectionCard(
-          title: 'Tampilan Tema',
-          subtitle: 'Pilih gaya desain yang paling nyaman buatmu.',
-          child: const _ThemeSelectorRow(),
-        ),
-        const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Mode Gelap',
-          subtitle: 'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
-          child: const _ThemeModeSelector(),
-        ),
-        const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Akun yang Sedang Dipakai',
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Tampilan Tema',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Pilih gaya desain yang paling nyaman buatmu.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              const _ThemeSelectorRow(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mode Gelap',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              const _ThemeModeSelector(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Akun yang Sedang Dipakai',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   const Icon(Icons.person_rounded),
@@ -313,12 +351,22 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Notifikasi Rencana Keuangan',
-          subtitle:
-              'Atur jam notifikasi saat rencana keuangan mencapai tanggal target.',
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Notifikasi Rencana Keuangan',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Atur jam notifikasi saat rencana keuangan mencapai tanggal target.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 10),
               InkWell(
                 onTap: _pickNotificationTime,
                 borderRadius: BorderRadius.circular(12),
@@ -373,11 +421,22 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Atur Kategori',
-          subtitle: 'Pisahkan antar kategori pakai koma (,).',
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Atur Kategori',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Pisahkan antar kategori pakai koma (,).',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 10),
               TextField(
                 controller: _incomeCategoriesController,
                 decoration: const InputDecoration(
@@ -401,55 +460,23 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Backup & Restore Data',
-          subtitle:
-              'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
-          child: const BackupRestoreTile(),
-        ),
-        const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Koneksi Google Apps Script',
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  hintText: 'URL Web App',
-                  prefixIcon: Icon(Icons.link_rounded),
-                ),
-                keyboardType: TextInputType.url,
+              Text(
+                'Backup & Restore Data',
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _payloadRootController,
-                decoration: const InputDecoration(
-                  hintText: 'Kunci root payload (contoh: transaksi)',
-                  prefixIcon: Icon(Icons.data_object_rounded),
-                ),
+              const SizedBox(height: 6),
+              Text(
+                'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
+                style: theme.textTheme.bodySmall,
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        _SectionCard(
-          title: 'Pemetaan Data JSON',
-          subtitle: 'Samakan dengan nama kolom di Google Sheets kamu.',
-          child: Column(
-            children: [
-              ..._mappingControllers.entries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TextField(
-                    controller: entry.value,
-                    decoration: InputDecoration(
-                      hintText: entry.key,
-                      prefixIcon: const Icon(Icons.tune_rounded),
-                      labelText: entry.key,
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 4),
+              const BackupRestoreTile(),
             ],
           ),
         ),

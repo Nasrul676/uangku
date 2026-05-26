@@ -331,10 +331,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
               children: [
                 const Text(
                   'Pilih Kantong',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 16),
                 _FinancialPlanSheetItem(
@@ -364,11 +361,12 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             }
                             return _FinancialPlanSheetItem(
                               title: pocket.name,
-                              subtitle: pocket.allocationType == 'PERCENTAGE' 
-                                ? 'Alokasi: ${pocket.allocationValue.toInt()}%'
-                                : 'Alokasi: Rp ${NumberFormat.decimalPattern('id_ID').format(pocket.allocationValue)}',
+                              subtitle: pocket.allocationType == 'PERCENTAGE'
+                                  ? 'Alokasi: ${pocket.allocationValue.toInt()}%'
+                                  : 'Alokasi: Rp ${NumberFormat.decimalPattern('id_ID').format(pocket.allocationValue)}',
                               selected: _selectedPocketId == pocketId,
-                              onTap: () => Navigator.pop(sheetContext, pocketId),
+                              onTap: () =>
+                                  Navigator.pop(sheetContext, pocketId),
                             );
                           },
                         ),
@@ -727,7 +725,13 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               ),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
+                                color:
+                                    (Theme.of(context)
+                                        .extension<AppThemeExtension>()
+                                        ?.cardBorder
+                                        ?.top
+                                        .color ??
+                                    const Color(0xFF2D2D2D)),
                                 width: 1.1,
                               ),
                             ),
@@ -747,7 +751,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 Text(
                                   'Catat pengeluaran harian dengan cepat, datanya aman tersimpan di HP dulu.',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onErrorContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -1064,7 +1070,9 @@ class _FinancialPlanSheetItem extends StatelessWidget {
     return AnimatedBouncingCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      color: selected ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).cardTheme.color,
+      color: selected
+          ? Theme.of(context).colorScheme.errorContainer
+          : Theme.of(context).cardTheme.color,
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
@@ -1076,7 +1084,11 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: selected ? Theme.of(context).colorScheme.error : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    color: selected
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -1085,7 +1097,11 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: selected ? Theme.of(context).colorScheme.onErrorContainer : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    color: selected
+                        ? Theme.of(context).colorScheme.onErrorContainer
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
               ],
@@ -1147,7 +1163,9 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).cardTheme.color,
+          color: selected
+              ? Theme.of(context).colorScheme.errorContainer
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -1156,7 +1174,11 @@ class _CategoryChip extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: selected ? Theme.of(context).colorScheme.error : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: selected
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
           ),
         ),
       ),

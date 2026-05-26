@@ -27,7 +27,9 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).cardTheme.color,
+          color: selected
+              ? Theme.of(context).colorScheme.errorContainer
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border:
               Theme.of(context).extension<AppThemeExtension>()?.cardBorder ??
@@ -38,7 +40,11 @@ class _CategoryChip extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: selected ? Theme.of(context).colorScheme.error : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: selected
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
           ),
         ),
       ),
@@ -116,8 +122,9 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
         );
       }
       if (widget.item!.amount > 0) {
-        _amountController.text = NumberFormat.decimalPattern('id_ID')
-            .format(widget.item!.amount);
+        _amountController.text = NumberFormat.decimalPattern(
+          'id_ID',
+        ).format(widget.item!.amount);
       }
     } else {
       final categories = context.read<TransactionProvider>().expenseCategories;
@@ -427,7 +434,9 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 ),
                 trailing: const Icon(Icons.calendar_today),
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 onTap: () => _selectDate(context),
@@ -439,7 +448,9 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 ),
                 trailing: const Icon(Icons.access_time),
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 onTap: () => _selectTime(context),

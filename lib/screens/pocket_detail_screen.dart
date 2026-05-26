@@ -18,9 +18,7 @@ class PocketDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Detail Kantong',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -33,7 +31,7 @@ class PocketDetailScreen extends StatelessWidget {
                 orElse: () => null,
               );
               if (pocket == null) return const SizedBox();
-              
+
               return IconButton(
                 icon: const Icon(Icons.edit, color: Color(0xFF0066FF)),
                 onPressed: () {
@@ -54,7 +52,9 @@ class PocketDetailScreen extends StatelessWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Hapus Kantong?'),
-                  content: const Text('Apakah Anda yakin ingin menghapus kantong ini? Semua transaksi yang memakai kantong ini tidak akan ikut terhapus, hanya tidak memiliki label kantong lagi.'),
+                  content: const Text(
+                    'Apakah Anda yakin ingin menghapus kantong ini? Semua transaksi yang memakai kantong ini tidak akan ikut terhapus, hanya tidak memiliki label kantong lagi.',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -62,11 +62,17 @@ class PocketDetailScreen extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        Provider.of<TransactionProvider>(context, listen: false).deletePocket(pocketId);
+                        Provider.of<TransactionProvider>(
+                          context,
+                          listen: false,
+                        ).deletePocket(pocketId);
                         Navigator.pop(context);
                         Navigator.pop(context);
                       },
-                      child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -81,7 +87,7 @@ class PocketDetailScreen extends StatelessWidget {
             (p) => p?.id == pocketId,
             orElse: () => null,
           );
-          
+
           if (pocket == null) {
             return const Center(child: Text('Kantong tidak ditemukan.'));
           }
@@ -124,7 +130,10 @@ class PocketDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardTheme.color ?? Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -173,14 +182,22 @@ class PocketDetailScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: isNegative ? const Color(0xFFE53935) : (Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
+                            color: isNegative
+                                ? const Color(0xFFE53935)
+                                : (Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color ??
+                                      Colors.black),
                           ),
                         ),
                       ),
                       if (isNegative) ...[
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFEBEE),
                             borderRadius: BorderRadius.circular(4),
@@ -199,7 +216,7 @@ class PocketDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // ACTION BUTTONS
                 SizedBox(
                   width: double.infinity,
@@ -207,8 +224,14 @@ class PocketDetailScreen extends StatelessWidget {
                     onPressed: () {
                       _showAddMoneyOptionsDialog(context, provider, pocketId);
                     },
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                    label: const Text('Tambah Uang', style: TextStyle(color: Colors.white)),
+                    icon: const Icon(
+                      Icons.add_circle_outline,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Tambah Uang',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0066FF),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -233,7 +256,12 @@ class PocketDetailScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Builder(
                   builder: (context) {
-                    final expenses = provider.transactions.where((tx) => tx.pocketId == pocketId && tx.type == 'EXPENSE').toList();
+                    final expenses = provider.transactions
+                        .where(
+                          (tx) =>
+                              tx.pocketId == pocketId && tx.type == 'EXPENSE',
+                        )
+                        .toList();
                     if (expenses.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
@@ -258,10 +286,21 @@ class PocketDetailScreen extends StatelessWidget {
                               color: Color(0xFFFFEBEE),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.arrow_upward, color: Color(0xFFE53935), size: 16),
+                            child: const Icon(
+                              Icons.arrow_upward,
+                              color: Color(0xFFE53935),
+                              size: 16,
+                            ),
                           ),
-                          title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(DateFormat('dd MMM yyyy').format(DateTime.parse(tx.date))),
+                          title: Text(
+                            tx.title,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            DateFormat(
+                              'dd MMM yyyy',
+                            ).format(DateTime.parse(tx.date)),
+                          ),
                           trailing: Text(
                             '- ${currencyFormatter.format(tx.amount)}',
                             style: const TextStyle(
@@ -282,9 +321,13 @@ class PocketDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showCustomAmountDialog(BuildContext context, TransactionProvider provider, int pocketId) {
+  void _showCustomAmountDialog(
+    BuildContext context,
+    TransactionProvider provider,
+    int pocketId,
+  ) {
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -315,7 +358,10 @@ class PocketDetailScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0066FF),
               ),
-              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Simpan',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -323,7 +369,11 @@ class PocketDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showAddMoneyOptionsDialog(BuildContext context, TransactionProvider provider, int pocketId) {
+  void _showAddMoneyOptionsDialog(
+    BuildContext context,
+    TransactionProvider provider,
+    int pocketId,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -339,16 +389,16 @@ class PocketDetailScreen extends StatelessWidget {
               children: [
                 const Text(
                   'Tambah Uang ke Kantong',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFFE5F0FF),
-                    child: Icon(Icons.calculate_outlined, color: Color(0xFF0066FF)),
+                    child: Icon(
+                      Icons.calculate_outlined,
+                      color: Color(0xFF0066FF),
+                    ),
                   ),
                   title: const Text('Hitung Otomatis dari Pemasukan Sekarang'),
                   onTap: () async {
@@ -356,7 +406,11 @@ class PocketDetailScreen extends StatelessWidget {
                     await provider.calculatePocketAllocation(pocketId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Saldo berhasil dihitung dari pemasukan!')),
+                        const SnackBar(
+                          content: Text(
+                            'Saldo berhasil dihitung dari pemasukan!',
+                          ),
+                        ),
                       );
                     }
                   },
