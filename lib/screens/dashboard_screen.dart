@@ -3806,7 +3806,6 @@ class _DashboardPocketSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pockets = provider.pockets;
-    if (pockets.isEmpty) return const SizedBox();
 
     final NumberFormat currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',

@@ -28,7 +28,7 @@ class BackupService {
     final dbPath = db.path;
 
     // Flush WAL (Write-Ahead Log) ke file database utama agar data utuh saat di-copy
-    await db.execute('PRAGMA wal_checkpoint(FULL)');
+    await db.rawQuery('PRAGMA wal_checkpoint(FULL)');
 
     final dbFile = File(dbPath);
 
