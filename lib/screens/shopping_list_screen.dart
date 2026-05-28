@@ -129,7 +129,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
                 child: SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -141,8 +141,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.add_box_rounded, color: Color(0xFF2A9D50)),
-                    label: const Text('Tambah Belanja', style: TextStyle(color: Color(0xFF2A9D50))),
+                    icon: const Icon(
+                      Icons.add_box_rounded,
+                      color: Color(0xFF2A9D50),
+                    ),
+                    label: const Text(
+                      'Tambah Belanja',
+                      style: TextStyle(color: Color(0xFF2A9D50)),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: const BorderSide(color: Color(0xFF2A9D50)),
@@ -159,7 +165,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 )
               else ...[
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: _EstimationSummary(
                     total: estimatedTotal,
                     itemsCount: unboughtItems.length,
@@ -168,7 +174,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 Expanded(
                   child: ListView.separated(
                     itemCount: provider.items.length,
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+                    padding: const EdgeInsets.fromLTRB(5, 12, 5, 100),
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final item = provider.items[index];

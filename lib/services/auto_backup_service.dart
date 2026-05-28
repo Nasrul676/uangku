@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -58,10 +60,9 @@ Future<void> callbackDispatcher() async {
       'Auto Backup Berhasil',
       'Data berhasil dibackup ke: $fileName',
     );
-
   } catch (e) {
     debugPrint('Auto Backup Error: $e');
-    
+
     final errorNotification = {
       'title': 'Auto Backup Gagal',
       'subtitle': 'Terjadi kesalahan saat membackup data.',
@@ -92,7 +93,9 @@ class AutoBackupService {
     );
     await _notificationsPlugin.initialize(initSettings);
 
-    await AndroidAlarmManager.initialize();
+    if (!kIsWeb && Platform.isAndroid) {
+      await AndroidAlarmManager.initialize();
+    }
   }
 
   static Future<void> showNotification(String title, String body) async {
@@ -117,7 +120,11 @@ class AutoBackupService {
     );
   }
 
-  static Future<void> scheduleBackup(Duration frequency, {DateTime? startAt}) async {
+  static Future<void> scheduleBackup(
+    Duration frequency, {
+    DateTime? startAt,
+  }) async {
+    if (kIsWeb || !Platform.isAndroid) return;
     await AndroidAlarmManager.periodic(
       frequency,
       _autoBackupAlarmId,
@@ -130,6 +137,7 @@ class AutoBackupService {
   }
 
   static Future<void> testBackupNow() async {
+    if (kIsWeb || !Platform.isAndroid) return;
     await AndroidAlarmManager.oneShot(
       const Duration(seconds: 1),
       9999,
@@ -140,6 +148,7 @@ class AutoBackupService {
   }
 
   static Future<void> cancelBackup() async {
+    if (kIsWeb || !Platform.isAndroid) return;
     await AndroidAlarmManager.cancel(_autoBackupAlarmId);
   }
 }

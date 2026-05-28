@@ -17,7 +17,9 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: isEmbedded ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isEmbedded
+          ? Colors.transparent
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: isEmbedded ? null : AppBar(title: const Text('Setelan Aplikasi')),
       body: const SettingsContent(),
     );
@@ -264,7 +266,7 @@ class _SettingsContentState extends State<SettingsContent> {
     final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
       children: [
         AnimatedBouncingCard(
           isPressedEffect: false,
