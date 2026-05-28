@@ -827,7 +827,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                           Text(
                             'Pilih Kategori',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontSize: 22,
                               color: Theme.of(context).colorScheme.error,
                             ),
                           ),
@@ -978,7 +977,7 @@ class _FinancialPlanSelectorField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -1023,7 +1022,7 @@ class _PocketSelectorField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -1108,9 +1107,9 @@ class _FinancialPlanSheetItem extends StatelessWidget {
             ),
           ),
           if (selected)
-            const Icon(
+            Icon(
               Icons.check_circle_rounded,
-              color: Color(0xFFC24545),
+              color: Theme.of(context).colorScheme.error,
               size: 18,
             ),
         ],
@@ -1134,7 +1133,7 @@ class _CircleButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -1171,9 +1170,8 @@ class _CategoryChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            fontSize: 12,
             color: selected
                 ? Theme.of(context).colorScheme.error
                 : Theme.of(
@@ -1200,7 +1198,7 @@ class _AddCategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),

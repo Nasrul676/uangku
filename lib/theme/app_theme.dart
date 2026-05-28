@@ -99,7 +99,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'DMSans',
+      fontFamily: 'PlusJakartaSans',
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFFEDD07D),
@@ -122,7 +122,9 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontFamily: 'DMSerifDisplay',
           color: textCol,
-          fontSize: 34,
+          fontSize: 22,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -201,7 +203,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'DMSans',
+      fontFamily: 'PlusJakartaSans',
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: neoColorScheme,
       iconTheme: IconThemeData(color: inkCol, size: 22),
@@ -222,7 +224,9 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontFamily: 'DMSerifDisplay',
           color: inkCol,
-          fontSize: 34,
+          fontSize: 22,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0,
         ),
         iconTheme: IconThemeData(color: inkCol, size: 22),
       ),
@@ -368,27 +372,105 @@ class AppTheme {
 
   static TextTheme _textTheme(Color textColor) {
     return const TextTheme().copyWith(
+      displayLarge: TextStyle(
+        fontFamily: 'DMSerifDisplay',
+        fontSize: 57,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+        letterSpacing: -0.25,
+      ),
+      displayMedium: TextStyle(
+        fontFamily: 'DMSerifDisplay',
+        fontSize: 45,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+      ),
+      displaySmall: TextStyle(
+        fontFamily: 'DMSerifDisplay',
+        fontSize: 36,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+      ),
+      headlineLarge: TextStyle(
+        fontFamily: 'DMSerifDisplay',
+        fontSize: 34,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+      ),
       headlineMedium: TextStyle(
         fontFamily: 'DMSerifDisplay',
-        fontSize: 32,
+        fontSize: 28,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: 'DMSerifDisplay',
+        fontSize: 24,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       titleLarge: TextStyle(
         fontFamily: 'DMSerifDisplay',
-        fontSize: 30,
-        color: textColor,
-        fontWeight: FontWeight.w400,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: 'DMSerifDisplay',
         fontSize: 22,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
-      bodyLarge: TextStyle(color: textColor),
-      bodyMedium: TextStyle(color: textColor),
-      bodySmall: TextStyle(color: textColor.withOpacity(0.7)),
+      titleMedium: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 18,
+        color: textColor,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.15,
+      ),
+      titleSmall: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 14,
+        color: textColor,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+      bodyLarge: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 16,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.5,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 14,
+        color: textColor,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.25,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 12,
+        color: textColor.withOpacity(0.7),
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.4,
+      ),
+      labelLarge: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 14,
+        color: textColor,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 12,
+        color: textColor,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.5,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 11,
+        color: textColor.withOpacity(0.7),
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.5,
+      ),
     );
   }
 }

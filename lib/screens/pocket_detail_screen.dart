@@ -16,10 +16,7 @@ class PocketDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Detail Kantong',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Detail Kantong'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: Theme.of(context).iconTheme,
@@ -46,7 +43,7 @@ class PocketDetailScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
             onPressed: () {
               showDialog(
                 context: context,
@@ -69,9 +66,9 @@ class PocketDetailScreen extends StatelessWidget {
                         Navigator.pop(context);
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         'Hapus',
-                        style: TextStyle(color: Colors.red),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                     ),
                   ],
@@ -122,10 +119,8 @@ class PocketDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   pocket.name,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -135,19 +130,15 @@ class PocketDetailScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color ?? Colors.white,
+                    color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Text(
                     pocket.allocationType == 'PERCENTAGE'
                         ? 'Target: ${pocket.allocationValue.toInt()}% Pemasukan'
                         : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF666666),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -155,11 +146,11 @@ class PocketDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color ?? Colors.white,
+                    color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Theme.of(context).shadowColor.withOpacity(0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -167,27 +158,20 @@ class PocketDetailScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Saldo Kantong Tersisa',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF666666),
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         child: Text(
                           currencyFormatter.format(effectiveBalance),
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                             color: isNegative
-                                ? const Color(0xFFE53935)
-                                : (Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color ??
-                                      Colors.black),
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                       ),
@@ -199,15 +183,14 @@ class PocketDetailScreen extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEE),
+                            color: Theme.of(context).colorScheme.errorContainer,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'OVER BUDGET',
-                            style: TextStyle(
-                              color: Color(0xFFE53935),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -224,14 +207,8 @@ class PocketDetailScreen extends StatelessWidget {
                     onPressed: () {
                       _showAddMoneyOptionsDialog(context, provider, pocketId);
                     },
-                    icon: const Icon(
-                      Icons.add_circle_outline,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Tambah Uang',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Tambah Uang'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0066FF),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -246,11 +223,7 @@ class PocketDetailScreen extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Riwayat Pengeluaran Kantong',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -263,11 +236,11 @@ class PocketDetailScreen extends StatelessWidget {
                         )
                         .toList();
                     if (expenses.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Text(
                           'Belum ada pengeluaran dengan kantong ini.',
-                          style: TextStyle(color: Colors.grey),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       );
                     }
@@ -303,9 +276,9 @@ class PocketDetailScreen extends StatelessWidget {
                           ),
                           trailing: Text(
                             '- ${currencyFormatter.format(tx.amount)}',
-                            style: const TextStyle(
-                              color: Color(0xFFE53935),
-                              fontWeight: FontWeight.bold,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         );
@@ -358,10 +331,7 @@ class PocketDetailScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0066FF),
               ),
-              child: const Text(
-                'Simpan',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Simpan'),
             ),
           ],
         );

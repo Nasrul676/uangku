@@ -275,7 +275,7 @@ class _ShoppingItemTile extends StatelessWidget {
         isPressedEffect: true,
         onTap: () {},
         padding: const EdgeInsets.all(10),
-        color: Theme.of(context).cardTheme.color ?? Colors.white,
+        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
@@ -385,7 +385,7 @@ class _EstimationSummary extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black26 : Colors.white,
+              color: isDark ? Colors.black26 : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
               border: ext?.cardBorder,
             ),
@@ -396,16 +396,15 @@ class _EstimationSummary extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Estimasi Pengeluaran',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
                   total > 0 ? RupiahInputFormatter.format(total) : 'Rp 0',
-                  style: const TextStyle(
-                    fontFamily: 'DMSerifDisplay',
-                    fontSize: 22,
-                  ),
+                  style: theme.textTheme.headlineSmall,
                 ),
               ],
             ),
@@ -413,9 +412,11 @@ class _EstimationSummary extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 'Belum Dibeli',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 '',

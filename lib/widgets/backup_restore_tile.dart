@@ -434,9 +434,9 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                 // Header
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle_rounded,
-                      color: Colors.green,
+                      color: Theme.of(sheetCtx).colorScheme.primary,
                       size: 30,
                     ),
                     const SizedBox(width: 12),
@@ -453,7 +453,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                             fileName,
                             style: Theme.of(
                               sheetCtx,
-                            ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                            ).textTheme.bodySmall,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -467,7 +467,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                   'Pilih cara menyimpan:',
                   style: Theme.of(
                     sheetCtx,
-                  ).textTheme.labelLarge?.copyWith(color: Colors.grey),
+                  ).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
 

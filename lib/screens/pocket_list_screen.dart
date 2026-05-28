@@ -25,16 +25,9 @@ class PocketListScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
-          'Kantong Kamu',
-          style: TextStyle(
-            color: Color(0xFF111111),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
+        title: const Text('Kantong Kamu'),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF111111)),
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
@@ -101,10 +94,8 @@ class PocketListScreen extends StatelessWidget {
                         const Spacer(),
                         Text(
                           pocket.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111111),
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -112,10 +103,11 @@ class PocketListScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           currencyFormatter.format(effectiveBalance),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: isNegative ? const Color(0xFFE53935) : const Color(0xFF111111),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: isNegative
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -125,10 +117,7 @@ class PocketListScreen extends StatelessWidget {
                           pocket.allocationType == 'PERCENTAGE'
                               ? '${pocket.allocationValue.toInt()}% Pemasukan'
                               : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF666666),
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -179,12 +168,10 @@ class PocketListScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Buat Kantong',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111111),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
                 textAlign: TextAlign.center,
               ),

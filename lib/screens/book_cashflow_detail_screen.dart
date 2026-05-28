@@ -89,13 +89,12 @@ class BookCashflowDetailScreen extends StatelessWidget {
                     ),
                     const Divider(),
                     if (incomeByCategory.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Text(
                           'Tidak ada pemasukan tercatat.',
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontStyle: FontStyle.italic,
-                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -121,13 +120,12 @@ class BookCashflowDetailScreen extends StatelessWidget {
                     ),
                     const Divider(),
                     if (expenseByCategory.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Text(
                           'Tidak ada pengeluaran tercatat.',
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontStyle: FontStyle.italic,
-                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -169,9 +167,9 @@ class BookCashflowDetailScreen extends StatelessWidget {
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: netCashflow < 0
-                                ? const Color(0xFFC24545)
+                                ? colorScheme.error
                                 : (netCashflow > 0
-                                      ? const Color(0xFF227C44)
+                                      ? colorScheme.primary
                                       : colorScheme.onSurface),
                           ),
                         ),
@@ -181,11 +179,10 @@ class BookCashflowDetailScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           '  (Net Cash Flow)',
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontStyle: FontStyle.italic,
-                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -231,7 +228,9 @@ class BookCashflowDetailScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Periode: $dateRange',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
@@ -239,16 +238,17 @@ class BookCashflowDetailScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: book.isOpen
-                ? Colors.green.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             book.isOpen ? 'Status: Aktif' : 'Status: Selesai',
-            style: TextStyle(
-              color: book.isOpen ? Colors.green[700] : Colors.grey[700],
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: book.isOpen
+                  ? theme.colorScheme.primary
+                  : theme.hintColor,
             ),
           ),
         ),
@@ -298,10 +298,10 @@ class BookCashflowDetailScreen extends StatelessWidget {
                   formatter.format(amount) +
                   (isNegative ? ')' : ''),
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: isNegative
                     ? const Color(0xFFC24545)
-                    : (isPositive ? const Color(0xFF227C44) : null),
+                    : (isPositive ? const Color(0xFF1E7C43) : null),
               ),
             ),
           ],

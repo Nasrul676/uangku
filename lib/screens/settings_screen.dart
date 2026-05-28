@@ -276,7 +276,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Tampilan Tema',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               Text(
@@ -297,7 +297,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Mode Gelap',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               Text(
@@ -318,7 +318,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Akun yang Sedang Dipakai',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Row(
@@ -330,7 +330,7 @@ class _SettingsContentState extends State<SettingsContent> {
                       _currentUserName.isEmpty
                           ? 'Nama akun belum tersedia'
                           : _currentUserName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.labelLarge,
                     ),
                   ),
                 ],
@@ -361,7 +361,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Notifikasi Rencana Keuangan',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               Text(
@@ -431,7 +431,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Atur Kategori',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               Text(
@@ -470,7 +470,7 @@ class _SettingsContentState extends State<SettingsContent> {
             children: [
               Text(
                 'Backup & Restore Data',
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               Text(
@@ -578,8 +578,7 @@ class _ThemeModeSelector extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
+                style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
                       ? theme.colorScheme.primary
@@ -620,7 +619,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: theme.textTheme.titleMedium?.copyWith(fontSize: 22),
+            style: theme.textTheme.titleMedium,
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
@@ -783,7 +782,9 @@ class _ThemePreviewOption extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
@@ -791,19 +792,22 @@ class _ThemePreviewOption extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Colors.black.withOpacity(0.1)
+                  ? theme.colorScheme.primary.withOpacity(0.1)
                   : Colors.transparent,
               border: Border.all(
-                color: isSelected ? AppTheme.borderColor : Colors.grey.shade400,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.dividerColor,
               ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               isSelected ? 'Aktif' : 'Pilih',
-              style: TextStyle(
-                fontSize: 10,
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppTheme.borderColor : Colors.grey.shade600,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.hintColor,
               ),
             ),
           ),
