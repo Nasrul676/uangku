@@ -498,6 +498,7 @@ class _SettingsContentState extends State<SettingsContent> {
             child: const Text('Keluar Akun'),
           ),
         ),
+        const SizedBox(height: 100),
       ],
     );
   }

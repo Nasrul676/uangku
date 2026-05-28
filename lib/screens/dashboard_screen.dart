@@ -700,6 +700,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             final periods = provider.bookPeriods;
             final currentId = provider.selectedBookPeriodId;
             final activeBook = provider.activeBookPeriod;
@@ -798,13 +799,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? const Color(0xFFE5F0FF)
-                                          : Colors.white,
+                                          ? (isDark ? const Color(0xFF1A3B66) : const Color(0xFFE5F0FF))
+                                          : (isDark ? const Color(0xFF2D2D2D) : Colors.white),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: isSelected
                                             ? const Color(0xFF0066FF)
-                                            : Colors.grey.shade300,
+                                            : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                                       ),
                                     ),
                                     child: Row(
@@ -815,7 +816,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? const Color(0xFF0066FF)
-                                                : const Color(0xFFF0F0F0),
+                                                : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -824,7 +825,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 : Icons.lock_outline_rounded,
                                             color: isSelected
                                                 ? Colors.white
-                                                : Colors.grey.shade600,
+                                                : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
                                             size: 20,
                                           ),
                                         ),
@@ -840,16 +841,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
                                                   color: isSelected
-                                                      ? const Color(0xFF0066FF)
-                                                      : const Color(0xFF111111),
+                                                      ? (isDark ? const Color(0xFF66A3FF) : const Color(0xFF0066FF))
+                                                      : (isDark ? Colors.white : const Color(0xFF111111)),
                                                 ),
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
                                                 subtitle,
                                                 style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  fontSize: 13,
+                                                  color: isSelected
+                                                      ? (isDark ? const Color(0xFF66A3FF).withOpacity(0.8) : const Color(0xFF0066FF).withOpacity(0.8))
+                                                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                                                 ),
                                               ),
                                             ],
@@ -1488,6 +1491,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildBookManagerTab(TransactionProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final periods = provider.bookPeriods;
     final currentId = provider.selectedBookPeriodId;
     final activeBook = provider.activeBookPeriod;
@@ -1587,13 +1591,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFFE5F0FF)
-                                  : Colors.white,
+                                  ? (isDark ? const Color(0xFF1A3B66) : const Color(0xFFE5F0FF))
+                                  : (isDark ? const Color(0xFF2D2D2D) : Colors.white),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected
                                     ? const Color(0xFF0066FF)
-                                    : Colors.grey.shade300,
+                                    : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                               ),
                             ),
                             child: Row(
@@ -1604,7 +1608,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? const Color(0xFF0066FF)
-                                        : const Color(0xFFF0F0F0),
+                                        : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -1613,7 +1617,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         : Icons.lock_outline_rounded,
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.grey.shade600,
+                                        : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
                                     size: 20,
                                   ),
                                 ),
@@ -1628,8 +1632,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           color: isSelected
-                                              ? const Color(0xFF0066FF)
-                                              : const Color(0xFF111111),
+                                              ? (isDark ? const Color(0xFF66A3FF) : const Color(0xFF0066FF))
+                                              : (isDark ? Colors.white : const Color(0xFF111111)),
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -1637,7 +1641,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         subtitle,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                         ),
                                       ),
                                     ],
@@ -2495,38 +2499,45 @@ class _FinancialPlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final addButton = SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: isSaving ? null : onAddPlan,
+        icon: Icon(
+          isSaving ? Icons.hourglass_top_rounded : Icons.add_box_rounded,
+          color: const Color(0xFF2A9D50),
+        ),
+        label: Text(
+          isSaving ? 'Tunggu Sebentar...' : 'Buat Rencana Baru',
+          style: const TextStyle(color: Color(0xFF2A9D50)),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          side: const BorderSide(color: Color(0xFF2A9D50)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: isSaving ? null : onAddPlan,
-              icon: Icon(
-                isSaving ? Icons.hourglass_top_rounded : Icons.add_box_rounded,
-                color: const Color(0xFF2A9D50),
-              ),
-              label: Text(
-                isSaving ? 'Tunggu Sebentar...' : 'Buat Rencana Baru',
-                style: const TextStyle(color: Color(0xFF2A9D50)),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                side: const BorderSide(color: Color(0xFF2A9D50)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
           if (isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (plans.isEmpty)
-            const Expanded(
-              child: Center(child: Text('Belum ada rencana keuangan.')),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Belum ada rencana keuangan.'),
+                  const SizedBox(height: 16),
+                  addButton,
+                ],
+              ),
             )
           else
             Expanded(
@@ -2537,6 +2548,8 @@ class _FinancialPlanCard extends StatelessWidget {
                     plans: plans,
                     realizationByPlan: realizationByPlan,
                   ),
+                  const SizedBox(height: 12),
+                  addButton,
                   const SizedBox(height: 12),
                   Expanded(
                     child: ListView.separated(
