@@ -64,10 +64,10 @@ class UangkuBalanceWidgetProvider : HomeWidgetProvider() {
       val expenseColor = Color.parseColor("#FFC24545")
 
       if (isDarkMode) {
-        views.setInt(R.id.widget_root, "setBackgroundColor", Color.BLACK)
-        views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundColor", Color.BLACK)
-        views.setInt(R.id.widget_income_button, "setBackgroundColor", Color.BLACK)
-        views.setInt(R.id.widget_expense_button, "setBackgroundColor", Color.BLACK)
+        views.setInt(R.id.widget_root, "setBackgroundColor", Color.parseColor("#73000000"))
+        views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundColor", Color.TRANSPARENT)
+        views.setInt(R.id.widget_income_button, "setBackgroundColor", Color.TRANSPARENT)
+        views.setInt(R.id.widget_expense_button, "setBackgroundColor", Color.TRANSPARENT)
         views.setInt(R.id.widget_income_icon, "setColorFilter", Color.WHITE)
         views.setInt(R.id.widget_expense_icon, "setColorFilter", Color.WHITE)
       } else {

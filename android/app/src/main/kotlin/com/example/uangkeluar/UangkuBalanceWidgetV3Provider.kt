@@ -51,20 +51,18 @@ class UangkuBalanceWidgetV3Provider : HomeWidgetProvider() {
 
       // Styling logic for Dark Mode
       val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-      val labelColor = if (isDarkMode) Color.WHITE else Color.parseColor("#FF2D2D2D")
       val valueColor = if (isDarkMode) Color.WHITE else Color.parseColor("#FF111111")
       val expenseColor = Color.parseColor("#FFC24545")
 
       if (isDarkMode) {
-        views.setInt(R.id.widget_root, "setBackgroundColor", Color.BLACK)
-        views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundColor", Color.BLACK)
+        views.setInt(R.id.widget_root, "setBackgroundColor", Color.parseColor("#73000000"))
+        views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundColor", Color.TRANSPARENT)
       } else {
         // Reset colors in light mode (since RemoteViews can recycle views)
         views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.uangku_widget_background)
         views.setInt(R.id.widget_toggle_visibility_button, "setBackgroundResource", R.drawable.uangku_widget_income_cta_background)
       }
 
-      views.setTextColor(R.id.widget_wallet_label, labelColor)
       views.setTextColor(R.id.widget_toggle_visibility_button, valueColor)
 
       views.setTextViewText(R.id.widget_balance_value, displayBalance)
