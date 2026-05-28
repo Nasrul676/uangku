@@ -74,6 +74,9 @@ class HomeBalanceWidgetService {
     await HomeWidget.updateWidget(
       androidName: 'UangkuBalanceWidgetV2Provider',
     );
+    await HomeWidget.updateWidget(
+      androidName: 'UangkuBalanceWidgetV3Provider',
+    );
   }
 
   Future<Uri?> getInitialLaunchUri() {
