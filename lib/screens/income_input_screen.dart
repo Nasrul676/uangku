@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/success_overlay.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -191,6 +192,12 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
+      await SuccessOverlay.show(
+        context,
+        message: isEdit ? 'Pemasukan diperbarui!' : 'Pemasukan disimpan!',
+        color: AppTheme.incomeGreen,
+      );
+      if (!mounted) return;
       Navigator.pop(context);
       messenger.showSnackBar(
         SnackBar(
@@ -356,7 +363,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                       widget.existingTransaction == null
                           ? 'Catat Pemasukan'
                           : 'Edit Pemasukan',
-                      style: theme.textTheme.titleLarge?.copyWith(fontSize: 34),
+                      style: theme.textTheme.displaySmall,
                     ),
                   ),
                   _CircleButton(
@@ -451,9 +458,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                           const SizedBox(height: 10),
                           Text(
                             'Pilih Kategori',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontSize: 22,
-                            ),
+                            style: theme.textTheme.titleMedium,
                           ),
                           const SizedBox(height: 8),
                           Wrap(

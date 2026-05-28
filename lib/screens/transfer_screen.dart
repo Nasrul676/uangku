@@ -48,7 +48,7 @@ class _TransferScreenState extends State<TransferScreen> {
                   Expanded(
                     child: Text(
                       'Transfer Dana',
-                      style: theme.textTheme.titleLarge?.copyWith(fontSize: 36),
+                      style: theme.textTheme.displaySmall,
                     ),
                   ),
                   InkWell(
@@ -135,16 +135,13 @@ class _TransferScreenState extends State<TransferScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'Transaksi Terbaru',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontSize: 28,
-                          ),
+                          style: theme.textTheme.headlineMedium,
                         ),
                         const SizedBox(height: 16),
                         Center(
                           child: Text(
                             '\$$_input',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 52,
+                            style: theme.textTheme.displayLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),

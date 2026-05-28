@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _rememberMe = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -69,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFCFAFE4),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -88,44 +89,63 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ─ Logo
                     Container(
-                      width: 18,
-                      height: 32,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                          color: const Color(0xFF101010),
-                          width: 1.2,
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withValues(alpha: 0.7),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Icon(
-                        Icons.attach_money_rounded,
-                        size: 12,
-                        color: Theme.of(context).cardTheme.color ?? Colors.white,
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        size: 28,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
+                    Text(
+                      'UangKu',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       'Selamat Datang Lagi',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 44,
-                        height: 1.02,
-                        color: const Color(0xFF1A1A1A),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                        color: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Masuk dulu ya, biar bisa lanjut catat keuangan harianmu.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF2D2D2D),
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 18),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         child: Form(
                           key: _formKey,
                           child: Column(
@@ -137,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
                                   hintText: 'Masukkan email',
+                                  prefixIcon: Icon(Icons.email_outlined),
                                 ),
                                 validator: (value) {
                                   final text = (value ?? '').trim();
@@ -147,15 +168,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 14),
                               TextFormField(
                                 controller: _passwordController,
-                                obscureText: true,
+                                obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.done,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Password',
                                   hintText: 'Masukkan password',
+                                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _obscurePassword = !_obscurePassword,
+                                    ),
+                                  ),
                                 ),
+                                onFieldSubmitted: (_) => _submit(),
                                 validator: (value) {
                                   if ((value ?? '').isEmpty) {
                                     return 'Kata sandi masih kosong.';
@@ -163,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               CheckboxListTile(
                                 value: _rememberMe,
                                 contentPadding: EdgeInsets.zero,
@@ -174,21 +207,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() => _rememberMe = value ?? false);
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               SizedBox(
                                 width: double.infinity,
                                 height: 52,
-                                child: FilledButton(
+                                child: FilledButton.icon(
                                   onPressed: _isLoading ? null : _submit,
-                                  child: _isLoading
+                                  icon: _isLoading
                                       ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
+                                          width: 18, height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
+                                            color: Colors.white,
                                           ),
                                         )
-                                      : const Text('Masuk'),
+                                      : const Icon(Icons.login_rounded),
+                                  label: const Text('Masuk'),
                                 ),
                               ),
                             ],

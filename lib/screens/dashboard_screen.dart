@@ -14,6 +14,8 @@ import '../theme/app_theme.dart';
 import '../utils/app_transitions.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/skeleton_loader.dart';
+import '../widgets/success_overlay.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
@@ -735,15 +737,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           },
                           icon: const Icon(
                             Icons.check_circle_outline,
-                            color: Color(0xFF0066FF),
+                            color: AppTheme.primaryBlue,
                           ),
                           label: const Text(
                             'Pilih Buku Aktif',
-                            style: TextStyle(color: Color(0xFF0066FF)),
+                            style: TextStyle(color: AppTheme.primaryBlue),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Color(0xFF0066FF)),
+                            side: const BorderSide(color: AppTheme.primaryBlue),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -882,7 +884,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             icon: const Icon(Icons.add_box_rounded),
                             label: const Text('Buka Buku'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2A9D50),
+                              backgroundColor: AppTheme.incomeGreen,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
@@ -903,7 +905,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             icon: const Icon(Icons.bookmark_remove_rounded),
                             label: const Text('Tutup Buku'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFC24545),
+                              backgroundColor: AppTheme.expenseRed,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
@@ -1049,12 +1051,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final netBalance = totalIncome - totalExpense;
               final currentTabKey = ValueKey(_currentIndex);
               final currentTitle = _currentIndex == 1
-                  ? ''
+                  ? 'Transaksi'
                   : _currentIndex == 2
-                  ? ''
+                  ? 'Belanja'
                   : _currentIndex == 3
-                  ? ''
-                  : '';
+                  ? 'Pengaturan'
+                  : 'Beranda';
               final userName = _userName;
               final greeting = userName.isEmpty ? 'Hai,' : 'Hai, $userName';
 
@@ -1072,17 +1074,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   Text(
                                     greeting,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontSize: 36,
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  if (currentTitle.isNotEmpty)
-                                    Text(
-                                      currentTitle,
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontSize: 28,
-                                      ),
-                                    ),
+                                  Text(
+                                    currentTitle,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
                                 ],
                               ),
                             ),
@@ -1280,8 +1279,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.south_west_rounded,
                   title: 'Tambah Pemasukan',
                   subtitle: 'Catat uang yang masuk',
-                  color: const Color(0xFFA4DBB2),
-                  iconColor: const Color(0xFF113311),
+                  color: AppTheme.incomeLight,
+                  iconColor: AppTheme.incomeGreen,
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _openIncomeInput();
@@ -1292,8 +1291,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.north_east_rounded,
                   title: 'Tambah Pengeluaran',
                   subtitle: 'Catat uang yang keluar',
-                  color: const Color(0xFFF0C8C8),
-                  iconColor: const Color(0xFFC24545),
+                  color: AppTheme.expenseLight,
+                  iconColor: AppTheme.expenseRed,
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _openExpenseInput();
@@ -1411,7 +1410,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(
-                height: 100,
+                height: 120,
               ), // Transparent space for navbar clearance
             ],
           ),
@@ -1505,11 +1504,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _openBookFlow,
-              icon: const Icon(Icons.add_box_rounded, color: Color(0xFF2A9D50)),
-              label: const Text('Buka Buku Baru', style: TextStyle(color: Color(0xFF2A9D50))),
+              icon: const Icon(Icons.add_box_rounded, color: AppTheme.incomeGreen),
+              label: const Text('Buka Buku Baru', style: TextStyle(color: AppTheme.incomeGreen)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                side: const BorderSide(color: Color(0xFF2A9D50)),
+                side: const BorderSide(color: AppTheme.incomeGreen),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1519,14 +1518,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 12),
           Expanded(
             child: periods.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'Belum ada buku. Buka buku pertama untuk mulai mencatat.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                ? Center(
+                    child: _AppEmptyState(
+                      emoji: '📖',
+                      title: 'Belum ada buku',
+                      subtitle: 'Buka buku pertama untuk mulai mencatat keuanganmu.',
+                      ctaLabel: 'Buka Buku Pertama',
+                      onCtaTap: _openBookFlow,
                     ),
                   )
                 : ListView.separated(
@@ -1557,7 +1555,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onPressed: (_) {
                                   _closeActiveBookFlow(period);
                                 },
-                                backgroundColor: const Color(0xFFC24545),
+                                backgroundColor: AppTheme.expenseRed,
                                 foregroundColor: Colors.white,
                                 icon: Icons.bookmark_remove_rounded,
                                 label: 'Tutup',
@@ -1568,7 +1566,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onPressed: (_) {
                                   _reopenBookFlow(period);
                                 },
-                                backgroundColor: const Color(0xFF2A9D50),
+                                backgroundColor: AppTheme.incomeGreen,
                                 foregroundColor: Colors.white,
                                 icon: Icons.restore_rounded,
                                 label: 'Buka Lagi',
@@ -1591,12 +1589,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? (isDark ? const Color(0xFF1A3B66) : const Color(0xFFE5F0FF))
+                                  ? Theme.of(context).colorScheme.primaryContainer
                                   : (isDark ? const Color(0xFF2D2D2D) : Colors.white),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected
-                                    ? const Color(0xFF0066FF)
+                                    ? Theme.of(context).colorScheme.primary
                                     : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                               ),
                             ),
@@ -1606,9 +1604,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF0066FF)
-                                        : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -1628,29 +1626,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     children: [
                                       Text(
                                         period.label,
-                                        style: TextStyle(
-                                          fontSize: 16,
+                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: isSelected
-                                              ? (isDark ? const Color(0xFF66A3FF) : const Color(0xFF0066FF))
-                                              : (isDark ? Colors.white : const Color(0xFF111111)),
+                                              ? Theme.of(context).colorScheme.primary
+                                              : null,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         subtitle,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                        ),
+                                        style: Theme.of(context).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
                                 ),
                                 if (isSelected) ...[
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle,
-                                    color: Color(0xFF0066FF),
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                   const SizedBox(width: 8),
                                 ],
@@ -1667,27 +1661,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
           ),
-          const SizedBox(height: 12),
-          if (activeBook != null)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _closeActiveBookFlow(activeBook);
-                },
-                icon: const Icon(Icons.bookmark_remove_rounded),
-                label: const Text('Tutup Buku'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
-                  foregroundColor: Colors.grey.shade800,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reusable Empty State Widget
+// ─────────────────────────────────────────────────────────────────────────────
+class _AppEmptyState extends StatelessWidget {
+  const _AppEmptyState({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    this.ctaLabel,
+    this.onCtaTap,
+  });
+
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final String? ctaLabel;
+  final VoidCallback? onCtaTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              emoji,
+              style: const TextStyle(fontSize: 52),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (ctaLabel != null && onCtaTap != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.tonal(
+                onPressed: onCtaTap,
+                child: Text(ctaLabel!),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1722,7 +1759,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
 
     return SizedBox(
       width: maxWidth,
-      height: 98,
+      height: 114,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
@@ -1730,7 +1767,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
             width: maxWidth,
-            height: 64,
+            height: 76,
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color ?? Colors.white,
               borderRadius: BorderRadius.circular(999),
@@ -1775,8 +1812,8 @@ class _ExpandableQuickMenu extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(
-            top: 0,
+          Align(
+            alignment: Alignment.topCenter,
             child: _FloatingQuickAddButton(onTap: onOpenQuickAdd),
           ),
         ],
@@ -1799,7 +1836,7 @@ class _FloatingQuickAddButton extends StatelessWidget {
         width: 58,
         height: 58,
         decoration: BoxDecoration(
-          color: const Color(0xFFF5BB8A),
+          color: AppTheme.fabBgColor,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
           boxShadow: const [
@@ -1813,7 +1850,7 @@ class _FloatingQuickAddButton extends StatelessWidget {
         child: const Icon(
           Icons.add_rounded,
           size: 28,
-          color: Color(0xFF1F5A62),
+          color: AppTheme.fabIconColor,
         ),
       ),
     );
@@ -1897,16 +1934,12 @@ class _QuickNavItem extends StatefulWidget {
     required this.semanticLabel,
     required this.selected,
     required this.onTap,
-    this.selectedBackground,
-    this.iconColor,
   });
 
   final IconData icon;
   final String semanticLabel;
   final bool selected;
   final VoidCallback onTap;
-  final Color? selectedBackground;
-  final Color? iconColor;
 
   @override
   State<_QuickNavItem> createState() => _QuickNavItemState();
@@ -1917,48 +1950,65 @@ class _QuickNavItemState extends State<_QuickNavItem> {
 
   @override
   Widget build(BuildContext context) {
-    final Color background = widget.selected
-        ? (widget.selectedBackground ?? const Color(0xFFD4BEF2))
-        : Theme.of(context).cardTheme.color ?? Colors.white;
+    final theme = Theme.of(context);
+    final isSelected = widget.selected;
+    final activeColor = theme.colorScheme.primary;
+    final iconColor = isSelected
+        ? activeColor
+        : theme.iconTheme.color ?? AppTheme.borderColor;
 
     return Expanded(
       child: Semantics(
         label: widget.semanticLabel,
         button: true,
+        selected: isSelected,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOutCubic,
-          scale: _isPressed ? 0.96 : 1,
+          scale: _isPressed ? 0.93 : 1,
           child: InkWell(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(16),
             onTap: widget.onTap,
             onHighlightChanged: (value) {
               if (_isPressed == value) return;
               setState(() => _isPressed = value);
             },
-            child: Center(
-              child: Container(
-                width: 50,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color:
-                        (Theme.of(context)
-                            .extension<AppThemeExtension>()
-                            ?.cardBorder
-                            ?.top
-                            .color ??
-                        const Color(0xFF2D2D2D)),
-                    width: 1.2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    width: isSelected ? 48 : 40,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 20,
+                      color: iconColor,
+                    ),
                   ),
-                ),
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: widget.iconColor ?? const Color(0xFF1F5A62),
-                ),
+                  const SizedBox(height: 4),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      color: iconColor,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    child: Text(
+                      widget.semanticLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -2505,15 +2555,15 @@ class _FinancialPlanCard extends StatelessWidget {
         onPressed: isSaving ? null : onAddPlan,
         icon: Icon(
           isSaving ? Icons.hourglass_top_rounded : Icons.add_box_rounded,
-          color: const Color(0xFF2A9D50),
+          color: AppTheme.incomeGreen,
         ),
         label: Text(
           isSaving ? 'Tunggu Sebentar...' : 'Buat Rencana Baru',
-          style: const TextStyle(color: Color(0xFF2A9D50)),
+          style: const TextStyle(color: AppTheme.incomeGreen),
         ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          side: const BorderSide(color: Color(0xFF2A9D50)),
+          side: const BorderSide(color: AppTheme.incomeGreen),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -2527,7 +2577,12 @@ class _FinancialPlanCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: SkeletonLoader(itemCount: 3, itemHeight: 80),
+              ),
+            )
           else if (plans.isEmpty)
             Expanded(
               child: Column(
@@ -3867,8 +3922,7 @@ class _TransactionsCardState extends State<_TransactionsCard> {
               children: [
                 Text(
                   widget.title,
-                  style: widget.theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 24,
+                  style: widget.theme.textTheme.headlineSmall?.copyWith(
                     color: widget.titleColor,
                   ),
                 ),
@@ -3878,9 +3932,20 @@ class _TransactionsCardState extends State<_TransactionsCard> {
             const SizedBox(height: 10),
           ],
           if (widget.isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: SkeletonLoader(itemCount: 5),
+              ),
+            )
           else if (widget.transactions.isEmpty)
-            Expanded(child: Center(child: Text(widget.emptyText)))
+            Expanded(
+              child: _AppEmptyState(
+                emoji: widget.emptyText.contains('pemasukan') ? '💚' : '📭',
+                title: 'Belum ada data',
+                subtitle: widget.emptyText,
+              ),
+            )
           else
             Expanded(
               child: Scrollbar(
@@ -3962,53 +4027,52 @@ class _TransactionTile extends StatelessWidget {
         children: [
           SlidableAction(
             onPressed: (slidableCtx) async {
-              final confirmed = await showZoomDialog<bool>(
-                context: context,
-                builder: (dialogCtx) => AlertDialog(
-                  title: const Text('Hapus Transaksi?'),
-                  content: const Text(
-                    'Transaksi ini akan dihapus secara permanen.',
+              if (!context.mounted) return;
+              final provider = context.read<TransactionProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+
+              // Optimistic removal dengan Undo
+              messenger.clearSnackBars();
+              final snackBarController = messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '"${item.title}" dihapus.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx, false),
-                      child: const Text('Batal'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(dialogCtx, true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFF0C8C8),
-                        foregroundColor: const Color(0xFFC24545),
-                      ),
-                      child: const Text('Hapus'),
-                    ),
-                  ],
+                  duration: const Duration(seconds: 5),
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(
+                    label: 'Batalkan',
+                    onPressed: () {
+                      // Undo: tidak jadi hapus, snackbar dismiss sendiri
+                    },
+                  ),
                 ),
               );
 
-              if (confirmed == true && context.mounted) {
-                final messenger = ScaffoldMessenger.of(context);
+              final reason = await snackBarController.closed;
+              if (!context.mounted) return;
+
+              // Hanya hapus jika user TIDAK menekan Batalkan
+              if (reason != SnackBarClosedReason.action) {
                 try {
-                  await context.read<TransactionProvider>().removeTransaction(
-                    item.id!,
-                  );
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Transaksi berhasil dihapus.'),
-                    ),
-                  );
+                  await provider.removeTransaction(item.id!);
                 } catch (e) {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}',
+                  if (context.mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}',
+                        ),
+                        behavior: SnackBarBehavior.floating,
                       ),
-                    ),
-                  );
+                    );
+                  }
                 }
               }
             },
-            backgroundColor: const Color(0xFFC24545),
+            backgroundColor: AppTheme.expenseRed,
             foregroundColor: Colors.white,
             icon: Icons.delete_rounded,
             label: 'Hapus',
@@ -4032,8 +4096,8 @@ class _TransactionTile extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: isIncome
-                    ? const Color(0xFFA9DDB5)
-                    : const Color(0xFFF0C8C8),
+                    ? AppTheme.incomeLight
+                    : AppTheme.expenseLight,
                 borderRadius: BorderRadius.circular(8),
                 border: Theme.of(
                   context,
@@ -4042,7 +4106,7 @@ class _TransactionTile extends StatelessWidget {
               child: Icon(
                 isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
                 size: 16,
-                color: isIncome ? null : const Color(0xFFC24545),
+                color: isIncome ? AppTheme.incomeGreen : AppTheme.expenseRed,
               ),
             ),
             const SizedBox(width: 10),

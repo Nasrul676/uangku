@@ -30,7 +30,7 @@ class PocketDetailScreen extends StatelessWidget {
               if (pocket == null) return const SizedBox();
 
               return IconButton(
-                icon: const Icon(Icons.edit, color: Color(0xFF0066FF)),
+                icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -107,13 +107,13 @@ class PocketDetailScreen extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5F0FF),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     IconPickerUtils.getIconData(pocket.icon),
                     size: 40,
-                    color: const Color(0xFF0066FF),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -210,7 +210,7 @@ class PocketDetailScreen extends StatelessWidget {
                     icon: const Icon(Icons.add_circle_outline),
                     label: const Text('Tambah Uang'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -259,9 +259,9 @@ class PocketDetailScreen extends StatelessWidget {
                               color: Color(0xFFFFEBEE),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.arrow_upward,
-                              color: Color(0xFFE53935),
+                              color: Theme.of(context).colorScheme.error,
                               size: 16,
                             ),
                           ),
@@ -329,7 +329,7 @@ class PocketDetailScreen extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0066FF),
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
               child: const Text('Simpan'),
             ),
@@ -357,17 +357,17 @@ class PocketDetailScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tambah Uang ke Kantong',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFE5F0FF),
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     child: Icon(
                       Icons.calculate_outlined,
-                      color: Color(0xFF0066FF),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   title: const Text('Hitung Otomatis dari Pemasukan Sekarang'),
@@ -387,9 +387,9 @@ class PocketDetailScreen extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFE5F0FF),
-                    child: Icon(Icons.add, color: Color(0xFF0066FF)),
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
                   ),
                   title: const Text('Tambah Nominal Lain'),
                   onTap: () {

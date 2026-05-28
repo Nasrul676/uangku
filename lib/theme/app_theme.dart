@@ -61,23 +61,47 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
 }
 
 class AppTheme {
-  static const Color cream = Color(0xFFF5F2E9);
+  // ─── Neo-Brutalism Palette ───────────────────────────────────────────────────
+  static const Color cream       = Color(0xFFF5F2E9);
   static const Color borderColor = Color(0xFF1E1E1E);
   static const Color classicBorder = Color(0x331E1E1E);
   static const Color lightScaffold = Color(0xFFFAFAFA);
-  static const Color neoScaffold = Color(0xFFF4F2ED);
-  static const Color neoPaper = Color(0xFFFFFCF5);
-  static const Color neoInk = Color(0xFF121212);
-  static const Color neoYellow = Color(0xFFFFD84D);
-  static const Color neoBlue = Color(0xFF8EC5FF);
-  static const Color neoMint = Color(0xFF98E6A8);
-  static const Color neoCoral = Color(0xFFFF9D8E);
-  static const Color neoLavender = Color(0xFFC8B6FF);
+  static const Color neoScaffold   = Color(0xFFF4F2ED);
+  static const Color neoPaper      = Color(0xFFFFFCF5);
+  static const Color neoInk        = Color(0xFF121212);
+  static const Color neoYellow     = Color(0xFFFFD84D);
+  static const Color neoBlue       = Color(0xFF8EC5FF);
+  static const Color neoMint       = Color(0xFF98E6A8);
+  static const Color neoCoral      = Color(0xFFFF9D8E);
+  static const Color neoLavender   = Color(0xFFC8B6FF);
 
+  // ─── Dark Mode ───────────────────────────────────────────────────────────────
   static const Color darkScaffold = Color(0xFF121212);
-  static const Color darkCard = Color(0xFF1E1E1E);
-  static const Color darkBorder = Color(0xFF333333);
-  static const Color darkText = Color(0xFFF5F5F5);
+  static const Color darkCard     = Color(0xFF1E1E1E);
+  static const Color darkBorder   = Color(0xFF333333);
+  static const Color darkText     = Color(0xFFF5F5F5);
+
+  // ─── Semantic Color Tokens ───────────────────────────────────────────────────
+  /// Warna utama aplikasi — dipakai untuk primary action, link, dan highlight.
+  static const Color primaryBlue  = Color(0xFF0066FF);
+
+  /// Warna untuk nilai pemasukan / positif / sukses.
+  static const Color incomeGreen  = Color(0xFF2A9D50);
+
+  /// Warna untuk nilai pengeluaran / negatif / error.
+  static const Color expenseRed   = Color(0xFFC24545);
+
+  /// Versi light/container dari incomeGreen (chip background, badge).
+  static const Color incomeLight  = Color(0xFFA4DBB2);
+
+  /// Versi light/container dari expenseRed (chip background, badge).
+  static const Color expenseLight = Color(0xFFF0C8C8);
+
+  /// Warna icon khusus (teal gelap) untuk FAB quick add.
+  static const Color fabIconColor = Color(0xFF1F5A62);
+
+  /// Warna background FAB quick add.
+  static const Color fabBgColor   = Color(0xFFF5BB8A);
 
   static ThemeData getThemeData(
     AppThemeStyle style, {
@@ -102,7 +126,8 @@ class AppTheme {
       fontFamily: 'PlusJakartaSans',
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFEDD07D),
+        seedColor: primaryBlue,
+        error: expenseRed,
         surface: cardBg,
         brightness: brightness,
       ),
@@ -175,8 +200,8 @@ class AppTheme {
               offset: const Offset(0, 4),
             ),
           ],
-          primaryActionColor: const Color(0xFFA4DBB2),
-          negativeActionColor: const Color(0xFFF0C8C8),
+          primaryActionColor: incomeLight,
+          negativeActionColor: expenseLight,
         ),
       ],
     );
@@ -194,7 +219,7 @@ class AppTheme {
       onPrimary: neoInk,
       secondary: neoBlue,
       onSecondary: neoInk,
-      error: const Color(0xFFCC3A2B),
+      error: expenseRed,
       onError: Colors.white,
       surface: paperCol,
       onSurface: inkCol,

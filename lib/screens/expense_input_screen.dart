@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/success_overlay.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -577,6 +578,12 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
+      await SuccessOverlay.show(
+        context,
+        message: isEdit ? 'Pengeluaran diperbarui!' : 'Pengeluaran disimpan!',
+        color: AppTheme.expenseRed,
+      );
+      if (!mounted) return;
       Navigator.pop(context);
       messenger.showSnackBar(
         SnackBar(
@@ -669,8 +676,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       widget.existingTransaction == null
                           ? 'Catat Pengeluaran'
                           : 'Edit Pengeluaran',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 34,
+                      style: theme.textTheme.displaySmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
@@ -714,123 +720,158 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       key: _formKey,
                       child: ListView(
                         children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0x33F7CACA), Color(0x22F0C8C8)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color:
-                                    (Theme.of(context)
-                                        .extension<AppThemeExtension>()
-                                        ?.cardBorder
-                                        ?.top
-                                        .color ??
-                                    const Color(0xFF2D2D2D)),
-                                width: 1.1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.existingTransaction == null
-                                      ? 'Catat Cepat'
-                                      : 'Edit Data',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontSize: 24,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Catat pengeluaran harian dengan cepat, datanya aman tersimpan di HP dulu.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onErrorContainer,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _currencyFormatter.format(_amountValue),
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          InkWell(
-                            onTap: _pickDate,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                hintText: 'Tanggal',
-                                prefixIcon: Icon(Icons.calendar_today_rounded),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      DateFormat(
-                                        'EEEE, dd MMM yyyy',
-                                        'id',
-                                      ).format(_selectedDate),
-                                    ),
-                                  ),
-                                  const Icon(Icons.expand_more_rounded),
-                                ],
-                              ),
-                            ),
+                          // ── Section 1: Nominal & Judul ──────────────────
+                          _SectionHeader(
+                            emoji: '💸',
+                            label: 'Berapa yang dikeluarkan?',
+                            color: theme.colorScheme.error,
                           ),
                           const SizedBox(height: 10),
-                          InkWell(
-                            onTap: _pickTime,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                hintText: 'Jam',
-                                prefixIcon: Icon(Icons.access_time_rounded),
+                          TextFormField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [RupiahInputFormatter()],
+                            decoration: InputDecoration(
+                              hintText: 'Nominal pengeluaran',
+                              prefixIcon: const Icon(Icons.payments_rounded),
+                              suffix: _amountValue > 0
+                                  ? Text(
+                                      _currencyFormatter.format(_amountValue),
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: theme.colorScheme.error,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nominal wajib diisi';
+                              }
+                              final amount = RupiahInputFormatter.parse(value);
+                              if (amount <= 0) return 'Nominal tidak valid';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: const InputDecoration(
+                              hintText: 'Catatan / judul pengeluaran',
+                              prefixIcon: Icon(Icons.edit_note_rounded),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Judul wajib diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _qtyController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: const InputDecoration(
+                                    hintText: 'Jml (ops.)',
+                                    prefixIcon: Icon(Icons.numbers_rounded),
+                                  ),
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  Expanded(child: Text(_timeLabel())),
-                                  if (_selectedTime != null)
-                                    InkWell(
-                                      onTap: () =>
-                                          setState(() => _selectedTime = null),
-                                      borderRadius: BorderRadius.circular(99),
-                                      child: const Padding(
-                                        padding: EdgeInsets.all(4),
-                                        child: Icon(
-                                          Icons.close_rounded,
-                                          size: 16,
-                                        ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _unitController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Satuan (ops.)',
+                                    prefixIcon: Icon(Icons.straighten_rounded),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // ── Section 2: Waktu ────────────────────────────
+                          const SizedBox(height: 16),
+                          const _SectionDivider(),
+                          const SizedBox(height: 12),
+                          _SectionHeader(
+                            emoji: '📅',
+                            label: 'Kapan?',
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: InkWell(
+                                  onTap: _pickDate,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InputDecorator(
+                                    decoration: const InputDecoration(
+                                      hintText: 'Tanggal',
+                                      prefixIcon: Icon(Icons.calendar_today_rounded),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 14,
                                       ),
                                     ),
-                                  const SizedBox(width: 4),
-                                  const Icon(Icons.expand_more_rounded),
-                                ],
+                                    child: Text(
+                                      DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 2,
+                                child: InkWell(
+                                  onTap: _pickTime,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      hintText: 'Jam',
+                                      prefixIcon: const Icon(Icons.access_time_rounded),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 14,
+                                      ),
+                                      suffix: _selectedTime != null
+                                          ? GestureDetector(
+                                              onTap: () => setState(
+                                                () => _selectedTime = null,
+                                              ),
+                                              child: const Icon(
+                                                Icons.close_rounded,
+                                                size: 16,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      _timeLabel(),
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // ── Section 3: Kategori & Label ─────────────────
+                          const SizedBox(height: 16),
+                          const _SectionDivider(),
+                          const SizedBox(height: 12),
+                          _SectionHeader(
+                            emoji: '🏷️',
+                            label: 'Kategori & Label',
+                            color: theme.colorScheme.primary,
                           ),
                           const SizedBox(height: 10),
-                          Text(
-                            'Pilih Kategori',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -862,87 +903,26 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             onTap: () => _openPocketPicker(pockets),
                             selectedText: selectedPocketText,
                           ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: const InputDecoration(
-                              hintText: 'Catatan pengeluaran',
-                              prefixIcon: Icon(Icons.title_rounded),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Judul wajib diisi';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _amountController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [RupiahInputFormatter()],
-                            decoration: const InputDecoration(
-                              hintText: 'Nominal',
-                              prefixIcon: Icon(Icons.payments_rounded),
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nominal wajib diisi';
-                              }
-                              final amount = RupiahInputFormatter.parse(value);
-                              if (amount <= 0) {
-                                return 'Nominal tidak valid';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _qtyController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  decoration: const InputDecoration(
-                                    hintText: 'Jumlah (opsional)',
-                                    prefixIcon: Icon(Icons.numbers_rounded),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _unitController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Satuan (opsional)',
-                                    prefixIcon: Icon(Icons.straighten_rounded),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
+                          // ── Save Button ──────────────────────────────────
+                          const SizedBox(height: 20),
                           SizedBox(
                             height: 52,
-                            child: FilledButton(
+                            width: double.infinity,
+                            child: FilledButton.icon(
                               onPressed: _isSaving ? null : _saveExpense,
-                              child: _isSaving
+                              icon: _isSaving
                                   ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                      width: 18, height: 18,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                        strokeWidth: 2, color: Colors.white,
                                       ),
                                     )
-                                  : Text(
-                                      widget.existingTransaction == null
-                                          ? 'Simpan Catatan'
-                                          : 'Simpan Perubahan',
-                                    ),
+                                  : const Icon(Icons.check_rounded),
+                              label: Text(
+                                widget.existingTransaction == null
+                                    ? 'Simpan Catatan'
+                                    : 'Simpan Perubahan',
+                              ),
                             ),
                           ),
                         ],
@@ -1143,6 +1123,49 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.emoji,
+    required this.label,
+    required this.color,
+  });
+
+  final String emoji;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+    );
+  }
+}
+
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
     required this.label,
@@ -1156,28 +1179,43 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? Theme.of(context).colorScheme.errorContainer
-              : Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(10),
-          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+              ? theme.colorScheme.errorContainer
+              : theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(12),
+          border: selected
+              ? Border.all(color: theme.colorScheme.error, width: 1.5)
+              : theme.extension<AppThemeExtension>()?.cardBorder,
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: selected
-                ? Theme.of(context).colorScheme.error
-                : Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected
+                    ? theme.colorScheme.error
+                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1192,23 +1230,47 @@ class _AddCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            width: 1.5,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.add_rounded, size: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            isLoading
+                ? SizedBox(
+                    width: 14, height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.primary,
+                    ),
+                  )
+                : Icon(
+                    Icons.add_rounded,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
+            const SizedBox(width: 4),
+            Text(
+              'Tambah',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
