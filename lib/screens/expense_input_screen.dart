@@ -810,57 +810,46 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             color: theme.colorScheme.primary,
                           ),
                           const SizedBox(height: 10),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(
-                                flex: 3,
-                                child: InkWell(
-                                  onTap: _pickDate,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: InputDecorator(
-                                    decoration: const InputDecoration(
-                                      hintText: 'Tanggal',
-                                      prefixIcon: Icon(Icons.calendar_today_rounded),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 14,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
-                                      style: theme.textTheme.bodyMedium,
-                                    ),
+                              InkWell(
+                                onTap: _pickDate,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    hintText: 'Tanggal',
+                                    prefixIcon: Icon(Icons.calendar_today_rounded),
+                                  ),
+                                  child: Text(
+                                    DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
+                                    style: theme.textTheme.bodyMedium,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: InkWell(
-                                  onTap: _pickTime,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: InputDecorator(
-                                    decoration: InputDecoration(
-                                      hintText: 'Jam',
-                                      prefixIcon: const Icon(Icons.access_time_rounded),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 14,
-                                      ),
-                                      suffix: _selectedTime != null
-                                          ? GestureDetector(
-                                              onTap: () => setState(
-                                                () => _selectedTime = null,
-                                              ),
-                                              child: const Icon(
-                                                Icons.close_rounded,
-                                                size: 16,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      _timeLabel(),
-                                      style: theme.textTheme.bodyMedium,
-                                    ),
+                              const SizedBox(height: 10),
+                              InkWell(
+                                onTap: _pickTime,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InputDecorator(
+                                  decoration: InputDecoration(
+                                    hintText: 'Jam',
+                                    prefixIcon: const Icon(Icons.access_time_rounded),
+                                    suffix: _selectedTime != null
+                                        ? GestureDetector(
+                                            onTap: () => setState(
+                                              () => _selectedTime = null,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close_rounded,
+                                              size: 16,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    _timeLabel(),
+                                    style: theme.textTheme.bodyMedium,
                                   ),
                                 ),
                               ),

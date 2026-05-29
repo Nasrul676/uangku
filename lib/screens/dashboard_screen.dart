@@ -1790,7 +1790,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
 
     return SizedBox(
       width: maxWidth,
-      height: 114,
+      height: 100,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
@@ -1798,7 +1798,7 @@ class _ExpandableQuickMenu extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
             width: maxWidth,
-            height: 76,
+            height: 60,
             decoration: BoxDecoration(
               color: Theme.of(context).cardTheme.color ?? Colors.white,
               borderRadius: BorderRadius.circular(999),
@@ -2006,40 +2006,24 @@ class _QuickNavItemState extends State<_QuickNavItem> {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    width: isSelected ? 48 : 40,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primaryContainer
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      size: 20,
-                      color: iconColor,
-                    ),
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  width: isSelected ? 48 : 40,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primaryContainer
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  const SizedBox(height: 4),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: theme.textTheme.labelSmall!.copyWith(
-                      color: iconColor,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                    child: Text(
-                      widget.semanticLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  child: Icon(
+                    widget.icon,
+                    size: 20,
+                    color: iconColor,
                   ),
-                ],
+                ),
               ),
             ),
           ),
