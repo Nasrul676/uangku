@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/transaction_provider.dart';
@@ -317,6 +318,27 @@ class _SettingsContentState extends State<SettingsContent> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
+                'Gaya Huruf',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Pilih jenis huruf yang sesuai dengan seleramu.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              const _FontSelectorRow(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedBouncingCard(
+          isPressedEffect: false,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
                 'Akun yang Sedang Dipakai',
                 style: theme.textTheme.titleMedium,
               ),
@@ -587,6 +609,124 @@ class _ThemeModeSelector extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FontSelectorRow extends StatelessWidget {
+  const _FontSelectorRow();
+
+  String? _getFontFamilyForPreview(String fontId) {
+    switch (fontId) {
+      case 'feeling_cute':
+        return GoogleFonts.fredoka().fontFamily;
+      case 'feeling_childlike':
+        return GoogleFonts.mali().fontFamily;
+      case 'monospace':
+        return GoogleFonts.spaceMono().fontFamily;
+      case 'blobby':
+        return GoogleFonts.sniglet().fontFamily;
+      case 'pixel':
+        return GoogleFonts.vt323().fontFamily;
+      case 'informal':
+        return GoogleFonts.caveat().fontFamily;
+      case 'formal':
+        return GoogleFonts.merriweather().fontFamily;
+      default:
+        return 'PlusJakartaSans';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final currentFont = themeProvider.appFontFamily;
+
+    final options = [
+      {'id': 'default', 'label': 'Bawaan', 'name': 'Plus Jakarta Sans'},
+      {'id': 'feeling_cute', 'label': 'Feeling Cute', 'name': 'Fredoka'},
+      {'id': 'feeling_childlike', 'label': 'Childlike', 'name': 'Mali'},
+      {'id': 'monospace', 'label': 'Monospace', 'name': 'Space Mono'},
+      {'id': 'blobby', 'label': 'Blobby', 'name': 'Sniglet'},
+      {'id': 'pixel', 'label': 'Pixel', 'name': 'VT323'},
+      {'id': 'informal', 'label': 'Informal', 'name': 'Caveat'},
+      {'id': 'formal', 'label': 'Formal', 'name': 'Merriweather'},
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 2.0,
+      ),
+      itemCount: options.length,
+      itemBuilder: (context, index) {
+        final opt = options[index];
+        return _buildFontOption(
+          context,
+          opt['label']!,
+          opt['name']!,
+          opt['id']!,
+          currentFont == opt['id'],
+        );
+      },
+    );
+  }
+
+  Widget _buildFontOption(
+    BuildContext context,
+    String label,
+    String fontName,
+    String fontId,
+    bool isSelected,
+  ) {
+    final theme = Theme.of(context);
+    final themeProvider = context.read<ThemeProvider>();
+
+    return InkWell(
+      onTap: () => themeProvider.setAppFontFamily(fontId),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withOpacity(0.1)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.dividerColor.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Aa',
+              style: TextStyle(
+                fontFamily: _getFontFamilyForPreview(fontId),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? theme.colorScheme.primary : theme.hintColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? theme.colorScheme.primary : theme.hintColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

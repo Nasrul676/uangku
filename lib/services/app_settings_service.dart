@@ -10,6 +10,7 @@ class AppSettingsService {
   static const hideBalanceKey = 'hide_balance';
   static const appThemeKey = 'app_theme';
   static const themeModeKey = 'theme_mode';
+  static const appFontFamilyKey = 'app_font_family';
 
   static const defaultMapping = {
     'id': 'id',
@@ -145,5 +146,15 @@ class AppSettingsService {
   Future<void> saveThemeMode(String mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(themeModeKey, mode);
+  }
+
+  Future<String> getAppFontFamily() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(appFontFamilyKey) ?? 'default';
+  }
+
+  Future<void> saveAppFontFamily(String fontName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(appFontFamilyKey, fontName);
   }
 }

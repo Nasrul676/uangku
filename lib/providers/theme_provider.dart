@@ -9,13 +9,15 @@ class ThemeProvider extends ChangeNotifier {
 
   AppThemeStyle _currentStyle = AppThemeStyle.classic;
   ThemeMode _themeMode = ThemeMode.system;
+  String _appFontFamily = 'default';
 
   AppThemeStyle get currentStyle => _currentStyle;
   ThemeMode get themeMode => _themeMode;
+  String get appFontFamily => _appFontFamily;
 
-  ThemeData get themeData => AppTheme.getThemeData(_currentStyle);
+  ThemeData get themeData => AppTheme.getThemeData(_currentStyle, fontFamily: _appFontFamily);
   ThemeData get darkThemeData =>
-      AppTheme.getThemeData(_currentStyle, brightness: Brightness.dark);
+      AppTheme.getThemeData(_currentStyle, brightness: Brightness.dark, fontFamily: _appFontFamily);
 
   Future<void> init() async {
     final styleString = await _appSettingsService.getAppTheme();
@@ -31,6 +33,8 @@ class ThemeProvider extends ChangeNotifier {
       orElse: () => ThemeMode.system,
     );
 
+    _appFontFamily = await _appSettingsService.getAppFontFamily();
+
     notifyListeners();
   }
 
@@ -44,5 +48,11 @@ class ThemeProvider extends ChangeNotifier {
     _themeMode = mode;
     notifyListeners();
     await _appSettingsService.saveThemeMode(mode.name);
+  }
+
+  Future<void> setAppFontFamily(String fontName) async {
+    _appFontFamily = fontName;
+    notifyListeners();
+    await _appSettingsService.saveAppFontFamily(fontName);
   }
 }

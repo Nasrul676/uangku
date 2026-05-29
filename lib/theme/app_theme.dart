@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum AppThemeStyle { classic, neoBrutalism }
 
@@ -106,24 +107,55 @@ class AppTheme {
   static ThemeData getThemeData(
     AppThemeStyle style, {
     Brightness brightness = Brightness.light,
+    String fontFamily = 'default',
   }) {
     if (style == AppThemeStyle.neoBrutalism) {
-      return _buildNeoBrutalismTheme(brightness);
+      return _buildNeoBrutalismTheme(brightness, fontFamily);
     }
-    return _buildClassicTheme(brightness);
+    return _buildClassicTheme(brightness, fontFamily);
   }
 
-  static ThemeData _buildClassicTheme(Brightness brightness) {
+  static String? _getResolvedFontFamily(String fontChoice) {
+    switch (fontChoice) {
+      case 'feeling_cute':
+        return GoogleFonts.fredoka().fontFamily;
+      case 'feeling_childlike':
+        return GoogleFonts.mali().fontFamily;
+      case 'monospace':
+        return GoogleFonts.spaceMono().fontFamily;
+      case 'blobby':
+        return GoogleFonts.sniglet().fontFamily;
+      case 'pixel':
+        return GoogleFonts.vt323().fontFamily;
+      case 'informal':
+        return GoogleFonts.caveat().fontFamily;
+      case 'formal':
+        return GoogleFonts.merriweather().fontFamily;
+      default:
+        return 'PlusJakartaSans';
+    }
+  }
+
+  static String? _getResolvedDisplayFont(String fontChoice) {
+    if (fontChoice == 'default') {
+      return 'DMSerifDisplay';
+    }
+    return _getResolvedFontFamily(fontChoice);
+  }
+
+  static ThemeData _buildClassicTheme(Brightness brightness, String fontChoice) {
     final isDark = brightness == Brightness.dark;
     final scaffoldBg = isDark ? darkScaffold : lightScaffold;
     final cardBg = isDark ? darkCard : Colors.white;
     final textCol = isDark ? darkText : borderColor;
     final borderCol = isDark ? darkBorder : classicBorder;
+    
+    final resolvedFontFamily = _getResolvedFontFamily(fontChoice);
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'PlusJakartaSans',
+      fontFamily: resolvedFontFamily,
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryBlue,
@@ -145,10 +177,10 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
-          fontFamily: 'DMSerifDisplay',
+          fontFamily: _getResolvedDisplayFont(fontChoice),
           color: textCol,
           fontSize: 22,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0,
         ),
       ),
@@ -186,7 +218,7 @@ class AppTheme {
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
-      textTheme: _textTheme(textCol),
+      textTheme: _textTheme(textCol, fontChoice),
       extensions: [
         AppThemeExtension(
           cardBorder: Border.all(color: borderCol, width: 1.0),
@@ -207,7 +239,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData _buildNeoBrutalismTheme(Brightness brightness) {
+  static ThemeData _buildNeoBrutalismTheme(Brightness brightness, String fontChoice) {
     final isDark = brightness == Brightness.dark;
     final scaffoldBg = isDark ? darkScaffold : neoScaffold;
     final paperCol = isDark ? darkCard : neoPaper;
@@ -225,10 +257,12 @@ class AppTheme {
       onSurface: inkCol,
     );
 
+    final resolvedFontFamily = _getResolvedFontFamily(fontChoice);
+
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'PlusJakartaSans',
+      fontFamily: resolvedFontFamily,
       scaffoldBackgroundColor: scaffoldBg,
       colorScheme: neoColorScheme,
       iconTheme: IconThemeData(color: inkCol, size: 22),
@@ -247,11 +281,10 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
-          fontFamily: 'DMSerifDisplay',
+          fontFamily: _getResolvedDisplayFont(fontChoice),
           color: inkCol,
-          fontSize: 22,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
         ),
         iconTheme: IconThemeData(color: inkCol, size: 22),
       ),
@@ -380,7 +413,7 @@ class AppTheme {
           side: BorderSide(color: inkCol, width: 2),
         ),
       ),
-      textTheme: _textTheme(inkCol),
+      textTheme: _textTheme(inkCol, fontChoice),
       extensions: [
         AppThemeExtension(
           cardBorder: Border.all(color: inkCol, width: 2),
@@ -395,102 +428,105 @@ class AppTheme {
     );
   }
 
-  static TextTheme _textTheme(Color textColor) {
+  static TextTheme _textTheme(Color textColor, String fontChoice) {
+    final resolvedFontFamily = _getResolvedFontFamily(fontChoice);
+    final resolvedDisplayFont = _getResolvedDisplayFont(fontChoice);
+
     return const TextTheme().copyWith(
       displayLarge: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 57,
         color: textColor,
         fontWeight: FontWeight.w400,
         letterSpacing: -0.25,
       ),
       displayMedium: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 45,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       displaySmall: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 36,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       headlineLarge: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 34,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       headlineMedium: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 28,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       headlineSmall: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 24,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       titleLarge: TextStyle(
-        fontFamily: 'DMSerifDisplay',
+        fontFamily: resolvedDisplayFont,
         fontSize: 22,
         color: textColor,
         fontWeight: FontWeight.w400,
       ),
       titleMedium: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 18,
         color: textColor,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.15,
       ),
       titleSmall: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 14,
         color: textColor,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
       ),
       bodyLarge: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 16,
         color: textColor,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.5,
       ),
       bodyMedium: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 14,
         color: textColor,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.25,
       ),
       bodySmall: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 12,
         color: textColor.withOpacity(0.7),
         fontWeight: FontWeight.w400,
         letterSpacing: 0.4,
       ),
       labelLarge: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 14,
         color: textColor,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
       ),
       labelMedium: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 12,
         color: textColor,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
       ),
       labelSmall: TextStyle(
-        fontFamily: 'PlusJakartaSans',
+        fontFamily: resolvedFontFamily,
         fontSize: 11,
         color: textColor.withOpacity(0.7),
         fontWeight: FontWeight.w500,

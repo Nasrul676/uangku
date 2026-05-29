@@ -156,11 +156,11 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                           Text(
                             widget.message,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'PlusJakartaSans',
+                            style: TextStyle(
+                              fontFamily: Theme.of(context).textTheme.titleMedium?.fontFamily ?? 'PlusJakartaSans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF111111),
+                              color: const Color(0xFF111111),
                             ),
                           ),
                         ],
