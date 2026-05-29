@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/swipe_button.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
@@ -15,27 +16,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _authService = AuthService();
   bool _isCheckingRoute = false;
 
-  Future<void> _startApp() async {
-    if (_isCheckingRoute) return;
+  Future<bool> _startApp() async {
+    if (_isCheckingRoute) return false;
     setState(() => _isCheckingRoute = true);
 
     final shouldSkipAuth = await _authService.shouldSkipAuth();
-    if (!mounted) return;
+    if (!mounted) return false;
 
     if (shouldSkipAuth) {
       final userName = await _authService.getCurrentUserName();
-      if (!mounted) return;
+      if (!mounted) return false;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => DashboardScreen(userName: userName)),
       );
-      return;
+      return true;
     }
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
+    return true;
   }
 
   @override
@@ -114,37 +116,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: FilledButton(
-                    onPressed: _isCheckingRoute ? null : _startApp,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: isDark ? theme.colorScheme.primary : const Color(0xFF1E1E1E),
-                      foregroundColor: isDark ? theme.colorScheme.onPrimary : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 8,
-                      shadowColor: const Color(0xFF1E1E1E).withOpacity(isDark ? 0.0 : 0.3),
-                    ),
-                    child: _isCheckingRoute
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Yuk Mulai Sekarang!',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
+                SwipeButton(
+                  label: 'Swipe untuk melanjutkan',
+                  onSwipeComplete: _startApp,
+                  isLoading: _isCheckingRoute,
+                  isDark: isDark,
                 ),
               ],
             ),

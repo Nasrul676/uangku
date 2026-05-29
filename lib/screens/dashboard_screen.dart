@@ -13,7 +13,9 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_transitions.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../widgets/animated_bell_icon.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/entrance_animation.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/success_overlay.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -1138,15 +1140,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                _CircleIconButton(
-                                  icon: Icons.notifications_none_rounded,
-                                  onTap: () {
-                                    _showNotificationsBottomSheet(
-                                      context,
-                                      provider,
-                                      theme,
-                                    );
-                                  },
+                                AnimatedBellIcon(
+                                  animate:
+                                      provider.unreadNotificationCount > 0,
+                                  child: _CircleIconButton(
+                                    icon: Icons.notifications_none_rounded,
+                                    onTap: () {
+                                      _showNotificationsBottomSheet(
+                                        context,
+                                        provider,
+                                        theme,
+                                      );
+                                    },
+                                  ),
                                 ),
                                 if (provider.unreadNotificationCount > 0)
                                   Positioned(
@@ -1342,71 +1348,96 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           child: Column(
             children: [
-              _BalanceCard(
-                theme: theme,
-                totalIncome: totalIncome,
-                totalExpense: totalExpense,
-                netBalance: netBalance,
-                isBalanceHidden: provider.isBalanceHidden,
-                onToggleBalanceVisibility: () {
-                  provider.setBalanceHidden(!provider.isBalanceHidden);
-                },
-                onAddIncome: onAddIncome,
-                onAddExpense: onAddExpense,
+              // Balance card — flip entrance
+              EntranceAnimation(
+                type: EntranceType.flipX,
+                delay: const Duration(milliseconds: 100),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOutBack,
+                child: _BalanceCard(
+                  theme: theme,
+                  totalIncome: totalIncome,
+                  totalExpense: totalExpense,
+                  netBalance: netBalance,
+                  isBalanceHidden: provider.isBalanceHidden,
+                  onToggleBalanceVisibility: () {
+                    provider.setBalanceHidden(!provider.isBalanceHidden);
+                  },
+                  onAddIncome: onAddIncome,
+                  onAddExpense: onAddExpense,
+                ),
               ),
               const SizedBox(height: 10),
-              _DashboardPocketSection(provider: provider),
-              const SizedBox(height: 10),
-              _GraphCard(
-                theme: theme,
-                transactions: chartTransactions,
-                selectedType: _chartFilter,
-                selectedRangeDays: _chartRangeDays,
-                selectedDetail: _selectedChartDetail,
-                onSelectType: (type) => setState(() {
-                  _chartFilter = type;
-                  _selectedChartDetail = null;
-                }),
-                onSelectRangeDays: (days) => setState(() {
-                  _chartRangeDays = days;
-                  _selectedChartDetail = null;
-                }),
-                onBarTap: (detail) => setState(() {
-                  final isSame =
-                      _selectedChartDetail?.dayLabel == detail.dayLabel &&
-                      _selectedChartDetail?.amount == detail.amount;
-                  _selectedChartDetail = isSame ? null : detail;
-                }),
+              // Pockets — slide from right
+              EntranceAnimation(
+                type: EntranceType.slideRight,
+                delay: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 700),
+                child: _DashboardPocketSection(provider: provider),
               ),
               const SizedBox(height: 10),
-              _RecentSection(
-                theme: theme,
-                transactions: filteredRecent,
-                isLoading: provider.isLoading,
-                headerBottom: Row(
-                  children: [
-                    _FilterButton(
-                      label: 'Pemasukan',
-                      selected: _recentFilter == 'INCOME',
-                      onTap: () => setState(() {
-                        _recentFilter = _recentFilter == 'INCOME'
-                            ? 'ALL'
-                            : 'INCOME';
-                      }),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterButton(
-                      label: 'Pengeluaran',
-                      selected: _recentFilter == 'EXPENSE',
-                      textColor: const Color(0xFFC24545),
-                      selectedColor: const Color(0xFFF0C8C8),
-                      onTap: () => setState(() {
-                        _recentFilter = _recentFilter == 'EXPENSE'
-                            ? 'ALL'
-                            : 'EXPENSE';
-                      }),
-                    ),
-                  ],
+              // Chart — slide from bottom
+              EntranceAnimation(
+                type: EntranceType.slideUp,
+                delay: const Duration(milliseconds: 500),
+                duration: const Duration(milliseconds: 700),
+                child: _GraphCard(
+                  theme: theme,
+                  transactions: chartTransactions,
+                  selectedType: _chartFilter,
+                  selectedRangeDays: _chartRangeDays,
+                  selectedDetail: _selectedChartDetail,
+                  onSelectType: (type) => setState(() {
+                    _chartFilter = type;
+                    _selectedChartDetail = null;
+                  }),
+                  onSelectRangeDays: (days) => setState(() {
+                    _chartRangeDays = days;
+                    _selectedChartDetail = null;
+                  }),
+                  onBarTap: (detail) => setState(() {
+                    final isSame =
+                        _selectedChartDetail?.dayLabel == detail.dayLabel &&
+                        _selectedChartDetail?.amount == detail.amount;
+                    _selectedChartDetail = isSame ? null : detail;
+                  }),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Recent transactions — fade scale
+              EntranceAnimation(
+                type: EntranceType.fadeScale,
+                delay: const Duration(milliseconds: 700),
+                duration: const Duration(milliseconds: 600),
+                child: _RecentSection(
+                  theme: theme,
+                  transactions: filteredRecent,
+                  isLoading: provider.isLoading,
+                  headerBottom: Row(
+                    children: [
+                      _FilterButton(
+                        label: 'Pemasukan',
+                        selected: _recentFilter == 'INCOME',
+                        onTap: () => setState(() {
+                          _recentFilter = _recentFilter == 'INCOME'
+                              ? 'ALL'
+                              : 'INCOME';
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterButton(
+                        label: 'Pengeluaran',
+                        selected: _recentFilter == 'EXPENSE',
+                        textColor: const Color(0xFFC24545),
+                        selectedColor: const Color(0xFFF0C8C8),
+                        onTap: () => setState(() {
+                          _recentFilter = _recentFilter == 'EXPENSE'
+                              ? 'ALL'
+                              : 'EXPENSE';
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(

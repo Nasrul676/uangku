@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
 import '../widgets/success_overlay.dart';
+import '../widgets/swipe_button.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -492,9 +493,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     }
   }
 
-  Future<void> _saveExpense() async {
-    if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
+  Future<bool> _saveExpense() async {
+    if (_isSaving) return false;
+    if (!_formKey.currentState!.validate()) return false;
 
     final provider = context.read<TransactionProvider>();
     final minDate = _minimumExpenseDate(provider);
@@ -508,7 +509,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
           ),
         ),
       );
-      return;
+      return false;
     }
 
     final qtyText = _qtyController.text.trim();
@@ -519,7 +520,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Jumlahnya belum valid.')));
-      return;
+      return false;
     }
 
     final detailParts = <String>[];
@@ -576,14 +577,14 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
             .timeout(const Duration(seconds: 10));
       }
 
-      if (!mounted) return;
+      if (!mounted) return false;
       final messenger = ScaffoldMessenger.of(context);
       await SuccessOverlay.show(
         context,
         message: isEdit ? 'Pengeluaran diperbarui!' : 'Pengeluaran disimpan!',
         color: AppTheme.expenseRed,
       );
-      if (!mounted) return;
+      if (!mounted) return true;
       Navigator.pop(context);
       messenger.showSnackBar(
         SnackBar(
@@ -594,13 +595,15 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
           ),
         ),
       );
+      return true;
     } on TimeoutException {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Proses simpan agak lama. Coba lagi ya.')),
       );
+      return false;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       final message = e.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -611,6 +614,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
           ),
         ),
       );
+      return false;
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -905,25 +909,13 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                           ),
                           // ── Save Button ──────────────────────────────────
                           const SizedBox(height: 20),
-                          SizedBox(
-                            height: 52,
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: _isSaving ? null : _saveExpense,
-                              icon: _isSaving
-                                  ? const SizedBox(
-                                      width: 18, height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.check_rounded),
-                              label: Text(
-                                widget.existingTransaction == null
-                                    ? 'Simpan Catatan'
-                                    : 'Simpan Perubahan',
-                              ),
-                            ),
+                          SwipeButton(
+                            label: widget.existingTransaction == null
+                                ? 'Swipe untuk simpan'
+                                : 'Swipe untuk update',
+                            onSwipeComplete: _saveExpense,
+                            isLoading: _isSaving,
+                            isDark: Theme.of(context).brightness == Brightness.dark,
                           ),
                         ],
                       ),

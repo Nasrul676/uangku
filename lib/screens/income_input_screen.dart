@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
 import '../widgets/success_overlay.dart';
+import '../widgets/swipe_button.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -135,9 +136,9 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     ).formatTimeOfDay(selected, alwaysUse24HourFormat: true);
   }
 
-  Future<void> _saveIncome() async {
-    if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
+  Future<bool> _saveIncome() async {
+    if (_isSaving) return false;
+    if (!_formKey.currentState!.validate()) return false;
 
     final provider = context.read<TransactionProvider>();
     final minDate = _minimumIncomeDate(provider);
@@ -151,7 +152,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
           ),
         ),
       );
-      return;
+      return false;
     }
 
     final isEdit = widget.existingTransaction != null;
@@ -190,14 +191,14 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
             .timeout(const Duration(seconds: 10));
       }
 
-      if (!mounted) return;
+      if (!mounted) return false;
       final messenger = ScaffoldMessenger.of(context);
       await SuccessOverlay.show(
         context,
         message: isEdit ? 'Pemasukan diperbarui!' : 'Pemasukan disimpan!',
         color: AppTheme.incomeGreen,
       );
-      if (!mounted) return;
+      if (!mounted) return true;
       Navigator.pop(context);
       messenger.showSnackBar(
         SnackBar(
@@ -208,13 +209,15 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
           ),
         ),
       );
+      return true;
     } on TimeoutException {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Proses simpan agak lama. Coba lagi ya.')),
       );
+      return false;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       final message = e.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -225,6 +228,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
           ),
         ),
       );
+      return false;
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -479,24 +483,13 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             ],
                           ),
                           const SizedBox(height: 14),
-                          SizedBox(
-                            height: 52,
-                            child: FilledButton(
-                              onPressed: _isSaving ? null : _saveIncome,
-                              child: _isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      widget.existingTransaction == null
-                                          ? 'Simpan Catatan'
-                                          : 'Simpan Perubahan',
-                                    ),
-                            ),
+                          SwipeButton(
+                            label: widget.existingTransaction == null
+                                ? 'Swipe untuk simpan'
+                                : 'Swipe untuk update',
+                            onSwipeComplete: _saveIncome,
+                            isLoading: _isSaving,
+                            isDark: Theme.of(context).brightness == Brightness.dark,
                           ),
                         ],
                       ),
