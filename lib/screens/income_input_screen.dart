@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -264,7 +264,6 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
                   hintText: 'Contoh: Jualan Online',
-                  prefixIcon: Icon(Icons.add_rounded),
                 ),
                 onChanged: (value) => inputValue = value,
                 onSubmitted: submit,
@@ -391,7 +390,6 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 hintText: 'Tanggal',
-                                prefixIcon: Icon(Icons.calendar_today_rounded),
                               ),
                               child: Row(
                                 children: [
@@ -415,7 +413,6 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 hintText: 'Jam',
-                                prefixIcon: Icon(Icons.access_time_rounded),
                               ),
                               child: Row(
                                 children: [
@@ -446,7 +443,6 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             inputFormatters: [RupiahInputFormatter()],
                             decoration: const InputDecoration(
                               hintText: 'Nominal',
-                              prefixIcon: Icon(Icons.payments_rounded),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -465,22 +461,27 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             style: theme.textTheme.titleMedium,
                           ),
                           const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              ...categories.map(
-                                (item) => _CategoryChip(
-                                  label: item,
-                                  selected: _category == item,
-                                  onTap: () => setState(() => _category = item),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                ...categories.map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: _CategoryChip(
+                                      label: item,
+                                      selected: _category == item,
+                                      onTap: () => setState(() => _category = item),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              _AddCategoryChip(
-                                onTap: _openAddCategoryDialog,
-                                isLoading: _isAddingCategory,
-                              ),
-                            ],
+                                _AddCategoryChip(
+                                  onTap: _openAddCategoryDialog,
+                                  isLoading: _isAddingCategory,
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 14),
                           SwipeButton(

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shopping_provider.dart';
@@ -196,7 +196,6 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
                   hintText: 'Contoh: Belanja Dapur',
-                  prefixIcon: Icon(Icons.add_rounded),
                 ),
                 onChanged: (value) => inputValue = value,
                 onSubmitted: submit,

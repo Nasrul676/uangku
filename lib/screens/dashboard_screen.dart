@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -99,11 +99,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_isSavingFinancialPlan) return;
 
     final provider = context.read<TransactionProvider>();
-    final openBooks = provider.bookPeriods
-        .where((b) => b.isOpen)
-        .toList(growable: false);
+    final targetBooks = provider.bookPeriods.toList(growable: false);
 
-    if (openBooks.isEmpty) {
+    if (targetBooks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -118,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
 
     final draft = await _openFinancialPlanInputDialog(
-      openBooks: openBooks,
+      targetBooks: targetBooks,
       defaultBookId: defaultBookId,
     );
     if (draft == null) return;
@@ -132,6 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             targetAmount: draft.targetAmount,
             targetDate: draft.targetDate,
             bookPeriodId: draft.targetBookId,
+            category: draft.category,
           )
           .timeout(const Duration(seconds: 12));
       if (!mounted) return;
@@ -160,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<_FinancialPlanDraft?> _openFinancialPlanInputDialog({
     String title = 'Rencana Keuangan Baru',
     String actionLabel = 'Simpan',
-    required List<BookPeriod> openBooks,
+    required List<BookPeriod> targetBooks,
     int? defaultBookId,
     FinancialPlan? initialPlan,
   }) async {
@@ -170,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return _FinancialPlanInputDialog(
           title: title,
           actionLabel: actionLabel,
-          openBooks: openBooks,
+          targetBooks: targetBooks,
           defaultBookId: defaultBookId,
           parsePlanAmount: _parsePlanAmount,
           initialPlan: initialPlan,
@@ -183,13 +182,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_isSavingFinancialPlan) return;
 
     final provider = context.read<TransactionProvider>();
-    final openBooks = provider.bookPeriods
-        .where((b) => b.isOpen)
-        .toList(growable: false);
+    final targetBooks = provider.bookPeriods.toList(growable: false);
 
-    if (openBooks.isEmpty) {
+    if (targetBooks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada buku yang terbuka.')),
+        const SnackBar(content: Text('Belum ada buku yang tersedia.')),
       );
       return;
     }
@@ -197,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final draft = await _openFinancialPlanInputDialog(
       title: 'Edit Rencana Keuangan',
       actionLabel: 'Update',
-      openBooks: openBooks,
+      targetBooks: targetBooks,
       defaultBookId: plan.bookPeriodId,
       initialPlan: plan,
     );
@@ -213,6 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             targetAmount: draft.targetAmount,
             targetDate: draft.targetDate,
             bookPeriodId: draft.targetBookId,
+            category: draft.category,
           )
           .timeout(const Duration(seconds: 12));
 
@@ -236,6 +234,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _removeFinancialPlan(int id) async {
+    final shouldDelete = await showZoomDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: const Text('Apakah kamu yakin ingin menghapus rencana keuangan ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Tidak'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFF0C8C8),
+                foregroundColor: const Color(0xFFC24545),
+              ),
+              child: const Text('Ya, Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
     try {
       await context.read<TransactionProvider>().removeFinancialPlan(id);
     } catch (e) {
@@ -243,6 +267,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
+    }
+  }
+
+  Future<void> _openEditPlanBudgetDialog(int bookPeriodId, double currentBudget) async {
+    final controller = TextEditingController(
+      text: currentBudget > 0 ? NumberFormat.decimalPattern('id_ID').format(currentBudget) : '',
+    );
+    final result = await showZoomDialog<double>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Budget Rencana'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            inputFormatters: [RupiahInputFormatter()],
+            decoration: const InputDecoration(
+              hintText: 'Misal: 7000000',
+              prefixText: 'Rp ',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final val = RupiahInputFormatter.parse(controller.text);
+                Navigator.pop(context, val);
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      try {
+        await context.read<TransactionProvider>().updateBookPlanBudget(bookPeriodId, result);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
     }
   }
 
@@ -515,7 +586,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onSubmitted: (_) => submit(),
                       decoration: const InputDecoration(
                         hintText: 'Password akun',
-                        prefixIcon: Icon(Icons.lock_rounded),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -525,7 +595,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onSubmitted: (_) => submit(),
                       decoration: const InputDecoration(
                         hintText: 'Ketik HAPUS untuk konfirmasi',
-                        prefixIcon: Icon(Icons.warning_amber_rounded),
                       ),
                     ),
                     if (validationMessage != null) ...[
@@ -1507,9 +1576,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isLoading: provider.isLoading,
                   realizationByPlan: realizationByPlan,
                   isSaving: _isSavingFinancialPlan,
+                  planBudget: provider.bookPeriods.firstWhere((b) => b.id == (provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id), orElse: () => const BookPeriod(label: '', startDate: '', planBudget: 0.0)).planBudget,
                   onAddPlan: _openAddFinancialPlanDialog,
                   onEditPlan: _openEditFinancialPlanDialog,
                   onDeletePlan: _removeFinancialPlan,
+                  onEditBudget: () {
+                    final bookId = provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
+                    if (bookId != null) {
+                      final current = provider.bookPeriods.firstWhere((b) => b.id == bookId, orElse: () => const BookPeriod(label: '', startDate: '', planBudget: 0.0)).planBudget;
+                      _openEditPlanBudgetDialog(bookId, current);
+                    }
+                  },
                 ),
                 const BookPeriodRecapScreen(isEmbedded: true),
               ],
@@ -2548,9 +2625,11 @@ class _FinancialPlanCard extends StatelessWidget {
     required this.isLoading,
     required this.realizationByPlan,
     required this.isSaving,
+    required this.planBudget,
     required this.onAddPlan,
     required this.onEditPlan,
     required this.onDeletePlan,
+    required this.onEditBudget,
   });
 
   final ThemeData theme;
@@ -2558,9 +2637,11 @@ class _FinancialPlanCard extends StatelessWidget {
   final bool isLoading;
   final Map<int, double> realizationByPlan;
   final bool isSaving;
+  final double planBudget;
   final Future<void> Function() onAddPlan;
   final Future<void> Function(FinancialPlan plan) onEditPlan;
   final Future<void> Function(int id) onDeletePlan;
+  final VoidCallback onEditBudget;
 
   @override
   Widget build(BuildContext context) {
@@ -2617,38 +2698,42 @@ class _FinancialPlanCard extends StatelessWidget {
                     theme: theme,
                     plans: plans,
                     realizationByPlan: realizationByPlan,
+                    planBudget: planBudget,
+                    onEditBudget: onEditBudget,
                   ),
                   const SizedBox(height: 12),
-                  addButton,
-                  const SizedBox(height: 12),
                   Expanded(
-                    child: ListView.separated(
+                    child: ListView(
                       padding: const EdgeInsets.only(bottom: 100),
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
-                      itemCount: plans.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final plan = plans[index];
-                        final planId = plan.id;
-                        if (planId == null) {
-                          return const SizedBox.shrink();
-                        }
-                        final realized = realizationByPlan[planId] ?? 0;
-                        final progress = plan.targetAmount <= 0
-                            ? 0.0
-                            : (realized / plan.targetAmount)
-                                  .clamp(0.0, 1.0)
-                                  .toDouble();
-                        return _FinancialPlanTile(
-                          plan: plan,
-                          progress: progress,
-                          realizationAmount: realized,
-                          onEdit: () => onEditPlan(plan),
-                          onDelete: () => onDeletePlan(planId),
-                        );
-                      },
+                      children: [
+                        addButton,
+                        const SizedBox(height: 12),
+                        ...plans.map((plan) {
+                          final planId = plan.id;
+                          if (planId == null) {
+                            return const SizedBox.shrink();
+                          }
+                          final realized = realizationByPlan[planId] ?? 0;
+                          final progress = plan.targetAmount <= 0
+                              ? 0.0
+                              : (realized / plan.targetAmount)
+                                    .clamp(0.0, 1.0)
+                                    .toDouble();
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: _FinancialPlanTile(
+                              plan: plan,
+                              progress: progress,
+                              realizationAmount: realized,
+                              onEdit: () => onEditPlan(plan),
+                              onDelete: () => onDeletePlan(planId),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
                   ),
                 ],
@@ -2665,11 +2750,15 @@ class _FinancialPlanSummaryCard extends StatelessWidget {
     required this.theme,
     required this.plans,
     required this.realizationByPlan,
+    required this.planBudget,
+    required this.onEditBudget,
   });
 
   final ThemeData theme;
   final List<FinancialPlan> plans;
   final Map<int, double> realizationByPlan;
+  final double planBudget;
+  final VoidCallback onEditBudget;
 
   @override
   Widget build(BuildContext context) {
@@ -2718,13 +2807,26 @@ class _FinancialPlanSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Total Rencana Keuangan',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Ringkasan Rencana Keuangan',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: onEditBudget,
+                      borderRadius: BorderRadius.circular(4),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: Icon(Icons.edit_outlined, size: 16),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -2732,8 +2834,27 @@ class _FinancialPlanSummaryCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
+                          'Budget: ${formatter.format(planBudget)}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        Text(
                           'Target: ${formatter.format(totalTarget)}',
                           style: theme.textTheme.bodySmall,
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Selisih: ',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            Text(
+                              formatter.format(planBudget - totalTarget),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: (planBudget - totalTarget) < 0 ? const Color(0xFFC24545) : null,
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           'Realisasi: ${formatter.format(totalRealization)}',
@@ -2749,6 +2870,7 @@ class _FinancialPlanSummaryCard extends StatelessWidget {
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.primary,
+                            fontSize: 18,
                           ),
                         ),
                       ],
@@ -2831,7 +2953,12 @@ class _FinancialPlanTile extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
-                Text('$amountText • Target $dateText'),
+                Text(
+                  plan.category != null
+                      ? '${plan.category} • Target $dateText • $amountText'
+                      : 'Target $dateText • $amountText',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
@@ -3626,18 +3753,20 @@ class _FinancialPlanDraft {
     required this.targetAmount,
     required this.targetDate,
     required this.targetBookId,
+    this.category,
   });
 
   final String title;
   final double targetAmount;
   final DateTime targetDate;
   final int targetBookId;
+  final String? category;
 }
 
 class _FinancialPlanInputDialog extends StatefulWidget {
   const _FinancialPlanInputDialog({
     required this.title,
-    required this.openBooks,
+    required this.targetBooks,
     required this.defaultBookId,
     required this.parsePlanAmount,
     this.actionLabel = 'Simpan',
@@ -3646,7 +3775,7 @@ class _FinancialPlanInputDialog extends StatefulWidget {
 
   final String title;
   final String actionLabel;
-  final List<BookPeriod> openBooks;
+  final List<BookPeriod> targetBooks;
   final int? defaultBookId;
   final double? Function(String input) parsePlanAmount;
   final FinancialPlan? initialPlan;
@@ -3663,6 +3792,7 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
   int? _selectedBookId;
   DateTime? _minTargetDate;
   String? _validationMessage;
+  String? _selectedCategory;
 
   @override
   void initState() {
@@ -3670,6 +3800,12 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
     _titleController = TextEditingController(
       text: widget.initialPlan?.title ?? '',
     );
+    
+    final provider = context.read<TransactionProvider>();
+    final initialCat = widget.initialPlan?.category;
+    if (initialCat != null && provider.expenseCategories.contains(initialCat)) {
+      _selectedCategory = initialCat;
+    }
 
     final initialAmount = widget.initialPlan?.targetAmount;
     _amountController = TextEditingController(
@@ -3685,10 +3821,10 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
     final defaultBookIdCandidate =
         widget.initialPlan?.bookPeriodId ?? widget.defaultBookId;
     if (defaultBookIdCandidate != null &&
-        widget.openBooks.any((b) => b.id == defaultBookIdCandidate)) {
+        widget.targetBooks.any((b) => b.id == defaultBookIdCandidate)) {
       _selectedBookId = defaultBookIdCandidate;
     } else {
-      _selectedBookId = widget.openBooks.first.id;
+      _selectedBookId = widget.targetBooks.first.id;
     }
 
     _updateMinTargetDate();
@@ -3707,9 +3843,9 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
   }
 
   void _updateMinTargetDate() {
-    final book = widget.openBooks.firstWhere(
+    final book = widget.targetBooks.firstWhere(
       (b) => b.id == _selectedBookId,
-      orElse: () => widget.openBooks.first,
+      orElse: () => widget.targetBooks.first,
     );
     _minTargetDate = DateTime.tryParse(book.startDate);
   }
@@ -3773,6 +3909,7 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
         targetAmount: amount,
         targetDate: _selectedDate,
         targetBookId: _selectedBookId!,
+        category: _selectedCategory,
       ),
     );
   }
@@ -3785,17 +3922,16 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.openBooks.length > 1)
+            if (widget.targetBooks.length > 1)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: DropdownButtonFormField<int>(
                   initialValue: _selectedBookId,
                   style: Theme.of(context).textTheme.bodyLarge,
                   decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.book_rounded),
                     hintText: 'Pilih Buku Target',
                   ),
-                  items: widget.openBooks.map((book) {
+                  items: widget.targetBooks.map((book) {
                     return DropdownMenuItem(
                       value: book.id,
                       child: Text(book.label),
@@ -3816,7 +3952,6 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
               controller: _titleController,
               decoration: const InputDecoration(
                 hintText: 'Judul rencana',
-                prefixIcon: Icon(Icons.flag_rounded),
               ),
               onChanged: (_) {
                 if (_validationMessage == null) return;
@@ -3830,7 +3965,6 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
               inputFormatters: [RupiahInputFormatter()],
               decoration: const InputDecoration(
                 hintText: 'Target nominal',
-                prefixIcon: Icon(Icons.payments_rounded),
               ),
               onChanged: (_) {
                 if (_validationMessage == null) return;
@@ -3844,7 +3978,6 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
               child: InputDecorator(
                 decoration: const InputDecoration(
                   hintText: 'Target tanggal',
-                  prefixIcon: Icon(Icons.calendar_month_rounded),
                 ),
                 child: Row(
                   children: [
@@ -3860,6 +3993,28 @@ class _FinancialPlanInputDialogState extends State<_FinancialPlanInputDialog> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: const InputDecoration(
+                hintText: 'Kategori Pengeluaran (Opsional)',
+              ),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('Tanpa Kategori'),
+                ),
+                ...context.read<TransactionProvider>().expenseCategories.map(
+                  (cat) => DropdownMenuItem(
+                    value: cat,
+                    child: Text(cat),
+                  ),
+                ),
+              ],
+              onChanged: (val) {
+                setState(() => _selectedCategory = val);
+              },
             ),
             if (_validationMessage != null) ...[
               const SizedBox(height: 10),

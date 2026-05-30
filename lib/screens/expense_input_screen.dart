@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -197,7 +197,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       },
                       decoration: const InputDecoration(
                         hintText: 'Cari rencana yang diinginkan...',
-                        prefixIcon: Icon(Icons.search_rounded),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -254,6 +253,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     String? autofillAmount;
     String? autofillTitle;
+    String? autofillCategory;
     DateTime? autofillDate;
     if (selected != null) {
       for (final plan in plans) {
@@ -265,6 +265,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
             'id_ID',
           ).format(normalizedAmount);
           autofillTitle = plan.title;
+          autofillCategory = plan.category;
 
           final parsedTargetDate = DateTime.tryParse(plan.targetDate);
           if (parsedTargetDate != null) {
@@ -298,6 +299,11 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
           text: titleText,
           selection: TextSelection.collapsed(offset: titleText.length),
         );
+      }
+
+      final categoryText = autofillCategory?.trim();
+      if (categoryText != null && categoryText.isNotEmpty) {
+        _category = categoryText;
       }
 
       final pickedDate = autofillDate;
@@ -416,7 +422,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
                   hintText: 'Contoh: Belanja Dapur',
-                  prefixIcon: Icon(Icons.add_rounded),
                 ),
                 onChanged: (value) => inputValue = value,
                 onSubmitted: submit,
@@ -685,29 +690,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       ),
                     ),
                   ),
-                  _CircleButton(
-                    icon: Icons.shopping_cart_outlined,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ShoppingListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _CircleButton(
-                    icon: Icons.settings_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsScreen(),
-                        ),
-                      );
-                    },
-                  ),
                   const SizedBox(width: 8),
                   _CircleButton(
                     icon: Icons.close_rounded,
@@ -724,10 +706,57 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       key: _formKey,
                       child: ListView(
                         children: [
-                          // ── Section 1: Nominal & Judul ──────────────────
+                          // ── Section 1: Kategori & Label ─────────────────
                           _SectionHeader(
-                            emoji: '💸',
-                            label: 'Berapa yang dikeluarkan?',
+                            emoji: '🏷️',
+                            label: 'Kategori & Label',
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 10),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                ...categories.map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: _CategoryChip(
+                                      label: item,
+                                      selected: _category == item,
+                                      onTap: () => setState(() => _category = item),
+                                    ),
+                                  ),
+                                ),
+                                _AddCategoryChip(
+                                  onTap: _openAddCategoryDialog,
+                                  isLoading: _isAddingCategory,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _FinancialPlanSelectorField(
+                            plans: financialPlans,
+                            selectedPlanId: _selectedFinancialPlanId,
+                            onTap: () =>
+                                _openFinancialPlanPicker(financialPlans),
+                            selectedText: selectedPlanText,
+                          ),
+                          const SizedBox(height: 10),
+                          _PocketSelectorField(
+                            selectedPocketId: _selectedPocketId,
+                            onTap: () => _openPocketPicker(pockets),
+                            selectedText: selectedPocketText,
+                          ),
+                          
+                          // ── Section 2: Nominal & Judul ──────────────────
+                          const SizedBox(height: 16),
+                          const _SectionDivider(),
+                          const SizedBox(height: 12),
+                          _SectionHeader(
+                            emoji: '📝',
+                            label: 'Detail Pengeluaran',
                             color: theme.colorScheme.error,
                           ),
                           const SizedBox(height: 10),
@@ -737,7 +766,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             inputFormatters: [RupiahInputFormatter()],
                             decoration: InputDecoration(
                               hintText: 'Nominal pengeluaran',
-                              prefixIcon: const Icon(Icons.payments_rounded),
                               suffix: _amountValue > 0
                                   ? Text(
                                       _currencyFormatter.format(_amountValue),
@@ -763,7 +791,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             controller: _titleController,
                             decoration: const InputDecoration(
                               hintText: 'Catatan / judul pengeluaran',
-                              prefixIcon: Icon(Icons.edit_note_rounded),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -784,7 +811,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                   ],
                                   decoration: const InputDecoration(
                                     hintText: 'Jml (ops.)',
-                                    prefixIcon: Icon(Icons.numbers_rounded),
                                   ),
                                 ),
                               ),
@@ -794,13 +820,13 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                   controller: _unitController,
                                   decoration: const InputDecoration(
                                     hintText: 'Satuan (ops.)',
-                                    prefixIcon: Icon(Icons.straighten_rounded),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          // ── Section 2: Waktu ────────────────────────────
+                          
+                          // ── Section 3: Waktu ────────────────────────────
                           const SizedBox(height: 16),
                           const _SectionDivider(),
                           const SizedBox(height: 12),
@@ -819,7 +845,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 child: InputDecorator(
                                   decoration: const InputDecoration(
                                     hintText: 'Tanggal',
-                                    prefixIcon: Icon(Icons.calendar_today_rounded),
                                   ),
                                   child: Text(
                                     DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
@@ -834,7 +859,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 child: InputDecorator(
                                   decoration: InputDecoration(
                                     hintText: 'Jam',
-                                    prefixIcon: const Icon(Icons.access_time_rounded),
                                     suffix: _selectedTime != null
                                         ? GestureDetector(
                                             onTap: () => setState(
@@ -854,47 +878,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                          // ── Section 3: Kategori & Label ─────────────────
-                          const SizedBox(height: 16),
-                          const _SectionDivider(),
-                          const SizedBox(height: 12),
-                          _SectionHeader(
-                            emoji: '🏷️',
-                            label: 'Kategori & Label',
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              ...categories.map(
-                                (item) => _CategoryChip(
-                                  label: item,
-                                  selected: _category == item,
-                                  onTap: () => setState(() => _category = item),
-                                ),
-                              ),
-                              _AddCategoryChip(
-                                onTap: _openAddCategoryDialog,
-                                isLoading: _isAddingCategory,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _FinancialPlanSelectorField(
-                            plans: financialPlans,
-                            selectedPlanId: _selectedFinancialPlanId,
-                            onTap: () =>
-                                _openFinancialPlanPicker(financialPlans),
-                            selectedText: selectedPlanText,
-                          ),
-                          const SizedBox(height: 10),
-                          _PocketSelectorField(
-                            selectedPocketId: _selectedPocketId,
-                            onTap: () => _openPocketPicker(pockets),
-                            selectedText: selectedPocketText,
                           ),
                           // ── Save Button ──────────────────────────────────
                           const SizedBox(height: 20),
@@ -1183,7 +1166,7 @@ class _CategoryChip extends StatelessWidget {
               Icon(
                 Icons.check_rounded,
                 size: 14,
-                color: theme.colorScheme.error,
+                color: theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.error,
               ),
               const SizedBox(width: 4),
             ],
@@ -1192,7 +1175,7 @@ class _CategoryChip extends StatelessWidget {
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
-                    ? theme.colorScheme.error
+                    ? (theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.error)
                     : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),

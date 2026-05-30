@@ -5,6 +5,7 @@ class BookPeriod {
     required this.startDate,
     this.endDate,
     this.isClosed = 0,
+    this.planBudget = 0.0,
   });
 
   final int? id;
@@ -12,6 +13,7 @@ class BookPeriod {
   final String startDate;
   final String? endDate;
   final int isClosed;
+  final double planBudget;
 
   bool get closed => isClosed == 1;
   bool get isOpen => !closed;
@@ -22,6 +24,7 @@ class BookPeriod {
     String? startDate,
     String? endDate,
     int? isClosed,
+    double? planBudget,
   }) {
     return BookPeriod(
       id: id ?? this.id,
@@ -29,6 +32,7 @@ class BookPeriod {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       isClosed: isClosed ?? this.isClosed,
+      planBudget: planBudget ?? this.planBudget,
     );
   }
 
@@ -39,6 +43,7 @@ class BookPeriod {
       'start_date': startDate,
       'end_date': endDate,
       'is_closed': isClosed,
+      'plan_budget': planBudget,
     };
   }
 
@@ -49,6 +54,7 @@ class BookPeriod {
       startDate: map['start_date'] as String? ?? '',
       endDate: map['end_date'] as String?,
       isClosed: (map['is_closed'] as num?)?.toInt() ?? 0,
+      planBudget: (map['plan_budget'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

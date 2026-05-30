@@ -429,11 +429,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         color: isDark ? Colors.white38 : const Color(0xFFBDBDBD),
         fontSize: 14,
       ),
-      prefixIcon: Icon(
-        icon,
-        size: 20,
-        color: isDark ? Colors.white54 : const Color(0xFF9E9E9E),
-      ),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: fillColor,

@@ -397,7 +397,6 @@ class _SettingsContentState extends State<SettingsContent> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     hintText: 'Jam notifikasi',
-                    prefixIcon: Icon(Icons.access_time_rounded),
                   ),
                   child: Row(
                     children: [
@@ -461,23 +460,33 @@ class _SettingsContentState extends State<SettingsContent> {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 10),
+              Text(
+                'Kategori Pemasukan',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 6),
               TextField(
                 controller: _incomeCategoriesController,
                 decoration: const InputDecoration(
-                  hintText: 'Kategori pemasukan (contoh: Gaji, Bonus, Jualan)',
-                  prefixIcon: Icon(Icons.trending_up_rounded),
+                  hintText: 'Contoh: Gaji, Bonus, Jualan',
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+              Text(
+                'Kategori Pengeluaran',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFC24545),
+                ),
+              ),
+              const SizedBox(height: 6),
               TextField(
                 controller: _expenseCategoriesController,
                 decoration: const InputDecoration(
-                  hintText:
-                      'Kategori pengeluaran (contoh: Belanja, Makan, Tagihan)',
-                  prefixIcon: Icon(
-                    Icons.trending_down_rounded,
-                    color: Color(0xFFC24545),
-                  ),
+                  hintText: 'Contoh: Belanja, Makan, Tagihan',
                 ),
               ),
             ],

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -339,7 +339,6 @@ class _InputScreenState extends State<InputScreen> {
   InputDecoration _fieldDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon),
       fillColor: Theme.of(context).cardTheme.color,
     );
   }

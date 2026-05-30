@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +46,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               inputFormatters: [RupiahInputFormatter()],
               decoration: const InputDecoration(
                 hintText: 'Rp 0',
-                prefixIcon: Icon(Icons.payments_rounded),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {

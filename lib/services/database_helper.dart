@@ -14,7 +14,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 9;
+  static const _dbVersion = 11;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -184,6 +184,18 @@ class DatabaseHelper {
             )
           ''');
         }
+        if (oldVersion < 10) {
+          await db.execute('''
+            ALTER TABLE $financialPlansTable
+            ADD COLUMN category TEXT
+          ''');
+        }
+        if (oldVersion < 11) {
+          await db.execute('''
+            ALTER TABLE $bookPeriodsTable
+            ADD COLUMN plan_budget REAL NOT NULL DEFAULT 0
+          ''');
+        }
       },
     );
   }
@@ -211,7 +223,8 @@ class DatabaseHelper {
         label TEXT NOT NULL,
         start_date TEXT NOT NULL,
         end_date TEXT,
-        is_closed INTEGER NOT NULL DEFAULT 0
+        is_closed INTEGER NOT NULL DEFAULT 0,
+        plan_budget REAL NOT NULL DEFAULT 0
       )
     ''');
 
@@ -221,7 +234,8 @@ class DatabaseHelper {
         book_period_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         target_amount REAL NOT NULL,
-        target_date TEXT NOT NULL
+        target_date TEXT NOT NULL,
+        category TEXT
       )
     ''');
 
@@ -400,6 +414,7 @@ class DatabaseHelper {
           'title': plan.title,
           'target_amount': plan.targetAmount,
           'target_date': plan.targetDate,
+          if (plan.category != null) 'category': plan.category,
         }, conflictAlgorithm: ConflictAlgorithm.abort);
       }
 
@@ -425,6 +440,16 @@ class DatabaseHelper {
     await db.update(
       bookPeriodsTable,
       {'end_date': null, 'is_closed': 0},
+      where: 'id = ?',
+      whereArgs: [bookPeriodId],
+    );
+  }
+
+  Future<void> updateBookPeriodPlanBudget(int bookPeriodId, double planBudget) async {
+    final db = await database;
+    await db.update(
+      bookPeriodsTable,
+      {'plan_budget': planBudget},
       where: 'id = ?',
       whereArgs: [bookPeriodId],
     );

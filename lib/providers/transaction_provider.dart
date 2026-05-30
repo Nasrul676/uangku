@@ -420,6 +420,16 @@ class TransactionProvider extends ChangeNotifier {
     await loadBookPeriods();
   }
 
+  Future<void> updateBookPlanBudget(int bookPeriodId, double budget) async {
+    final target = _bookPeriods.where((item) => item.id == bookPeriodId);
+    if (target.isEmpty) {
+      throw Exception('Buku yang dipilih belum ketemu.');
+    }
+    
+    await _databaseHelper.updateBookPeriodPlanBudget(bookPeriodId, budget);
+    await loadBookPeriods();
+  }
+
   Future<void> removeBookPeriod(int bookPeriodId) async {
     if (_isRemovingBookPeriod) {
       throw Exception('Lagi memproses hapus buku. Tunggu sebentar ya.');
@@ -753,6 +763,7 @@ class TransactionProvider extends ChangeNotifier {
     required double targetAmount,
     required DateTime targetDate,
     int? bookPeriodId,
+    String? category,
   }) async {
     final selectedId =
         bookPeriodId ?? _selectedBookPeriodId ?? activeBookPeriod?.id;
@@ -794,6 +805,7 @@ class TransactionProvider extends ChangeNotifier {
         title: targetTitle,
         targetAmount: targetAmount,
         targetDate: targetDateString,
+        category: category,
       ),
     );
 
@@ -805,6 +817,7 @@ class TransactionProvider extends ChangeNotifier {
         title: targetTitle,
         targetAmount: targetAmount,
         targetDate: targetDateString,
+        category: category,
       ),
     ];
     await _rescheduleFinancialPlanNotifications();
@@ -817,6 +830,7 @@ class TransactionProvider extends ChangeNotifier {
     required double targetAmount,
     required DateTime targetDate,
     required int bookPeriodId,
+    String? category,
   }) async {
     final targetTitle = title.trim();
     if (targetTitle.isEmpty) {
@@ -853,6 +867,7 @@ class TransactionProvider extends ChangeNotifier {
       title: targetTitle,
       targetAmount: targetAmount,
       targetDate: targetDateString,
+      category: category,
     );
 
     await _databaseHelper.updateFinancialPlan(updatedPlan);
