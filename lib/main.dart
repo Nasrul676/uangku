@@ -13,6 +13,8 @@ import 'services/app_settings_service.dart';
 import 'services/auto_backup_service.dart';
 
 import 'providers/shopping_provider.dart';
+import 'widgets/custom_loading_indicator.dart';
+import 'widgets/global_action_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -138,6 +140,10 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
         builder: (context, themeProvider, _) {
           return MaterialApp(
             navigatorKey: _navigatorKey,
+            builder: (context, child) => GlobalActionOverlay(
+              key: globalOverlayKey,
+              child: child!,
+            ),
             title: 'uangku',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,
@@ -146,7 +152,7 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
             home:
                 _initialHome ??
                 const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
+                  body: Center(child: CustomLoadingIndicator(size: 48)),
                 ),
           );
         },

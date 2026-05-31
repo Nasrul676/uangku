@@ -3,15 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as p;
-
-import '../services/database_helper.dart';
-import '../services/backup_service.dart';
-import '../services/auto_backup_service.dart';
-import 'auto_backup_settings_sheet.dart';
 import 'package:provider/provider.dart';
+
+import '../services/backup_service.dart';
+import '../services/database_helper.dart';
 import '../providers/transaction_provider.dart';
 import '../models/app_notification.dart';
+import '../services/auto_backup_service.dart';
+import 'auto_backup_settings_sheet.dart';
+import 'custom_loading_indicator.dart';
 
 // ─── Progress Model ──────────────────────────────────────────────────────────
 
@@ -115,30 +117,7 @@ class _BackupProgressDialog extends StatefulWidget {
   State<_BackupProgressDialog> createState() => _BackupProgressDialogState();
 }
 
-class _BackupProgressDialogState extends State<_BackupProgressDialog>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _pulse = Tween<double>(
-      begin: 0.88,
-      end: 1.12,
-    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
-
+class _BackupProgressDialogState extends State<_BackupProgressDialog> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -157,31 +136,10 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog>
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Pulsing Icon ──
-                  ScaleTransition(
-                    scale: _pulse,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.primary.withValues(alpha: 0.25),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        widget.isRestore
-                            ? Icons.settings_backup_restore_rounded
-                            : Icons.backup_rounded,
-                        size: 40,
-                        color: cs.primary,
-                      ),
-                    ),
+                  Lottie.asset(
+                    'assets/lottie/loading.json',
+                    width: 120,
+                    height: 120,
                   ),
 
                   const SizedBox(height: 20),
@@ -451,9 +409,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                           ),
                           Text(
                             fileName,
-                            style: Theme.of(
-                              sheetCtx,
-                            ).textTheme.bodySmall,
+                            style: Theme.of(sheetCtx).textTheme.bodySmall,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -465,9 +421,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
                 const SizedBox(height: 20),
                 Text(
                   'Pilih cara menyimpan:',
-                  style: Theme.of(
-                    sheetCtx,
-                  ).textTheme.labelLarge,
+                  style: Theme.of(sheetCtx).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
 
@@ -790,11 +744,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
       children: [
         ListTile(
           leading: _isBackingUp
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const CustomLoadingIndicator(size: 20)
               : const Icon(Icons.upload_rounded),
           title: const Text('Backup Data'),
           subtitle: const Text('Simpan data ke file ZIP'),
@@ -803,11 +753,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
         ),
         ListTile(
           leading: _isRestoring
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const CustomLoadingIndicator(size: 20)
               : const Icon(Icons.download_rounded),
           title: const Text('Restore Data'),
           subtitle: const Text('Pulihkan data dari file ZIP'),

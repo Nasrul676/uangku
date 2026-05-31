@@ -37,7 +37,7 @@ class _AnimatedBouncingCardState extends State<AnimatedBouncingCard> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       padding: widget.padding,
-      margin: widget.margin,
+      margin: widget.margin ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: widget.color ?? theme.cardTheme.color,
         borderRadius: widget.borderRadius ?? (theme.cardTheme.shape is RoundedRectangleBorder 

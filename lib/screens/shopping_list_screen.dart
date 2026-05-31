@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -7,9 +8,12 @@ import '../providers/shopping_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
-import '../widgets/animated_bouncing_card.dart';
+import '../widgets/app_card.dart';
+import '../widgets/custom_loading_indicator.dart';
 
 import 'add_shopping_item_screen.dart';
+import 'saving_goals_screen.dart';
+import 'recurring_transactions_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({Key? key, this.isEmbedded = false})
@@ -21,6 +25,73 @@ class ShoppingListScreen extends StatefulWidget {
 }
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (widget.isEmbedded) {
+      return DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            TabBar(
+              labelColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+              tabs: const [
+                Tab(text: 'Belanja'),
+                Tab(text: 'Tabungan'),
+                Tab(text: 'Rutin'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Expanded(
+              child: TabBarView(
+                children: [
+                  _ShoppingListContent(),
+                  SavingGoalsScreen(),
+                  RecurringTransactionsScreen(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Daftar Rencana'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Belanja'),
+              Tab(text: 'Tabungan'),
+              Tab(text: 'Rutin'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            _ShoppingListContent(),
+            SavingGoalsScreen(),
+            RecurringTransactionsScreen(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShoppingListContent extends StatefulWidget {
+  const _ShoppingListContent({Key? key}) : super(key: key);
+
+  @override
+  _ShoppingListContentState createState() => _ShoppingListContentState();
+}
+
+class _ShoppingListContentState extends State<_ShoppingListContent> {
   Future<void> _showBuyDialog(ShoppingItem item) async {
     final formKey = GlobalKey<FormState>();
     final initialTotal = item.amount;
@@ -106,15 +177,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: widget.isEmbedded ? Colors.transparent : null,
-      appBar: widget.isEmbedded
-          ? null
-          : AppBar(title: const Text('Daftar Belanja')),
-      body: Consumer<ShoppingProvider>(
+    return Consumer<ShoppingProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CustomLoadingIndicator(size: 40));
           }
 
           final unboughtItems = provider.items
@@ -159,8 +225,25 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
               ),
               if (provider.items.isEmpty)
-                const Expanded(
-                  child: Center(child: Text('Belum ada daftar belanja.')),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Lottie.asset(
+                          'assets/lottie/empty.json',
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum ada daftar belanja.',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  ),
                 )
               else ...[
                 Padding(
@@ -200,7 +283,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             ],
           );
         },
-      ),
     );
   }
 }
@@ -270,8 +352,7 @@ class _ShoppingItemTile extends StatelessWidget {
           ),
         ],
       ),
-      child: AnimatedBouncingCard(
-        isPressedEffect: true,
+      child: AppCard(isInteractive: true,
         onTap: () {},
         padding: const EdgeInsets.all(10),
         color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,

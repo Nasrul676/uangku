@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/icon_picker_utils.dart';
 import '../utils/rupiah_input_formatter.dart';
+import 'expense_input_screen.dart';
 import 'pocket_form_screen.dart';
 
 class PocketDetailScreen extends StatelessWidget {
@@ -211,9 +212,46 @@ class PocketDetailScreen extends StatelessWidget {
                     label: const Text('Tambah Uang'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ExpenseInputScreen(
+                            initialPocketId: pocketId,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.remove_circle_outline),
+                    label: const Text('Tambah Pengeluaran'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),

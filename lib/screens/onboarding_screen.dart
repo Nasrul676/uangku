@@ -52,8 +52,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? [const Color(0xFF2A1B38), const Color(0xFF3B2A4A), const Color(0xFF1E3A5F)]
-                : [const Color(0xFFFFF2D8), const Color(0xFFEAD6EE), const Color(0xFFA0E9FF)],
+                ? [
+                    const Color(0xFF2A1B38),
+                    const Color(0xFF3B2A4A),
+                    const Color(0xFF1E3A5F),
+                  ]
+                : [
+                    const Color(0xFFFFF2D8),
+                    const Color(0xFFEAD6EE),
+                    const Color(0xFFA0E9FF),
+                  ],
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
@@ -64,39 +72,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  child: const Center(
-                    child: Text('💸', style: TextStyle(fontSize: 32)),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isDark ? theme.colorScheme.surface.withOpacity(0.5) : Colors.white.withOpacity(0.6),
+                    color: isDark
+                        ? theme.colorScheme.surface.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '✨ UangKu App',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: isDark ? theme.colorScheme.primary : const Color(0xFF5A3092),
+                      color: isDark
+                          ? theme.colorScheme.primary
+                          : const Color(0xFF5A3092),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const Spacer(),
                 Text(
                   'Atur Uang\nJadi Lebih\nMenyenangkan',
                   style: theme.textTheme.titleLarge?.copyWith(

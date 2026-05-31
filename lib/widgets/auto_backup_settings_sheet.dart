@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../services/auto_backup_service.dart';
+import 'custom_loading_indicator.dart';
 
 class AutoBackupSettingsSheet extends StatefulWidget {
   const AutoBackupSettingsSheet({super.key});
@@ -144,7 +145,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
     if (_isLoading) {
       return const SizedBox(
         height: 200, 
-        child: Center(child: CircularProgressIndicator())
+        child: Center(child: CustomLoadingIndicator(size: 40))
       );
     }
 

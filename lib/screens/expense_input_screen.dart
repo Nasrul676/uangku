@@ -1,9 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
-import '../widgets/success_overlay.dart';
+import '../widgets/global_action_overlay.dart';
 import '../widgets/swipe_button.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -14,14 +14,20 @@ import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../providers/transaction_provider.dart';
+import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
-  const ExpenseInputScreen({super.key, this.existingTransaction});
+  const ExpenseInputScreen({
+    super.key,
+    this.existingTransaction,
+    this.initialPocketId,
+  });
 
   final FinanceTransaction? existingTransaction;
+  final int? initialPocketId;
 
   @override
   State<ExpenseInputScreen> createState() => _ExpenseInputScreenState();
@@ -74,6 +80,8 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       _category = existing.category;
       _selectedFinancialPlanId = existing.financialPlanId;
       _selectedPocketId = existing.pocketId;
+    } else {
+      _selectedPocketId = widget.initialPocketId;
     }
   }
 
@@ -547,59 +555,40 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     setState(() => _isSaving = true);
 
     try {
-      if (isEdit) {
-        await context
-            .read<TransactionProvider>()
-            .updateTransaction(
-              id: widget.existingTransaction!.id!,
-              title: titleWithDetail,
-              amount: RupiahInputFormatter.parse(_amountController.text),
-              type: 'EXPENSE',
-              category: _category,
-              date: normalizedSelectedDate,
-              time: _selectedTime == null
-                  ? null
-                  : _formatTimeForStorage(_selectedTime!),
-              financialPlanId: selectedPlanId,
-              pocketId: _selectedPocketId,
-            )
-            .timeout(const Duration(seconds: 10));
-      } else {
-        await context
-            .read<TransactionProvider>()
-            .addTransaction(
-              title: titleWithDetail,
-              amount: RupiahInputFormatter.parse(_amountController.text),
-              type: 'EXPENSE',
-              category: _category,
-              date: normalizedSelectedDate,
-              time: _selectedTime == null
-                  ? null
-                  : _formatTimeForStorage(_selectedTime!),
-              financialPlanId: selectedPlanId,
-              pocketId: _selectedPocketId,
-            )
-            .timeout(const Duration(seconds: 10));
-      }
+      await GlobalActionOverlay.run(() async {
+        if (isEdit) {
+          await context.read<TransactionProvider>().updateTransaction(
+            id: widget.existingTransaction!.id!,
+            title: titleWithDetail,
+            amount: CalculatorParser.evaluate(_amountController.text),
+            type: 'EXPENSE',
+            category: _category,
+            date: normalizedSelectedDate,
+            time: _selectedTime == null
+                ? null
+                : _formatTimeForStorage(_selectedTime!),
+            financialPlanId: selectedPlanId,
+            pocketId: _selectedPocketId,
+          );
+        } else {
+          await context.read<TransactionProvider>().addTransaction(
+            title: titleWithDetail,
+            amount: CalculatorParser.evaluate(_amountController.text),
+            type: 'EXPENSE',
+            category: _category,
+            date: normalizedSelectedDate,
+            time: _selectedTime == null
+                ? null
+                : _formatTimeForStorage(_selectedTime!),
+            financialPlanId: selectedPlanId,
+            pocketId: _selectedPocketId,
+          );
+        }
 
-      if (!mounted) return false;
-      final messenger = ScaffoldMessenger.of(context);
-      await SuccessOverlay.show(
-        context,
-        message: isEdit ? 'Pengeluaran diperbarui!' : 'Pengeluaran disimpan!',
-        color: AppTheme.expenseRed,
-      );
-      if (!mounted) return true;
-      Navigator.pop(context);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            isEdit
-                ? 'Pengeluaran berhasil diperbarui!'
-                : 'Sip, pengeluaran berhasil disimpan!',
-          ),
-        ),
-      );
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
       return true;
     } on TimeoutException {
       if (!mounted) return false;
@@ -610,15 +599,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     } catch (e) {
       if (!mounted) return false;
       final message = e.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message.isEmpty
-                ? 'Lagi ada kendala saat menyimpan pengeluaran.'
-                : message,
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $message')));
       return false;
     } finally {
       if (mounted) {
@@ -724,7 +707,8 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                     child: _CategoryChip(
                                       label: item,
                                       selected: _category == item,
-                                      onTap: () => setState(() => _category = item),
+                                      onTap: () =>
+                                          setState(() => _category = item),
                                     ),
                                   ),
                                 ),
@@ -749,7 +733,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             onTap: () => _openPocketPicker(pockets),
                             selectedText: selectedPocketText,
                           ),
-                          
+
                           // ── Section 2: Nominal & Judul ──────────────────
                           const SizedBox(height: 16),
                           const _SectionDivider(),
@@ -769,10 +753,11 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               suffix: _amountValue > 0
                                   ? Text(
                                       _currencyFormatter.format(_amountValue),
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: theme.colorScheme.error,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.error,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     )
                                   : null,
                             ),
@@ -825,7 +810,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                               ),
                             ],
                           ),
-                          
+
                           // ── Section 3: Waktu ────────────────────────────
                           const SizedBox(height: 16),
                           const _SectionDivider(),
@@ -847,7 +832,10 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                     hintText: 'Tanggal',
                                   ),
                                   child: Text(
-                                    DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
+                                    DateFormat(
+                                      'dd MMM yyyy',
+                                      'id',
+                                    ).format(_selectedDate),
                                     style: theme.textTheme.bodyMedium,
                                   ),
                                 ),
@@ -887,7 +875,8 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 : 'Swipe untuk update',
                             onSwipeComplete: _saveExpense,
                             isLoading: _isSaving,
-                            isDark: Theme.of(context).brightness == Brightness.dark,
+                            isDark:
+                                Theme.of(context).brightness == Brightness.dark,
                           ),
                         ],
                       ),
@@ -921,7 +910,9 @@ class _FinancialPlanSelectorField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+        color:
+            Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -966,7 +957,9 @@ class _PocketSelectorField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+        color:
+            Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
@@ -1077,7 +1070,9 @@ class _CircleButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+          color:
+              Theme.of(context).cardTheme.color ??
+              Theme.of(context).colorScheme.surface,
           shape: BoxShape.circle,
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
         ),
@@ -1166,7 +1161,9 @@ class _CategoryChip extends StatelessWidget {
               Icon(
                 Icons.check_rounded,
                 size: 14,
-                color: theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.error,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white
+                    : theme.colorScheme.error,
               ),
               const SizedBox(width: 4),
             ],
@@ -1175,7 +1172,9 @@ class _CategoryChip extends StatelessWidget {
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
-                    ? (theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.error)
+                    ? (theme.brightness == Brightness.dark
+                          ? Colors.white
+                          : theme.colorScheme.error)
                     : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
@@ -1214,7 +1213,8 @@ class _AddCategoryChip extends StatelessWidget {
           children: [
             isLoading
                 ? SizedBox(
-                    width: 14, height: 14,
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: theme.colorScheme.primary,

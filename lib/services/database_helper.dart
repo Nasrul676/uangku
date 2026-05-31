@@ -7,6 +7,8 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
+import '../models/recurring_transaction.dart';
+import '../models/saving_goal.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -14,13 +16,15 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 11;
+  static const _dbVersion = 13;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
   static const shoppingItemsTable = 'shopping_items';
   static const pocketsTable = 'pockets';
   static const notificationsTable = 'notifications';
+  static const savingGoalsTable = 'saving_goals';
+  static const recurringTransactionsTable = 'recurring_transactions';
 
   Database? _database;
 
@@ -196,6 +200,43 @@ class DatabaseHelper {
             ADD COLUMN plan_budget REAL NOT NULL DEFAULT 0
           ''');
         }
+        if (oldVersion < 12) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $savingGoalsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              target_amount REAL NOT NULL,
+              current_amount REAL NOT NULL DEFAULT 0,
+              target_date TEXT,
+              icon TEXT
+            )
+          ''');
+          
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $recurringTransactionsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              type TEXT NOT NULL,
+              amount REAL NOT NULL,
+              title TEXT NOT NULL,
+              category TEXT NOT NULL,
+              frequency TEXT NOT NULL,
+              next_date TEXT NOT NULL,
+              is_active INTEGER NOT NULL DEFAULT 1,
+              pocket_id INTEGER,
+              financial_plan_id INTEGER
+            )
+          ''');
+        }
+        if (oldVersion < 13) {
+          await db.execute('''
+            ALTER TABLE $recurringTransactionsTable
+            ADD COLUMN pocket_id INTEGER
+          ''');
+          await db.execute('''
+            ALTER TABLE $recurringTransactionsTable
+            ADD COLUMN financial_plan_id INTEGER
+          ''');
+        }
       },
     );
   }
@@ -225,6 +266,32 @@ class DatabaseHelper {
         end_date TEXT,
         is_closed INTEGER NOT NULL DEFAULT 0,
         plan_budget REAL NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $savingGoalsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL NOT NULL DEFAULT 0,
+        target_date TEXT,
+        icon TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $recurringTransactionsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        next_date TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        pocket_id INTEGER,
+        financial_plan_id INTEGER
       )
     ''');
 
@@ -580,5 +647,67 @@ class DatabaseHelper {
   Future<void> deleteNotification(int id) async {
     final db = await database;
     await db.delete(notificationsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- SAVING GOALS CRUD ---
+  Future<List<SavingGoal>> getAllSavingGoals() async {
+    final db = await database;
+    final result = await db.query(savingGoalsTable, orderBy: 'id ASC');
+    return result.map(SavingGoal.fromMap).toList();
+  }
+
+  Future<int> insertSavingGoal(SavingGoal goal) async {
+    final db = await database;
+    return db.insert(
+      savingGoalsTable,
+      goal.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> updateSavingGoal(SavingGoal goal) async {
+    final db = await database;
+    await db.update(
+      savingGoalsTable,
+      goal.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [goal.id],
+    );
+  }
+
+  Future<void> deleteSavingGoal(int id) async {
+    final db = await database;
+    await db.delete(savingGoalsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- RECURRING TRANSACTIONS CRUD ---
+  Future<List<RecurringTransaction>> getAllRecurringTransactions() async {
+    final db = await database;
+    final result = await db.query(recurringTransactionsTable, orderBy: 'id ASC');
+    return result.map(RecurringTransaction.fromMap).toList();
+  }
+
+  Future<int> insertRecurringTransaction(RecurringTransaction transaction) async {
+    final db = await database;
+    return db.insert(
+      recurringTransactionsTable,
+      transaction.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> updateRecurringTransaction(RecurringTransaction transaction) async {
+    final db = await database;
+    await db.update(
+      recurringTransactionsTable,
+      transaction.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [transaction.id],
+    );
+  }
+
+  Future<void> deleteRecurringTransaction(int id) async {
+    final db = await database;
+    await db.delete(recurringTransactionsTable, where: 'id = ?', whereArgs: [id]);
   }
 }

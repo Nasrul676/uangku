@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 /// Menampilkan overlay success animation singkat (scale + fade).
 /// Dipanggil sebelum Navigator.pop() saat transaksi berhasil disimpan.
@@ -15,6 +16,7 @@ class SuccessOverlay {
     String message = 'Berhasil disimpan!',
     Color color = const Color(0xFF2A9D50),
     Duration duration = const Duration(milliseconds: 900),
+    String lottieAsset = 'assets/lottie/success.json',
   }) async {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -23,6 +25,7 @@ class SuccessOverlay {
       builder: (_) => _SuccessOverlayWidget(
         message: message,
         color: color,
+        lottieAsset: lottieAsset,
         onDone: () => entry.remove(),
         duration: duration,
       ),
@@ -37,12 +40,14 @@ class _SuccessOverlayWidget extends StatefulWidget {
   const _SuccessOverlayWidget({
     required this.message,
     required this.color,
+    required this.lottieAsset,
     required this.onDone,
     required this.duration,
   });
 
   final String message;
   final Color color;
+  final String lottieAsset;
   final VoidCallback onDone;
   final Duration duration;
 
@@ -146,10 +151,12 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                               color: widget.color.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.check_circle_rounded,
-                              color: widget.color,
-                              size: 44,
+                            child: Lottie.asset(
+                              widget.lottieAsset,
+                              width: 72,
+                              height: 72,
+                              repeat: false,
+                              fit: BoxFit.cover,
                             ),
                           ),
                           const SizedBox(height: 16),

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'custom_loading_indicator.dart';
 
 /// A swipe-to-action button with animated chevrons and shimmer text.
 ///
@@ -228,12 +229,9 @@ class _SwipeButtonState extends State<SwipeButton>
                     ],
                   ),
                   child: widget.isLoading
-                      ? Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: trackColors[0],
-                          ),
+                      ? CustomLoadingIndicator(
+                          size: 24,
+                          color: trackColors[0],
                         )
                       : AnimatedBuilder(
                           animation: _chevronController,

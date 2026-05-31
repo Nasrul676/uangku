@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/app_card.dart';
 import 'book_cashflow_detail_screen.dart';
 
 class BookPeriodRecapScreen extends StatelessWidget {
@@ -15,13 +17,18 @@ class BookPeriodRecapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: isEmbedded ? Colors.transparent : null,
-      appBar: isEmbedded ? null : AppBar(title: const Text('Rekap Cashflow per Buku')),
+      appBar: isEmbedded
+          ? null
+          : AppBar(title: const Text('Rekap Cashflow per Buku')),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
           final bookPeriods = provider.bookPeriods.toList();
 
           if (bookPeriods.isEmpty) {
-            return const Center(child: Text('Belum ada buku pengeluaran.'));
+            return const EmptyState(
+              title: 'Belum ada data',
+              subtitle: 'Belum ada buku pengeluaran.',
+            );
           }
 
           return ListView.builder(
@@ -94,25 +101,23 @@ class _BookRecapCard extends StatelessWidget {
       dateRange = book.startDate;
     }
 
-    return Card(
+    return AppCard(
+      isInteractive: true,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BookCashflowDetailScreen(
-                book: book,
-                transactions: bookTransactions,
-              ),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BookCashflowDetailScreen(
+              book: book,
+              transactions: bookTransactions,
             ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          ),
+        );
+      },
+      padding: const EdgeInsets.all(16),
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -209,8 +214,6 @@ class _BookRecapCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
+import '../widgets/app_card.dart';
 
 class BookCashflowDetailScreen extends StatelessWidget {
   const BookCashflowDetailScreen({
@@ -47,6 +49,17 @@ class BookCashflowDetailScreen extends StatelessWidget {
 
     final netCashflow = totalIncome - totalExpense;
 
+    // --- Expense By Category Logic ---
+    final sortedExpenses = expenseByCategory.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    final topExpenses = sortedExpenses.take(5).toList();
+    final otherExpensesSum = sortedExpenses.skip(5).fold<double>(0.0, (sum, entry) => sum + entry.value);
+    
+    if (otherExpensesSum > 0) {
+      topExpenses.add(MapEntry('Lainnya', otherExpensesSum));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Detail Laporan Cashflow')),
       body: SingleChildScrollView(
@@ -58,15 +71,158 @@ class BookCashflowDetailScreen extends StatelessWidget {
             _buildHeader(theme, formatter),
             const SizedBox(height: 24),
 
-            // Laporan Cashflow Standard
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+            // --- Income vs Expense Card ---
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Statistik Arus Kas', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 200,
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: (totalIncome > totalExpense ? totalIncome : totalExpense) * 1.2,
+                          barTouchData: BarTouchData(enabled: false),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value == 0) return const Text('Masuk');
+                                  if (value == 1) return const Text('Keluar');
+                                  return const Text('');
+                                },
+                              ),
+                            ),
+                            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          gridData: const FlGridData(show: false),
+                          borderData: FlBorderData(show: false),
+                          barGroups: [
+                            BarChartGroupData(
+                              x: 0,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: totalIncome,
+                                  color: Colors.green,
+                                  width: 40,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                            BarChartGroupData(
+                              x: 1,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: totalExpense,
+                                  color: theme.colorScheme.error,
+                                  width: 40,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // --- Expense By Category PieChart ---
+            if (topExpenses.isNotEmpty) ...[
+              AppCard(
+                padding: const EdgeInsets.all(16),
                 child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Pengeluaran Berdasarkan Kategori', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 200,
+                        child: PieChart(
+                          PieChartData(
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 40,
+                            sections: List.generate(topExpenses.length, (i) {
+                              final entry = topExpenses[i];
+                              final percentage = (entry.value / totalExpense) * 100;
+                              final colors = [
+                                Colors.blue,
+                                Colors.orange,
+                                Colors.purple,
+                                Colors.teal,
+                                Colors.pink,
+                                Colors.grey
+                              ];
+                              
+                              return PieChartSectionData(
+                                color: colors[i % colors.length],
+                                value: entry.value,
+                                title: '${percentage.toStringAsFixed(0)}%',
+                                radius: 50,
+                                titleStyle: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Legend
+                      ...List.generate(topExpenses.length, (i) {
+                        final entry = topExpenses[i];
+                        final colors = [
+                          Colors.blue,
+                          Colors.orange,
+                          Colors.purple,
+                          Colors.teal,
+                          Colors.pink,
+                          Colors.grey
+                        ];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: colors[i % colors.length],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(entry.key)),
+                              Text(
+                                formatter.format(entry.value),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Laporan Cashflow Standard
+            AppCard(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Center(
@@ -189,7 +345,6 @@ class BookCashflowDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
             ),
           ],
         ),

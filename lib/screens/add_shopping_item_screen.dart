@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shopping_provider.dart';
@@ -7,6 +7,7 @@ import '../models/shopping_item.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../widgets/custom_loading_indicator.dart';
 
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
@@ -73,11 +74,7 @@ class _AddCategoryChip extends StatelessWidget {
               Border.all(color: Colors.grey.shade300),
         ),
         child: isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? const CustomLoadingIndicator(size: 16)
             : const Icon(Icons.add_rounded, size: 16),
       ),
     );
@@ -208,11 +205,7 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 FilledButton(
                   onPressed: isSubmitting ? null : submit,
                   child: isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const CustomLoadingIndicator(size: 20)
                       : const Text('Tambah'),
                 ),
               ],

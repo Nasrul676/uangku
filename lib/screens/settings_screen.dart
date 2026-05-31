@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/animated_bouncing_card.dart';
+import '../widgets/app_card.dart';
 import '../widgets/backup_restore_tile.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_loading_indicator.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -269,8 +270,7 @@ class _SettingsContentState extends State<SettingsContent> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
       children: [
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,8 +290,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,8 +310,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,8 +330,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,8 +372,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,11 +411,7 @@ class _SettingsContentState extends State<SettingsContent> {
                       ? null
                       : _saveNotificationTime,
                   child: _isSavingNotificationTime
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const CustomLoadingIndicator(size: 20)
                       : const Text('Simpan Jam Notifikasi'),
                 ),
               ),
@@ -432,11 +424,7 @@ class _SettingsContentState extends State<SettingsContent> {
                       ? null
                       : _sendNotificationDemo,
                   child: _isSendingNotificationDemo
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const CustomLoadingIndicator(size: 20)
                       : const Text('Kirim Notifikasi Demo'),
                 ),
               ),
@@ -444,8 +432,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,8 +480,7 @@ class _SettingsContentState extends State<SettingsContent> {
           ),
         ),
         const SizedBox(height: 10),
-        AnimatedBouncingCard(
-          isPressedEffect: false,
+        AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,20 +734,17 @@ class _SectionCard extends StatelessWidget {
     this.subtitle,
     required this.child,
     this.padding = const EdgeInsets.all(12),
-    this.isPressedEffect = false,
   });
 
   final String title;
   final String? subtitle;
   final Widget child;
   final EdgeInsets padding;
-  final bool isPressedEffect;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AnimatedBouncingCard(
-      isPressedEffect: isPressedEffect,
+    return AppCard(isInteractive: true,
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,7 +900,7 @@ class _ThemePreviewOption extends StatelessWidget {
     final theme = Theme.of(context);
     final ext = theme.extension<AppThemeExtension>();
 
-    return AnimatedBouncingCard(
+    return AppCard(isInteractive: true,
       onTap: onTap,
       padding: const EdgeInsets.all(8),
       color: isSelected ? ext?.primaryActionColor : theme.cardTheme.color,

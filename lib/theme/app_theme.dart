@@ -202,7 +202,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: isDark ? neoYellow : borderColor,
+            color: isDark ? neoBlue : borderColor,
             width: 1.5,
           ),
         ),
@@ -247,7 +247,7 @@ class AppTheme {
 
     final neoColorScheme = ColorScheme(
       brightness: brightness,
-      primary: neoYellow,
+      primary: neoBlue,
       onPrimary: neoInk,
       secondary: neoBlue,
       onSecondary: neoInk,
@@ -310,7 +310,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: neoYellow,
+          backgroundColor: neoBlue,
           foregroundColor: neoInk,
           elevation: 0,
           shadowColor: Colors.transparent,
@@ -355,7 +355,7 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected))
-            return isDark ? neoYellow : neoInk;
+            return isDark ? neoBlue : neoInk;
           return paperCol;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -367,7 +367,7 @@ class AppTheme {
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return neoYellow;
+          if (states.contains(WidgetState.selected)) return neoBlue;
           return paperCol;
         }),
         checkColor: WidgetStateProperty.all(neoInk),

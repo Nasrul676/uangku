@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/icon_picker_utils.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../widgets/global_action_overlay.dart';
 import '../models/pocket.dart';
 import 'package:intl/intl.dart';
 
@@ -66,27 +67,29 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
           ? RupiahInputFormatter.parse(_valueController.text)
           : (double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0);
       
-      if (widget.pocket == null) {
-        await provider.addPocket(
-          bookPeriodId: bookId,
-          name: _nameController.text,
-          icon: _selectedIcon,
-          allocationType: _allocationType,
-          allocationValue: value,
-        );
-      } else {
-        final updatedPocket = widget.pocket!.copyWith(
-          name: _nameController.text,
-          icon: _selectedIcon,
-          allocationType: _allocationType,
-          allocationValue: value,
-        );
-        await provider.updatePocket(updatedPocket);
-      }
-      
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      await GlobalActionOverlay.run(() async {
+        if (widget.pocket == null) {
+          await provider.addPocket(
+            bookPeriodId: bookId,
+            name: _nameController.text,
+            icon: _selectedIcon,
+            allocationType: _allocationType,
+            allocationValue: value,
+          );
+        } else {
+          final updatedPocket = widget.pocket!.copyWith(
+            name: _nameController.text,
+            icon: _selectedIcon,
+            allocationType: _allocationType,
+            allocationValue: value,
+          );
+          await provider.updatePocket(updatedPocket);
+        }
+        
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
     }
   }
 

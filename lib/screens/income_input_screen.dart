@@ -1,9 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_bouncing_card.dart';
-import '../widgets/success_overlay.dart';
+import '../widgets/global_action_overlay.dart';
 import '../widgets/swipe_button.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +12,7 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../utils/calculator_parser.dart';
 
 class IncomeInputScreen extends StatefulWidget {
   const IncomeInputScreen({super.key, this.existingTransaction});
@@ -160,55 +161,36 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     setState(() => _isSaving = true);
 
     try {
-      if (isEdit) {
-        await context
-            .read<TransactionProvider>()
-            .updateTransaction(
-              id: widget.existingTransaction!.id!,
-              title: _category,
-              amount: RupiahInputFormatter.parse(_amountController.text),
-              type: 'INCOME',
-              category: _category,
-              date: _selectedDate,
-              time: _selectedTime == null
-                  ? null
-                  : _formatTimeForStorage(_selectedTime!),
-            )
-            .timeout(const Duration(seconds: 10));
-      } else {
-        await context
-            .read<TransactionProvider>()
-            .addTransaction(
-              title: _category,
-              amount: RupiahInputFormatter.parse(_amountController.text),
-              type: 'INCOME',
-              category: _category,
-              date: _selectedDate,
-              time: _selectedTime == null
-                  ? null
-                  : _formatTimeForStorage(_selectedTime!),
-            )
-            .timeout(const Duration(seconds: 10));
-      }
+      await GlobalActionOverlay.run(() async {
+        if (isEdit) {
+          await context.read<TransactionProvider>().updateTransaction(
+            id: widget.existingTransaction!.id!,
+            title: 'Pemasukan',
+            amount: CalculatorParser.evaluate(_amountController.text),
+            type: 'INCOME',
+            category: _category,
+            date: _selectedDate,
+            time: _selectedTime == null
+                ? null
+                : _formatTimeForStorage(_selectedTime!),
+          );
+        } else {
+          await context.read<TransactionProvider>().addTransaction(
+            title: 'Pemasukan',
+            amount: CalculatorParser.evaluate(_amountController.text),
+            type: 'INCOME',
+            category: _category,
+            date: _selectedDate,
+            time: _selectedTime == null
+                ? null
+                : _formatTimeForStorage(_selectedTime!),
+          );
+        }
 
-      if (!mounted) return false;
-      final messenger = ScaffoldMessenger.of(context);
-      await SuccessOverlay.show(
-        context,
-        message: isEdit ? 'Pemasukan diperbarui!' : 'Pemasukan disimpan!',
-        color: AppTheme.incomeGreen,
-      );
-      if (!mounted) return true;
-      Navigator.pop(context);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            isEdit
-                ? 'Pemasukan berhasil diperbarui!'
-                : 'Yeay, pemasukan berhasil disimpan!',
-          ),
-        ),
-      );
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
       return true;
     } on TimeoutException {
       if (!mounted) return false;
@@ -472,7 +454,8 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                                     child: _CategoryChip(
                                       label: item,
                                       selected: _category == item,
-                                      onTap: () => setState(() => _category = item),
+                                      onTap: () =>
+                                          setState(() => _category = item),
                                     ),
                                   ),
                                 ),
@@ -490,7 +473,8 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                                 : 'Swipe untuk update',
                             onSwipeComplete: _saveIncome,
                             isLoading: _isSaving,
-                            isDark: Theme.of(context).brightness == Brightness.dark,
+                            isDark:
+                                Theme.of(context).brightness == Brightness.dark,
                           ),
                         ],
                       ),

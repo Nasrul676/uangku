@@ -7,6 +7,8 @@ import '../models/finance_transaction.dart';
 import '../models/financial_plan_input.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
+import '../models/recurring_transaction.dart';
+import '../models/saving_goal.dart';
 import '../models/app_notification.dart';
 import '../services/app_settings_service.dart';
 import '../services/database_helper.dart';
@@ -41,6 +43,8 @@ class TransactionProvider extends ChangeNotifier {
   List<FinancialPlan> _allFinancialPlans = [];
   List<Pocket> _allPockets = [];
   List<AppNotification> _persistentNotifications = [];
+  List<SavingGoal> _savingGoals = [];
+  List<RecurringTransaction> _recurringTransactions = [];
   int? _selectedBookPeriodId;
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -82,6 +86,9 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   List<FinancialPlan> get activeBookFinancialPlans => financialPlans;
+
+  List<SavingGoal> get savingGoals => _savingGoals;
+  List<RecurringTransaction> get recurringTransactions => _recurringTransactions;
 
   int? get selectedBookPeriodId => _selectedBookPeriodId;
   BookPeriod? get activeBookPeriod {
@@ -132,8 +139,11 @@ class TransactionProvider extends ChangeNotifier {
     await loadBookPeriods();
     await loadFinancialPlans();
     await loadPockets();
+    await loadSavingGoals();
+    await loadRecurringTransactions();
     await loadNotifications();
     await loadTransactions();
+    await _processRecurringTransactions();
   }
 
   Future<void> loadTransactions() async {
@@ -194,6 +204,88 @@ class TransactionProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  Future<void> loadSavingGoals() async {
+    try {
+      _savingGoals = await _databaseHelper.getAllSavingGoals();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadRecurringTransactions() async {
+    try {
+      _recurringTransactions = await _databaseHelper.getAllRecurringTransactions();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _processRecurringTransactions() async {
+    bool hasNewTransactions = false;
+    final now = DateTime.now();
+
+    for (var tx in _recurringTransactions) {
+      if (!tx.isActive) continue;
+
+      DateTime nextDate = DateTime.parse(tx.nextDate);
+      bool isUpdated = false;
+
+      // Loop to catch up if multiple periods have passed
+      while (nextDate.isBefore(now) || _isSameDay(nextDate, now)) {
+        // Create transaction
+        await addTransaction(
+          title: tx.title,
+          amount: tx.amount,
+          type: tx.type,
+          category: tx.category,
+          date: nextDate,
+          pocketId: tx.pocketId,
+          financialPlanId: tx.financialPlanId,
+        );
+
+        // Advance next date
+        if (tx.frequency == 'WEEKLY') {
+          nextDate = nextDate.add(const Duration(days: 7));
+        } else if (tx.frequency == 'MONTHLY') {
+          // Add one month
+          final month = nextDate.month == 12 ? 1 : nextDate.month + 1;
+          final year = nextDate.month == 12 ? nextDate.year + 1 : nextDate.year;
+          // Handle end of month (e.g. Jan 31 -> Feb 28)
+          final lastDayOfNextMonth = DateTime(year, month + 1, 0).day;
+          final day = nextDate.day > lastDayOfNextMonth ? lastDayOfNextMonth : nextDate.day;
+          nextDate = DateTime(year, month, day, nextDate.hour, nextDate.minute);
+        }
+        isUpdated = true;
+        hasNewTransactions = true;
+      }
+
+      if (isUpdated) {
+        await updateRecurringTransaction(tx.copyWith(nextDate: nextDate.toIso8601String()));
+      }
+    }
+
+    if (hasNewTransactions) {
+      await insertNotification(
+        AppNotification(
+          title: 'Transaksi Rutin Terproses',
+          subtitle: 'Beberapa transaksi rutin otomatis telah dicatat ke bukumu.',
+          type: 'INFO',
+          createdAt: DateTime.now(),
+        ),
+      );
+      // Transactions list was already reloaded by addTransaction, but just in case
+      await loadTransactions();
+    }
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   Future<void> insertNotification(AppNotification notification) async {
@@ -1097,6 +1189,68 @@ class TransactionProvider extends ChangeNotifier {
     final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
     final updatedPocket = pocket.copyWith(currentBalance: pocket.currentBalance + amount);
     await updatePocket(updatedPocket);
+  }
+
+  // --- SAVING GOALS ---
+  Future<void> addSavingGoal(SavingGoal goal) async {
+    try {
+      await _databaseHelper.insertSavingGoal(goal);
+      await loadSavingGoals();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateSavingGoal(SavingGoal goal) async {
+    try {
+      await _databaseHelper.updateSavingGoal(goal);
+      await loadSavingGoals();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteSavingGoal(int id) async {
+    try {
+      await _databaseHelper.deleteSavingGoal(id);
+      await loadSavingGoals();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // --- RECURRING TRANSACTIONS ---
+  Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
+    try {
+      await _databaseHelper.insertRecurringTransaction(transaction);
+      await loadRecurringTransactions();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateRecurringTransaction(RecurringTransaction transaction) async {
+    try {
+      await _databaseHelper.updateRecurringTransaction(transaction);
+      await loadRecurringTransactions();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteRecurringTransaction(int id) async {
+    try {
+      await _databaseHelper.deleteRecurringTransaction(id);
+      await loadRecurringTransactions();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
   }
 
   int? get _currentPlanScopeBookId =>
