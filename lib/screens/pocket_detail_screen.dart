@@ -111,10 +111,11 @@ class PocketDetailScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    IconPickerUtils.getIconData(pocket.icon),
-                    size: 40,
-                    color: Theme.of(context).colorScheme.primary,
+                  child: Center(
+                    child: Text(
+                      IconPickerUtils.getIcon(pocket.icon),
+                      style: const TextStyle(fontSize: 40),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),

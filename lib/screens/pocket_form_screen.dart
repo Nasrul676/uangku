@@ -114,9 +114,10 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 2.5,
                   ),
                   itemCount: icons.length,
                   itemBuilder: (context, index) {
@@ -129,6 +130,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                         Navigator.pop(context);
                       },
                       child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           color: _selectedIcon == iconName 
                               ? const Color(0xFFE5F0FF) 
@@ -136,11 +138,28 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: _selectedIcon == iconName
                               ? Border.all(color: const Color(0xFF0066FF), width: 2)
-                              : null,
+                              : Border.all(color: Colors.transparent, width: 2),
                         ),
-                        child: Icon(
-                          IconPickerUtils.getIconData(iconName),
-                          color: _selectedIcon == iconName ? const Color(0xFF0066FF) : Colors.grey.shade700,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              IconPickerUtils.getIcon(iconName),
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                iconName.split('_').map((e) => e.isEmpty ? '' : '${e[0].toUpperCase()}${e.substring(1)}').join(' '),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: _selectedIcon == iconName ? FontWeight.bold : FontWeight.normal,
+                                  color: _selectedIcon == iconName ? const Color(0xFF0066FF) : Colors.grey.shade700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -188,10 +207,11 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFF0066FF), width: 2),
                     ),
-                    child: Icon(
-                      IconPickerUtils.getIconData(_selectedIcon),
-                      size: 40,
-                      color: const Color(0xFF0066FF),
+                    child: Center(
+                      child: Text(
+                        IconPickerUtils.getIcon(_selectedIcon),
+                        style: const TextStyle(fontSize: 40),
+                      ),
                     ),
                   ),
                 ),

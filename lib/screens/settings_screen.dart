@@ -268,7 +268,7 @@ class _SettingsContentState extends State<SettingsContent> {
     final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       children: [
         AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),

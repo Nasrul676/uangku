@@ -23,7 +23,6 @@ class PocketListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Kantong Kamu'),
         backgroundColor: Colors.transparent,
@@ -32,9 +31,9 @@ class PocketListScreen extends StatelessWidget {
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
           final pockets = provider.pockets;
-          
+
           return GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
@@ -48,9 +47,11 @@ class PocketListScreen extends StatelessWidget {
               }
 
               final pocket = pockets[index];
-              final effectiveBalance = provider.getPocketEffectiveBalance(pocket.id!);
+              final effectiveBalance = provider.getPocketEffectiveBalance(
+                pocket.id!,
+              );
               final isNegative = effectiveBalance < 0;
-              
+
               final NumberFormat currencyFormatter = NumberFormat.currency(
                 locale: 'id_ID',
                 symbol: 'Rp ',
@@ -73,7 +74,8 @@ class PocketListScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => PocketDetailScreen(pocketId: pocket.id!),
+                        builder: (context) =>
+                            PocketDetailScreen(pocketId: pocket.id!),
                       ),
                     );
                   },
@@ -85,30 +87,31 @@ class PocketListScreen extends StatelessWidget {
                         CircleAvatar(
                           radius: 32,
                           backgroundColor: const Color(0xFFE5F0FF),
-                          child: Icon(
-                            IconPickerUtils.getIconData(pocket.icon),
-                            color: const Color(0xFF0066FF),
-                            size: 32,
+                          child: Text(
+                            IconPickerUtils.getIcon(pocket.icon),
+                            style: const TextStyle(fontSize: 32),
                           ),
                         ),
                         const Spacer(),
                         Text(
                           pocket.name,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           currencyFormatter.format(effectiveBalance),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: isNegative
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: isNegative
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -147,9 +150,7 @@ class PocketListScreen extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const PocketFormScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const PocketFormScreen()),
           );
         },
         child: Padding(
@@ -161,18 +162,14 @@ class PocketListScreen extends StatelessWidget {
               const CircleAvatar(
                 radius: 32,
                 backgroundColor: Color(0xFF6B3076), // Dark purple circle
-                child: Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                child: Icon(Icons.add, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 12),
               Text(
                 'Buat Kantong',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
             ],

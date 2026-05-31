@@ -140,10 +140,8 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
         builder: (context, themeProvider, _) {
           return MaterialApp(
             navigatorKey: _navigatorKey,
-            builder: (context, child) => GlobalActionOverlay(
-              key: globalOverlayKey,
-              child: child!,
-            ),
+            builder: (context, child) =>
+                GlobalActionOverlay(key: globalOverlayKey, child: child!),
             title: 'uangku',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,

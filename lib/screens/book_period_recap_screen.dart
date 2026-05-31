@@ -32,7 +32,7 @@ class BookPeriodRecapScreen extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
             itemCount: bookPeriods.length,
             itemBuilder: (context, index) {
               final book = bookPeriods[index];

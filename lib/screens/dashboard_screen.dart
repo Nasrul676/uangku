@@ -1096,7 +1096,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.fromLTRB(5, 10, 5, 0),
           child: Consumer<TransactionProvider>(
             builder: (context, provider, _) {
               final allTransactions = provider.transactions;
