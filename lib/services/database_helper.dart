@@ -18,6 +18,7 @@ class DatabaseHelper {
 
   static const _dbName = 'uangkeluar.db';
   static const _dbVersion = 14;
+  static const _dbVersion = 14;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -140,16 +141,20 @@ class DatabaseHelper {
 
         if (oldVersion < 7) {
           // Check if column already exists (added in version 6 in some builds)
-          var columns = await db.rawQuery('PRAGMA table_info($shoppingItemsTable)');
-          bool columnExists = columns.any((column) => column['name'] == 'expense_transaction_id');
-          
+          var columns = await db.rawQuery(
+            'PRAGMA table_info($shoppingItemsTable)',
+          );
+          bool columnExists = columns.any(
+            (column) => column['name'] == 'expense_transaction_id',
+          );
+
           if (!columnExists) {
             await db.execute('''
               ALTER TABLE $shoppingItemsTable
               ADD COLUMN expense_transaction_id INTEGER
             ''');
           }
-          
+
           await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
           );
@@ -172,7 +177,7 @@ class DatabaseHelper {
               current_balance REAL NOT NULL DEFAULT 0
             )
           ''');
-          
+
           await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
           );
@@ -213,7 +218,7 @@ class DatabaseHelper {
               icon TEXT
             )
           ''');
-          
+
           await db.execute('''
             CREATE TABLE IF NOT EXISTS $recurringTransactionsTable (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -541,7 +546,10 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> updateBookPeriodPlanBudget(int bookPeriodId, double planBudget) async {
+  Future<void> updateBookPeriodPlanBudget(
+    int bookPeriodId,
+    double planBudget,
+  ) async {
     final db = await database;
     await db.update(
       bookPeriodsTable,
@@ -681,7 +689,10 @@ class DatabaseHelper {
   // --- SAVING GOALS CRUD ---
   Future<List<SavingGoal>> getAllSavingGoals() async {
     final db = await database;
-    final result = await db.query(savingGoalsTable, orderBy: 'id ASC');
+    final result = await db.query(
+      savingGoalsTable,
+      orderBy: 'order_index ASC, id ASC',
+    );
     return result.map(SavingGoal.fromMap).toList();
   }
 
@@ -707,7 +718,11 @@ class DatabaseHelper {
   Future<void> deleteSavingGoal(int id) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.delete(savingHistoriesTable, where: 'saving_goal_id = ?', whereArgs: [id]);
+      await txn.delete(
+        savingHistoriesTable,
+        where: 'saving_goal_id = ?',
+        whereArgs: [id],
+      );
       await txn.delete(savingGoalsTable, where: 'id = ?', whereArgs: [id]);
     });
   }
@@ -736,11 +751,16 @@ class DatabaseHelper {
   // --- RECURRING TRANSACTIONS CRUD ---
   Future<List<RecurringTransaction>> getAllRecurringTransactions() async {
     final db = await database;
-    final result = await db.query(recurringTransactionsTable, orderBy: 'id ASC');
+    final result = await db.query(
+      recurringTransactionsTable,
+      orderBy: 'id ASC',
+    );
     return result.map(RecurringTransaction.fromMap).toList();
   }
 
-  Future<int> insertRecurringTransaction(RecurringTransaction transaction) async {
+  Future<int> insertRecurringTransaction(
+    RecurringTransaction transaction,
+  ) async {
     final db = await database;
     return db.insert(
       recurringTransactionsTable,
@@ -749,7 +769,9 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> updateRecurringTransaction(RecurringTransaction transaction) async {
+  Future<void> updateRecurringTransaction(
+    RecurringTransaction transaction,
+  ) async {
     final db = await database;
     await db.update(
       recurringTransactionsTable,
@@ -761,6 +783,10 @@ class DatabaseHelper {
 
   Future<void> deleteRecurringTransaction(int id) async {
     final db = await database;
-    await db.delete(recurringTransactionsTable, where: 'id = ?', whereArgs: [id]);
+    await db.delete(
+      recurringTransactionsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
