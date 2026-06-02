@@ -1222,6 +1222,24 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> reorderSavingGoals(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    
+    final goal = _savingGoals.removeAt(oldIndex);
+    _savingGoals.insert(newIndex, goal);
+
+    for (int i = 0; i < _savingGoals.length; i++) {
+      _savingGoals[i] = _savingGoals[i].copyWith(orderIndex: i);
+    }
+    notifyListeners();
+
+    for (final updatedGoal in _savingGoals) {
+      await _databaseHelper.updateSavingGoal(updatedGoal);
+    }
+  }
+
   // --- RECURRING TRANSACTIONS ---
   Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
     try {

@@ -1545,6 +1545,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       realizationByPlan[planId] = (realizationByPlan[planId] ?? 0) + tx.amount;
     }
 
+    final sortedFinancialPlans = List<FinancialPlan>.from(financialPlans)
+      ..sort((a, b) {
+        final realizationA = realizationByPlan[a.id] ?? 0;
+        final realizationB = realizationByPlan[b.id] ?? 0;
+        final progressA = a.targetAmount > 0 ? (realizationA / a.targetAmount).clamp(0.0, 1.0) : 0.0;
+        final progressB = b.targetAmount > 0 ? (realizationB / b.targetAmount).clamp(0.0, 1.0) : 0.0;
+        return progressA.compareTo(progressB);
+      });
+
     return DefaultTabController(
       length: 5,
       child: Column(
@@ -1584,7 +1593,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 FinancialPlanCard(
                   theme: theme,
-                  plans: financialPlans,
+                  plans: sortedFinancialPlans,
                   isLoading: provider.isLoading,
                   realizationByPlan: realizationByPlan,
                   isSaving: _isSavingFinancialPlan,

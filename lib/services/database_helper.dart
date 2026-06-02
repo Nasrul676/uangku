@@ -16,7 +16,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 13;
+  static const _dbVersion = 14;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -237,6 +237,12 @@ class DatabaseHelper {
             ADD COLUMN financial_plan_id INTEGER
           ''');
         }
+        if (oldVersion < 14) {
+          await db.execute('''
+            ALTER TABLE $savingGoalsTable
+            ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
+          ''');
+        }
       },
     );
   }
@@ -276,7 +282,8 @@ class DatabaseHelper {
         target_amount REAL NOT NULL,
         current_amount REAL NOT NULL DEFAULT 0,
         target_date TEXT,
-        icon TEXT
+        icon TEXT,
+        order_index INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -652,7 +659,7 @@ class DatabaseHelper {
   // --- SAVING GOALS CRUD ---
   Future<List<SavingGoal>> getAllSavingGoals() async {
     final db = await database;
-    final result = await db.query(savingGoalsTable, orderBy: 'id ASC');
+    final result = await db.query(savingGoalsTable, orderBy: 'order_index ASC, id ASC');
     return result.map(SavingGoal.fromMap).toList();
   }
 

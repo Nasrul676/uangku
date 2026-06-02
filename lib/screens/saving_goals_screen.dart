@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../models/saving_goal.dart';
+import '../widgets/shake_widget.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/animated_bouncing_card.dart';
 import 'saving_goal_input_screen.dart';
@@ -23,6 +26,15 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
     decimalDigits: 0,
   );
 
+  bool _isReorderMode = false;
+  Timer? _longPressTimer;
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -37,31 +49,54 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
             padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
             child: SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SavingGoalInputScreen(),
+              child: _isReorderMode 
+                ? OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isReorderMode = false;
+                      });
+                    },
+                    icon: const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF2A9D50),
                     ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.add_box_rounded,
-                  color: Color(0xFF2A9D50),
-                ),
-                label: const Text(
-                  'Tambah Tabungan',
-                  style: TextStyle(color: Color(0xFF2A9D50)),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF2A9D50)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    label: const Text(
+                      'Selesai Mengatur',
+                      style: TextStyle(color: Color(0xFF2A9D50)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF2A9D50)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SavingGoalInputScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.add_box_rounded,
+                      color: Color(0xFF2A9D50),
+                    ),
+                    label: const Text(
+                      'Tambah Tabungan',
+                      style: TextStyle(color: Color(0xFF2A9D50)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF2A9D50)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
-                ),
-              ),
             ),
           ),
           if (goals.isEmpty)
@@ -92,18 +127,21 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
             )
           else
             Expanded(
-              child: ListView.separated(
+              child: ReorderableListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
                 itemCount: goals.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                onReorder: (oldIndex, newIndex) {
+                  provider.reorderSavingGoals(oldIndex, newIndex);
+                },
+                buildDefaultDragHandles: false,
                 itemBuilder: (context, index) {
                   final goal = goals[index];
                   final progress = goal.targetAmount > 0
                       ? (goal.currentAmount / goal.targetAmount).clamp(0.0, 1.0)
                       : 0.0;
                   
-                  return AnimatedBouncingCard(
-                    onTap: () {
+                  Widget cardContent = AnimatedBouncingCard(
+                    onTap: _isReorderMode ? null : () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -177,6 +215,39 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                         ),
                       ],
                     ),
+                  );
+
+                  Widget itemContent = Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: cardContent,
+                  );
+
+                  return GestureDetector(
+                    key: ValueKey(goal.id ?? index),
+                    onTapDown: (_) {
+                      if (!_isReorderMode) {
+                        _longPressTimer = Timer(const Duration(seconds: 2), () {
+                          HapticFeedback.vibrate();
+                          setState(() {
+                            _isReorderMode = true;
+                          });
+                        });
+                      }
+                    },
+                    onTapUp: (_) => _longPressTimer?.cancel(),
+                    onTapCancel: () => _longPressTimer?.cancel(),
+                    child: _isReorderMode
+                        ? ReorderableDragStartListener(
+                            index: index,
+                            child: ShakeWidget(
+                              isShaking: _isReorderMode,
+                              child: itemContent,
+                            ),
+                          )
+                        : ShakeWidget(
+                            isShaking: _isReorderMode,
+                            child: itemContent,
+                          ),
                   );
                 },
               ),

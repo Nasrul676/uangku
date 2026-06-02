@@ -6,6 +6,7 @@ class SavingGoal {
     required this.currentAmount,
     this.targetDate,
     this.icon,
+    this.orderIndex = 0,
   });
 
   final int? id;
@@ -14,6 +15,7 @@ class SavingGoal {
   final double currentAmount;
   final String? targetDate;
   final String? icon;
+  final int orderIndex;
 
   Map<String, dynamic> toMap() {
     return {
@@ -23,6 +25,7 @@ class SavingGoal {
       'current_amount': currentAmount,
       if (targetDate != null) 'target_date': targetDate,
       if (icon != null) 'icon': icon,
+      'order_index': orderIndex,
     };
   }
 
@@ -34,6 +37,7 @@ class SavingGoal {
       currentAmount: (map['current_amount'] as num).toDouble(),
       targetDate: map['target_date'] as String?,
       icon: map['icon'] as String?,
+      orderIndex: map['order_index'] as int? ?? 0,
     );
   }
 
@@ -44,6 +48,7 @@ class SavingGoal {
     double? currentAmount,
     String? targetDate,
     String? icon,
+    int? orderIndex,
   }) {
     return SavingGoal(
       id: id ?? this.id,
@@ -52,6 +57,7 @@ class SavingGoal {
       currentAmount: currentAmount ?? this.currentAmount,
       targetDate: targetDate ?? this.targetDate,
       icon: icon ?? this.icon,
+      orderIndex: orderIndex ?? this.orderIndex,
     );
   }
 }
