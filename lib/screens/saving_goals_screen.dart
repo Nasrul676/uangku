@@ -127,7 +127,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
             )
           else
             Expanded(
-              child: ListView.separated(
+              child: ReorderableListView.builder(
                 padding: const EdgeInsets.fromLTRB(5, 16, 5, 140),
                 itemCount: goals.length,
                 onReorder: (oldIndex, newIndex) {
