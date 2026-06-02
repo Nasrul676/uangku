@@ -17,7 +17,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 14;
+  static const _dbVersion = 15;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -257,11 +257,19 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
           );
         }
-        if (oldVersion < 14) {
-          await db.execute('''
-            ALTER TABLE $savingGoalsTable
-            ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
-          ''');
+        if (oldVersion < 15) {
+          var columns = await db.rawQuery(
+            'PRAGMA table_info($savingGoalsTable)',
+          );
+          bool columnExists = columns.any(
+            (column) => column['name'] == 'order_index',
+          );
+          if (!columnExists) {
+            await db.execute('''
+              ALTER TABLE $savingGoalsTable
+              ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
+            ''');
+          }
         }
       },
     );
