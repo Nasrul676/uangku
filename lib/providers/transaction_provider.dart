@@ -9,8 +9,10 @@ import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
 import '../models/saving_goal.dart';
+import '../models/saving_history.dart';
 import '../models/app_notification.dart';
 import '../services/app_settings_service.dart';
+import '../services/background_notification_service.dart';
 import '../services/database_helper.dart';
 import '../services/home_balance_widget_service.dart';
 import '../services/notification_service.dart';
@@ -88,7 +90,8 @@ class TransactionProvider extends ChangeNotifier {
   List<FinancialPlan> get activeBookFinancialPlans => financialPlans;
 
   List<SavingGoal> get savingGoals => _savingGoals;
-  List<RecurringTransaction> get recurringTransactions => _recurringTransactions;
+  List<RecurringTransaction> get recurringTransactions =>
+      _recurringTransactions;
 
   int? get selectedBookPeriodId => _selectedBookPeriodId;
   BookPeriod? get activeBookPeriod {
@@ -127,6 +130,21 @@ class TransactionProvider extends ChangeNotifier {
 
   double get currentNetBalance {
     return currentTotalIncome - currentTotalExpense;
+  }
+
+  double getBookBalance(int bookId) {
+    double income = 0;
+    double expense = 0;
+    for (var tx in _allTransactions) {
+      if (tx.bookPeriodId == bookId) {
+        if (tx.type == 'INCOME') {
+          income += tx.amount;
+        } else if (tx.type == 'EXPENSE') {
+          expense += tx.amount;
+        }
+      }
+    }
+    return income - expense;
   }
 
   int get unsyncedCount =>
@@ -198,7 +216,9 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> loadNotifications() async {
     try {
       final rawNotifications = await _databaseHelper.getAllNotifications();
-      _persistentNotifications = rawNotifications.map((map) => AppNotification.fromMap(map)).toList();
+      _persistentNotifications = rawNotifications
+          .map((map) => AppNotification.fromMap(map))
+          .toList();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -218,7 +238,8 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> loadRecurringTransactions() async {
     try {
-      _recurringTransactions = await _databaseHelper.getAllRecurringTransactions();
+      _recurringTransactions = await _databaseHelper
+          .getAllRecurringTransactions();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -258,7 +279,9 @@ class TransactionProvider extends ChangeNotifier {
           final year = nextDate.month == 12 ? nextDate.year + 1 : nextDate.year;
           // Handle end of month (e.g. Jan 31 -> Feb 28)
           final lastDayOfNextMonth = DateTime(year, month + 1, 0).day;
-          final day = nextDate.day > lastDayOfNextMonth ? lastDayOfNextMonth : nextDate.day;
+          final day = nextDate.day > lastDayOfNextMonth
+              ? lastDayOfNextMonth
+              : nextDate.day;
           nextDate = DateTime(year, month, day, nextDate.hour, nextDate.minute);
         }
         isUpdated = true;
@@ -266,7 +289,9 @@ class TransactionProvider extends ChangeNotifier {
       }
 
       if (isUpdated) {
-        await updateRecurringTransaction(tx.copyWith(nextDate: nextDate.toIso8601String()));
+        await updateRecurringTransaction(
+          tx.copyWith(nextDate: nextDate.toIso8601String()),
+        );
       }
     }
 
@@ -274,7 +299,8 @@ class TransactionProvider extends ChangeNotifier {
       await insertNotification(
         AppNotification(
           title: 'Transaksi Rutin Terproses',
-          subtitle: 'Beberapa transaksi rutin otomatis telah dicatat ke bukumu.',
+          subtitle:
+              'Beberapa transaksi rutin otomatis telah dicatat ke bukumu.',
           type: 'INFO',
           createdAt: DateTime.now(),
         ),
@@ -290,7 +316,9 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> insertNotification(AppNotification notification) async {
     try {
-      await _databaseHelper.insertNotification(notification.toMap()..remove('id'));
+      await _databaseHelper.insertNotification(
+        notification.toMap()..remove('id'),
+      );
       await loadNotifications();
     } catch (e) {
       debugPrint('Error inserting notification: $e');
@@ -338,7 +366,11 @@ class TransactionProvider extends ChangeNotifier {
     final List<AppNotification> dynamicNotifications = [];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
 
     // 1. Dynamic Plan Due Alerts
     final realizationByPlan = <int, double>{};
@@ -354,7 +386,11 @@ class TransactionProvider extends ChangeNotifier {
 
       final parsedDate = DateTime.tryParse(plan.targetDate);
       if (parsedDate == null) continue;
-      final targetDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+      final targetDate = DateTime(
+        parsedDate.year,
+        parsedDate.month,
+        parsedDate.day,
+      );
 
       if (targetDate.isAfter(today)) continue;
 
@@ -363,18 +399,21 @@ class TransactionProvider extends ChangeNotifier {
 
       final isOverdue = targetDate.isBefore(today);
       final overdueDays = isOverdue ? today.difference(targetDate).inDays : 0;
-      
+
       final payloadKey = {'planId': planId}.toString();
       if (_dismissedDynamicNotifications.contains(payloadKey)) continue;
 
-      dynamicNotifications.add(AppNotification(
-        title: plan.title,
-        subtitle: '${isOverdue ? 'Terlambat $overdueDays hari' : 'Jatuh tempo hari ini'} • Target ${formatter.format(plan.targetAmount)}',
-        type: isOverdue ? 'PLAN_DUE' : 'PLAN_WARNING',
-        isRead: false,
-        createdAt: targetDate, // Uses target date as sort order
-        payload: {'planId': planId},
-      ));
+      dynamicNotifications.add(
+        AppNotification(
+          title: plan.title,
+          subtitle:
+              '${isOverdue ? 'Terlambat $overdueDays hari' : 'Jatuh tempo hari ini'} • Target ${formatter.format(plan.targetAmount)}',
+          type: isOverdue ? 'PLAN_DUE' : 'PLAN_WARNING',
+          isRead: false,
+          createdAt: targetDate, // Uses target date as sort order
+          payload: {'planId': planId},
+        ),
+      );
     }
 
     // 2. Dynamic Pockets Over Budget
@@ -384,14 +423,17 @@ class TransactionProvider extends ChangeNotifier {
         final payloadKey = {'pocketId': pocket.id}.toString();
         if (_dismissedDynamicNotifications.contains(payloadKey)) continue;
 
-        dynamicNotifications.add(AppNotification(
-          title: pocket.name,
-          subtitle: 'Kantong Over Budget ${formatter.format(effectiveBalance.abs())}',
-          type: 'POCKET_OVER_BUDGET',
-          isRead: false,
-          createdAt: now,
-          payload: {'pocketId': pocket.id},
-        ));
+        dynamicNotifications.add(
+          AppNotification(
+            title: pocket.name,
+            subtitle:
+                'Kantong Over Budget ${formatter.format(effectiveBalance.abs())}',
+            type: 'POCKET_OVER_BUDGET',
+            isRead: false,
+            createdAt: now,
+            payload: {'pocketId': pocket.id},
+          ),
+        );
       }
     }
 
@@ -517,7 +559,7 @@ class TransactionProvider extends ChangeNotifier {
     if (target.isEmpty) {
       throw Exception('Buku yang dipilih belum ketemu.');
     }
-    
+
     await _databaseHelper.updateBookPeriodPlanBudget(bookPeriodId, budget);
     await loadBookPeriods();
   }
@@ -665,7 +707,7 @@ class TransactionProvider extends ChangeNotifier {
     return normalized;
   }
 
-  Future<void> addTransaction({
+  Future<int> addTransaction({
     required String title,
     required double amount,
     required String type,
@@ -725,8 +767,9 @@ class TransactionProvider extends ChangeNotifier {
       isSynced: 0,
     );
 
-    await _databaseHelper.insertTransaction(tx);
+    final id = await _databaseHelper.insertTransaction(tx);
     await loadTransactions();
+    return id;
   }
 
   Future<int> addTransactionForShopping({
@@ -738,6 +781,7 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? bookId,
     int? pocketId,
+    int? financialPlanId,
   }) async {
     final selectedBookId = bookId ?? _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -764,6 +808,7 @@ class TransactionProvider extends ChangeNotifier {
     final tx = FinanceTransaction(
       bookPeriodId: selectedBookId,
       pocketId: pocketId,
+      financialPlanId: financialPlanId,
       title: title,
       amount: amount,
       type: type,
@@ -1100,10 +1145,9 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> _rescheduleFinancialPlanNotifications() async {
     try {
-      await _notificationService.scheduleFinancialPlanNotifications(
-        plans: _allFinancialPlans,
-        hour: _planNotificationHour,
-        minute: _planNotificationMinute,
+      await BackgroundNotificationService.scheduleFinancialPlanAlarm(
+        _planNotificationHour,
+        _planNotificationMinute,
       );
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -1120,6 +1164,60 @@ class TransactionProvider extends ChangeNotifier {
         isHidden: _isBalanceHidden,
       );
     } catch (_) {}
+  }
+
+  Future<void> transferBetweenBooks({
+    required int sourceBookId,
+    required int targetBookId,
+    required double amount,
+    required DateTime date,
+    required String notes,
+    String targetCategory = 'Transfer Masuk',
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final sourcePeriod = _bookPeriods.firstWhere((p) => p.id == sourceBookId);
+      final targetPeriod = _bookPeriods.firstWhere((p) => p.id == targetBookId);
+
+      final timeStr = DateFormat('HH:mm').format(DateTime.now());
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+
+      final sourceTx = FinanceTransaction(
+        bookPeriodId: sourceBookId,
+        type: 'EXPENSE',
+        amount: amount,
+        category: 'Transfer Keluar',
+        date: dateStr,
+        time: timeStr,
+        title: notes.isEmpty ? 'Transfer ke  ${targetPeriod.label}' : notes,
+        isSynced: 0,
+      );
+
+      final targetTx = FinanceTransaction(
+        bookPeriodId: targetBookId,
+        type: 'INCOME',
+        amount: amount,
+        category: targetCategory,
+        date: dateStr,
+        time: timeStr,
+        title: 'Transfer dari sisa saldo ${sourcePeriod.label}',
+        isSynced: 0,
+      );
+
+      await _databaseHelper.insertTransaction(sourceTx);
+      await _databaseHelper.insertTransaction(targetTx);
+
+      await loadTransactions();
+
+      // Catat log notifikasi sukses transfer (opsional)
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // --- POCKET LOGIC ---
@@ -1167,14 +1265,17 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> calculatePocketAllocation(int pocketId) async {
     final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
-    
+
     double newBalance = 0;
     if (pocket.allocationType == 'PERCENTAGE') {
       // Calculate total income for the book period
       final totalIncome = _allTransactions
-          .where((tx) => tx.bookPeriodId == pocket.bookPeriodId && tx.type == 'INCOME')
+          .where(
+            (tx) =>
+                tx.bookPeriodId == pocket.bookPeriodId && tx.type == 'INCOME',
+          )
           .fold(0.0, (sum, tx) => sum + tx.amount);
-      
+
       newBalance = totalIncome * (pocket.allocationValue / 100);
     } else {
       // NOMINAL
@@ -1187,7 +1288,9 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> addCustomAmountToPocket(int pocketId, double amount) async {
     final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
-    final updatedPocket = pocket.copyWith(currentBalance: pocket.currentBalance + amount);
+    final updatedPocket = pocket.copyWith(
+      currentBalance: pocket.currentBalance + amount,
+    );
     await updatePocket(updatedPocket);
   }
 
@@ -1222,6 +1325,20 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<SavingHistory>> getSavingHistories(int goalId) async {
+    return await _databaseHelper.getSavingHistories(goalId);
+  }
+
+  Future<void> addSavingHistory(SavingHistory history) async {
+    try {
+      await _databaseHelper.insertSavingHistory(history);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
   // --- RECURRING TRANSACTIONS ---
   Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
     try {
@@ -1233,7 +1350,9 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateRecurringTransaction(RecurringTransaction transaction) async {
+  Future<void> updateRecurringTransaction(
+    RecurringTransaction transaction,
+  ) async {
     try {
       await _databaseHelper.updateRecurringTransaction(transaction);
       await loadRecurringTransactions();

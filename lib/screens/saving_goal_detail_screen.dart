@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 
 import '../models/saving_goal.dart';
+import '../models/saving_history.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../widgets/success_overlay.dart';
@@ -22,11 +23,28 @@ class SavingGoalDetailScreen extends StatefulWidget {
 
 class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
   late ConfettiController _confettiController;
+  List<SavingHistory> _histories = [];
+  bool _isLoadingHistory = true;
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHistories();
+    });
+  }
+
+  Future<void> _loadHistories() async {
+    if (widget.goal.id == null) return;
+    final provider = context.read<TransactionProvider>();
+    final h = await provider.getSavingHistories(widget.goal.id!);
+    if (mounted) {
+      setState(() {
+        _histories = h;
+        _isLoadingHistory = false;
+      });
+    }
   }
 
   @override
@@ -194,6 +212,46 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
+            if (_isLoadingHistory)
+              const Center(child: CircularProgressIndicator())
+            else if (_histories.isNotEmpty) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Riwayat Penambahan',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _histories.length,
+                itemBuilder: (context, index) {
+                  final h = _histories[index];
+                  final dateStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.parse(h.date));
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: const Icon(Icons.arrow_downward, color: Colors.green),
+                    ),
+                    title: Text(h.who),
+                    subtitle: Text(dateStr),
+                    trailing: Text(
+                      '+ ${currencyFormatter.format(h.amount)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -214,19 +272,33 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
 
   void _showTopUpDialog(BuildContext context, SavingGoal goal, TransactionProvider provider) {
     final amountController = TextEditingController();
+    final whoController = TextEditingController();
     
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Tambah Tabungan'),
-          content: TextField(
-            controller: amountController,
-            keyboardType: TextInputType.visiblePassword,
-            decoration: const InputDecoration(
-              hintText: 'Masukkan nominal (+ - k m)',
-              prefixText: 'Rp ',
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.visiblePassword,
+                decoration: const InputDecoration(
+                  hintText: 'Masukkan nominal (+ - k m)',
+                  prefixText: 'Rp ',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: whoController,
+                decoration: const InputDecoration(
+                  hintText: 'Siapa yang menabung?',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -236,11 +308,22 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
             FilledButton(
               onPressed: () async {
                 final amount = CalculatorParser.evaluate(amountController.text);
-                if (amount > 0) {
+                final who = whoController.text.trim();
+                if (amount > 0 && who.isNotEmpty) {
                   final newGoal = goal.copyWith(
                     currentAmount: goal.currentAmount + amount,
                   );
                   await provider.updateSavingGoal(newGoal);
+
+                  final history = SavingHistory(
+                    savingGoalId: goal.id!,
+                    amount: amount,
+                    who: who,
+                    date: DateTime.now().toIso8601String(),
+                  );
+                  await provider.addSavingHistory(history);
+                  _loadHistories();
+
                   if (context.mounted) {
                     Navigator.pop(context);
                     

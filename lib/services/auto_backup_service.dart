@@ -31,9 +31,9 @@ Future<void> callbackDispatcher() async {
         ? prefs.getString('auto_backup_password')
         : null;
 
-    // Pastikan koneksi database ditutup sebelum backup
+    // Checkpoint WAL sebelum backup agar data konsisten, tapi JANGAN tutup database
+    // karena BackupService butuh koneksi aktif untuk membuat SQL dump.
     await DatabaseHelper.instance.checkpointDatabase();
-    await DatabaseHelper.instance.closeDatabase();
 
     final zipFile = await BackupService.createBackup(password: password);
 
@@ -63,14 +63,18 @@ Future<void> callbackDispatcher() async {
   } catch (e) {
     debugPrint('Auto Backup Error: $e');
 
-    final errorNotification = {
-      'title': 'Auto Backup Gagal',
-      'subtitle': 'Terjadi kesalahan saat membackup data.',
-      'type': 'BACKUP_FAILED',
-      'is_read': 0,
-      'created_at': DateTime.now().toIso8601String(),
-    };
-    await DatabaseHelper.instance.insertNotification(errorNotification);
+    try {
+      final errorNotification = {
+        'title': 'Auto Backup Gagal',
+        'subtitle': 'Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) : e.toString()}',
+        'type': 'BACKUP_FAILED',
+        'is_read': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      await DatabaseHelper.instance.insertNotification(errorNotification);
+    } catch (_) {
+      // Abaikan error saat menyimpan notifikasi gagal
+    }
 
     await AutoBackupService.showNotification(
       'Auto Backup Gagal',
@@ -136,6 +140,45 @@ class AutoBackupService {
     );
   }
 
+  /// Menjalankan backup langsung (untuk tombol test di UI).
+  /// Mengembalikan nama file ZIP jika berhasil, atau melempar exception jika gagal.
+  static Future<String> runBackupNow() async {
+    final prefs = await SharedPreferences.getInstance();
+    final destFolder = prefs.getString('auto_backup_folder') ?? '';
+    if (destFolder.isEmpty) {
+      throw Exception('Folder penyimpanan belum dipilih. Pilih folder terlebih dahulu.');
+    }
+
+    final usePassword = prefs.getBool('auto_backup_use_password') ?? false;
+    final password = usePassword ? prefs.getString('auto_backup_password') : null;
+
+    // Checkpoint WAL agar data konsisten sebelum backup
+    await DatabaseHelper.instance.checkpointDatabase();
+
+    final zipFile = await BackupService.createBackup(password: password);
+
+    final fileName = p.basename(zipFile.path);
+    final destPath = p.join(destFolder, fileName);
+    await zipFile.copy(destPath);
+
+    if (await zipFile.exists()) {
+      await zipFile.delete();
+    }
+
+    // Catat notifikasi sukses
+    final successNotification = {
+      'title': 'Auto Backup Berhasil',
+      'subtitle': 'Data berhasil dibackup ke: $fileName',
+      'type': 'BACKUP_SUCCESS',
+      'is_read': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    await DatabaseHelper.instance.insertNotification(successNotification);
+
+    return fileName;
+  }
+
+  /// Hanya untuk keperluan alarm manager background.
   static Future<void> testBackupNow() async {
     if (kIsWeb || !Platform.isAndroid) return;
     await AndroidAlarmManager.oneShot(

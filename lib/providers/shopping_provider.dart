@@ -82,7 +82,7 @@ class ShoppingProvider with ChangeNotifier {
     await loadItems(item.bookPeriodId, force: true);
   }
 
-  Future<void> markAsBought(ShoppingItem item, double totalAmount) async {
+  Future<void> markAsBought(ShoppingItem item, double totalAmount, {int? pocketId, int? financialPlanId}) async {
     try {
       final normalizedTotal = totalAmount < 0 ? 0.0 : totalAmount;
       final unitAmount = item.quantity == 0
@@ -100,6 +100,8 @@ class ShoppingProvider with ChangeNotifier {
         date: now,
         time: ':',
         bookId: item.bookPeriodId,
+        pocketId: pocketId,
+        financialPlanId: financialPlanId,
       );
       
       final updatedItem = item.copyWith(

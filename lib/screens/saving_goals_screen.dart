@@ -93,7 +93,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
           else
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
+                padding: const EdgeInsets.fromLTRB(5, 16, 5, 140),
                 itemCount: goals.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {

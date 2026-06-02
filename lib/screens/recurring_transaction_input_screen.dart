@@ -805,11 +805,11 @@ class _CategoryChip extends StatelessWidget {
               label,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? (theme.brightness == Brightness.dark
-                          ? Colors.white
-                          : theme.colorScheme.error)
-                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white
+                    : (selected
+                        ? theme.colorScheme.error
+                        : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
               ),
             ),
           ],

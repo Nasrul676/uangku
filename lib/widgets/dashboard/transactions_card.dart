@@ -38,6 +38,7 @@ class TransactionsCard extends StatefulWidget {
 class _TransactionsCardState extends State<TransactionsCard> {
   late final ScrollController _scrollController;
   final Set<int> _hiddenTransactions = {};
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -53,6 +54,12 @@ class _TransactionsCardState extends State<TransactionsCard> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredTransactions = _searchQuery.isEmpty 
+        ? widget.transactions 
+        : widget.transactions.where((t) => 
+            t.title.toLowerCase().contains(_searchQuery) ||
+            t.category.toLowerCase().contains(_searchQuery)).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
@@ -72,6 +79,42 @@ class _TransactionsCardState extends State<TransactionsCard> {
             ),
             const SizedBox(height: 10),
           ],
+          if (widget.transactions.isNotEmpty || _searchQuery.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: TextField(
+                controller: TextEditingController.fromValue(
+                  TextEditingValue(
+                    text: _searchQuery,
+                    selection: TextSelection.collapsed(offset: _searchQuery.length),
+                  ),
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Cari transaksi...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () {
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              ),
+            ),
+          ],
           if (widget.isLoading)
             Expanded(
               child: Padding(
@@ -79,11 +122,11 @@ class _TransactionsCardState extends State<TransactionsCard> {
                 child: SkeletonLoader(itemCount: 5),
               ),
             )
-          else if (widget.transactions.isEmpty)
+          else if (filteredTransactions.isEmpty)
             Expanded(
               child: EmptyState(
-                title: 'Belum ada data',
-                subtitle: widget.emptyText,
+                title: _searchQuery.isNotEmpty ? 'Pencarian tidak ditemukan' : 'Belum ada data',
+                subtitle: _searchQuery.isNotEmpty ? 'Coba gunakan kata kunci lain.' : widget.emptyText,
               ),
             )
           else
@@ -98,11 +141,11 @@ class _TransactionsCardState extends State<TransactionsCard> {
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  itemCount: widget.transactions.length,
+                  itemCount: filteredTransactions.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final item = widget.transactions[index];
+                    final item = filteredTransactions[index];
                     if (_hiddenTransactions.contains(item.id)) {
                       return const SizedBox.shrink();
                     }

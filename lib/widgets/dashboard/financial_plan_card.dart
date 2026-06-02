@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:flutter_slidable/flutter_slidable.dart';
+
 import '../../models/financial_plan.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
@@ -20,6 +22,7 @@ class FinancialPlanCard extends StatelessWidget {
     required this.onEditPlan,
     required this.onDeletePlan,
     required this.onEditBudget,
+    required this.canEditBudget,
   });
 
   final ThemeData theme;
@@ -32,6 +35,7 @@ class FinancialPlanCard extends StatelessWidget {
   final Future<void> Function(FinancialPlan plan) onEditPlan;
   final Future<void> Function(int id) onDeletePlan;
   final VoidCallback onEditBudget;
+  final bool canEditBudget;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +92,7 @@ class FinancialPlanCard extends StatelessWidget {
                     realizationByPlan: realizationByPlan,
                     planBudget: planBudget,
                     onEditBudget: onEditBudget,
+                    canEditBudget: canEditBudget,
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -99,7 +104,20 @@ class FinancialPlanCard extends StatelessWidget {
                       children: [
                         addButton,
                         const SizedBox(height: 12),
-                        ...plans.map((plan) {
+                        ...(() {
+                          final sortedPlans = List<FinancialPlan>.from(plans)..sort((a, b) {
+                            final realizedA = realizationByPlan[a.id] ?? 0;
+                            final progressA = a.targetAmount <= 0
+                                ? 0.0
+                                : (realizedA / a.targetAmount).clamp(0.0, 1.0).toDouble();
+                            final realizedB = realizationByPlan[b.id] ?? 0;
+                            final progressB = b.targetAmount <= 0
+                                ? 0.0
+                                : (realizedB / b.targetAmount).clamp(0.0, 1.0).toDouble();
+                            return progressA.compareTo(progressB);
+                          });
+                          return sortedPlans;
+                        })().map((plan) {
                           final planId = plan.id;
                           if (planId == null) {
                             return const SizedBox.shrink();
@@ -141,6 +159,7 @@ class FinancialPlanSummaryCard extends StatelessWidget {
     required this.realizationByPlan,
     required this.planBudget,
     required this.onEditBudget,
+    required this.canEditBudget,
   });
 
   final ThemeData theme;
@@ -148,6 +167,7 @@ class FinancialPlanSummaryCard extends StatelessWidget {
   final Map<int, double> realizationByPlan;
   final double planBudget;
   final VoidCallback onEditBudget;
+  final bool canEditBudget;
 
   @override
   Widget build(BuildContext context) {
@@ -171,51 +191,58 @@ class FinancialPlanSummaryCard extends StatelessWidget {
       decimalDigits: 0,
     );
 
-    return AppCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
+    return Slidable(
+      key: const ValueKey('summary-card'),
+      endActionPane: canEditBudget ? ActionPane(
+        motion: const ScrollMotion(),
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondary,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.calculate_rounded,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSecondary,
-            ),
+          SlidableAction(
+            onPressed: (_) => onEditBudget(),
+            backgroundColor: const Color(0xFF6CC185),
+            foregroundColor: Colors.white,
+            icon: Icons.edit_rounded,
+            label: 'Edit',
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Ringkasan',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+        ],
+      ) : null,
+      child: AppCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.calculate_rounded,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSecondary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Ringkasan',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    InkWell(
-                      onTap: onEditBudget,
-                      borderRadius: BorderRadius.circular(4),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: Icon(Icons.edit_outlined, size: 16),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -286,7 +313,7 @@ class FinancialPlanSummaryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 
@@ -325,94 +352,113 @@ class FinancialPlanTile extends StatelessWidget {
       decimalDigits: 0,
     ).format(cappedRealization);
 
-    return AppCard(
-      padding: const EdgeInsets.all(10),
-      color: Theme.of(context).cardTheme.color ?? Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
-      child: Row(
+    return Slidable(
+      key: ValueKey(plan.id ?? plan.hashCode),
+      startActionPane: ActionPane(
+        motion: const ScrollMotion(),
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Theme.of(
-                context,
-              ).extension<AppThemeExtension>()?.cardBorder,
-            ),
-            child: const Icon(Icons.flag_rounded, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  plan.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  plan.category != null
-                      ? '${plan.category} • Target $dateText • $amountText'
-                      : 'Target $dateText • $amountText',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0, end: progress),
-                          duration: const Duration(milliseconds: 1000),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, _) =>
-                              LinearProgressIndicator(
-                                minHeight: 6,
-                                value: value,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                color: const Color(0xFF1F5A62),
-                              ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      progressText,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Realisasi: $realizationText',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit rencana',
-          ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: 'Hapus rencana',
+          SlidableAction(
+            onPressed: (_) => onEdit(),
+            backgroundColor: const Color(0xFF6CC185),
+            foregroundColor: Colors.white,
+            icon: Icons.edit_rounded,
+            label: 'Edit',
+            borderRadius: BorderRadius.circular(12),
           ),
         ],
+      ),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (_) => onDelete(),
+            backgroundColor: const Color(0xFFE57373),
+            foregroundColor: Colors.white,
+            icon: Icons.delete_rounded,
+            label: 'Hapus',
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
+      ),
+      child: AppCard(
+        padding: const EdgeInsets.all(10),
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                border: Theme.of(
+                  context,
+                ).extension<AppThemeExtension>()?.cardBorder,
+              ),
+              child: const Icon(Icons.flag_rounded, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plan.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    plan.category != null
+                        ? '${plan.category} • Target $dateText • $amountText'
+                        : 'Target $dateText • $amountText',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: progress),
+                            duration: const Duration(milliseconds: 1000),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, _) =>
+                                LinearProgressIndicator(
+                                  minHeight: 6,
+                                  value: value,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surface,
+                                  color: const Color(0xFF1F5A62),
+                                ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        progressText,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Realisasi: $realizationText',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

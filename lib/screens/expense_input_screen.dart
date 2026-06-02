@@ -168,6 +168,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   Future<void> _openFinancialPlanPicker(List<FinancialPlan> plans) async {
     final selected = await showModalBottomSheet<int?>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -186,7 +187,12 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  6,
+                  12,
+                  12 + MediaQuery.of(context).viewInsets.bottom,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,7 +752,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                           const SizedBox(height: 10),
                           TextFormField(
                             controller: _amountController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.text,
                             inputFormatters: [RupiahInputFormatter()],
                             decoration: InputDecoration(
                               hintText: 'Nominal pengeluaran',
@@ -1171,11 +1177,11 @@ class _CategoryChip extends StatelessWidget {
               label,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? (theme.brightness == Brightness.dark
-                          ? Colors.white
-                          : theme.colorScheme.error)
-                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white
+                    : (selected
+                        ? theme.colorScheme.error
+                        : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
               ),
             ),
           ],

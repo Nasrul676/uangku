@@ -24,6 +24,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
   TimeOfDay? _dailyTime;
 
   bool _isLoading = true;
+  bool _isTestingBackup = false;
 
   @override
   void initState() {
@@ -247,14 +248,54 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.tonal(
-                  onPressed: () async {
-                    await AutoBackupService.testBackupNow();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Test Auto Backup sedang berjalan di background...')),
-                    );
-                  },
-                  child: const Text('Jalankan Auto Backup Sekarang (Tes)'),
+                  onPressed: _isTestingBackup
+                      ? null
+                      : () async {
+                          if (_folderPath.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pilih folder penyimpanan terlebih dahulu!'),
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() => _isTestingBackup = true);
+                          try {
+                            final fileName = await AutoBackupService.runBackupNow();
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Backup berhasil: $fileName'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            final message = e.toString().replaceFirst('Exception: ', '');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Backup gagal: $message'),
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                              ),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isTestingBackup = false);
+                          }
+                        },
+                  child: _isTestingBackup
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Sedang Backup...'),
+                          ],
+                        )
+                      : const Text('Jalankan Auto Backup Sekarang (Tes)'),
                 ),
               ),
               const SizedBox(height: 12),

@@ -30,63 +30,45 @@ class EntranceAnimation extends StatefulWidget {
   State<EntranceAnimation> createState() => _EntranceAnimationState();
 }
 
-class _EntranceAnimationState extends State<EntranceAnimation>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+class _EntranceAnimationState extends State<EntranceAnimation> {
+  bool _start = false;
 
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
-
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
-
     if (widget.delay == Duration.zero) {
-      _controller.forward();
+      _start = true;
     } else {
       Future.delayed(widget.delay, () {
-        if (mounted) _controller.forward();
+        if (mounted) setState(() => _start = true);
       });
     }
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        final value = _animation.value;
-
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: _start ? 1.0 : 0.0),
+      duration: widget.duration,
+      curve: widget.curve,
+      builder: (context, value, child) {
         switch (widget.type) {
           case EntranceType.flipX:
-            return _buildFlip(value);
+            return _buildFlip(value, child!);
           case EntranceType.slideRight:
-            return _buildSlideRight(value);
+            return _buildSlideRight(value, child!);
           case EntranceType.slideUp:
-            return _buildSlideUp(value);
+            return _buildSlideUp(value, child!);
           case EntranceType.fadeScale:
-            return _buildFadeScale(value);
+            return _buildFadeScale(value, child!);
         }
       },
+      child: widget.child,
     );
   }
 
   /// 3D flip around Y-axis
-  Widget _buildFlip(double value) {
+  Widget _buildFlip(double value, Widget child) {
     // Start at 90° and rotate to 0°
     final angle = (1 - value) * pi / 2;
 
@@ -97,40 +79,40 @@ class _EntranceAnimationState extends State<EntranceAnimation>
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.001) // perspective
           ..rotateY(angle),
-        child: widget.child,
+        child: child,
       ),
     );
   }
 
   /// Slide in from the right
-  Widget _buildSlideRight(double value) {
+  Widget _buildSlideRight(double value, Widget child) {
     return Opacity(
       opacity: value.clamp(0.0, 1.0),
       child: Transform.translate(
         offset: Offset(80 * (1 - value), 0),
-        child: widget.child,
+        child: child,
       ),
     );
   }
 
   /// Slide in from the bottom
-  Widget _buildSlideUp(double value) {
+  Widget _buildSlideUp(double value, Widget child) {
     return Opacity(
       opacity: value.clamp(0.0, 1.0),
       child: Transform.translate(
         offset: Offset(0, 60 * (1 - value)),
-        child: widget.child,
+        child: child,
       ),
     );
   }
 
   /// Fade in + scale up
-  Widget _buildFadeScale(double value) {
+  Widget _buildFadeScale(double value, Widget child) {
     return Opacity(
       opacity: value.clamp(0.0, 1.0),
       child: Transform.scale(
         scale: 0.9 + (0.1 * value),
-        child: widget.child,
+        child: child,
       ),
     );
   }

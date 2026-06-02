@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/transaction_provider.dart';
@@ -35,7 +38,7 @@ class SettingsContent extends StatefulWidget {
   State<SettingsContent> createState() => _SettingsContentState();
 }
 
-class _SettingsContentState extends State<SettingsContent> {
+class _SettingsContentState extends State<SettingsContent> with WidgetsBindingObserver {
   late final TextEditingController _urlController;
   late final TextEditingController _payloadRootController;
   late final TextEditingController _incomeCategoriesController;
@@ -47,10 +50,14 @@ class _SettingsContentState extends State<SettingsContent> {
   late TimeOfDay _notificationTime;
   bool _isSavingNotificationTime = false;
   bool _isSendingNotificationDemo = false;
+  bool _isNotificationGranted = false;
+  bool _isExactAlarmGranted = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPermissions();
     final provider = context.read<TransactionProvider>();
     _urlController = TextEditingController(text: provider.webAppUrl);
     _payloadRootController = TextEditingController(
@@ -102,6 +109,13 @@ class _SettingsContentState extends State<SettingsContent> {
     _loadAccountInfo();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissions();
+    }
+  }
+
   Future<void> _loadAccountInfo() async {
     final name = await _authService.getCurrentUserName();
     final email = await _authService.getCurrentUserEmail();
@@ -112,8 +126,21 @@ class _SettingsContentState extends State<SettingsContent> {
     });
   }
 
+  Future<void> _checkPermissions() async {
+    if (Platform.isAndroid || Platform.isIOS) {
+      final notifStatus = await Permission.notification.status;
+      final exactStatus = await Permission.scheduleExactAlarm.status;
+      if (!mounted) return;
+      setState(() {
+        _isNotificationGranted = notifStatus.isGranted;
+        _isExactAlarmGranted = exactStatus.isGranted;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _urlController.dispose();
     _payloadRootController.dispose();
     _incomeCategoriesController.dispose();
@@ -179,6 +206,17 @@ class _SettingsContentState extends State<SettingsContent> {
     setState(() => _isSavingNotificationTime = true);
 
     try {
+      if (Platform.isAndroid) {
+        final notifStatus = await Permission.notification.status;
+        if (!notifStatus.isGranted) {
+          await Permission.notification.request();
+        }
+
+        final exactStatus = await Permission.scheduleExactAlarm.status;
+        if (!exactStatus.isGranted) {
+          await Permission.scheduleExactAlarm.request();
+        }
+      }
       await context.read<TransactionProvider>().savePlanNotificationTime(
         hour: _notificationTime.hour,
         minute: _notificationTime.minute,
@@ -206,6 +244,13 @@ class _SettingsContentState extends State<SettingsContent> {
     setState(() => _isSendingNotificationDemo = true);
 
     try {
+      if (Platform.isAndroid) {
+        final notifStatus = await Permission.notification.status;
+        if (!notifStatus.isGranted) {
+          await Permission.notification.request();
+        }
+      }
+
       await context
           .read<TransactionProvider>()
           .showFinancialPlanNotificationDemo();
@@ -431,6 +476,10 @@ class _SettingsContentState extends State<SettingsContent> {
             ],
           ),
         ),
+        if (Platform.isAndroid || Platform.isIOS) ...[
+          const SizedBox(height: 10),
+          _buildPermissionCard(theme),
+        ],
         const SizedBox(height: 10),
         AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),
@@ -517,6 +566,55 @@ class _SettingsContentState extends State<SettingsContent> {
         ),
         const SizedBox(height: 100),
       ],
+    );
+  }
+
+  Widget _buildPermissionCard(ThemeData theme) {
+    return AppCard(isInteractive: true,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Izin Sistem & Notifikasi',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Pastikan semua izin di bawah ini aktif agar notifikasi jadwal berjalan lancar.',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Izin Notifikasi'),
+            subtitle: const Text('Memunculkan pesan peringatan di layar.'),
+            trailing: _isNotificationGranted
+                ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                : FilledButton.tonal(
+                    onPressed: () async {
+                      await Permission.notification.request();
+                      _checkPermissions();
+                    },
+                    child: const Text('Izinkan'),
+                  ),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Izin Alarm Tepat Waktu'),
+            subtitle: const Text('Agar pengingat muncul di waktu yang akurat (tidak ditunda oleh sistem penghemat baterai).'),
+            trailing: _isExactAlarmGranted
+                ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                : FilledButton.tonal(
+                    onPressed: () async {
+                      await Permission.scheduleExactAlarm.request();
+                      _checkPermissions();
+                    },
+                    child: const Text('Izinkan'),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

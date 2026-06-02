@@ -31,13 +31,13 @@ class Pocket {
 
   factory Pocket.fromMap(Map<String, dynamic> map) {
     return Pocket(
-      id: map['id'],
-      bookPeriodId: map['book_period_id'],
-      name: map['name'],
-      icon: map['icon'],
-      allocationType: map['allocation_type'],
-      allocationValue: map['allocation_value'],
-      currentBalance: map['current_balance'],
+      id: map['id'] as int?,
+      bookPeriodId: map['book_period_id'] as int,
+      name: map['name'] as String,
+      icon: map['icon'] as String,
+      allocationType: map['allocation_type'] as String,
+      allocationValue: (map['allocation_value'] as num?)?.toDouble() ?? 0.0,
+      currentBalance: (map['current_balance'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

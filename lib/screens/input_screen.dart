@@ -1,6 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'package:flutter/services.dart';
+import '../utils/calculator_parser.dart';
+import '../utils/rupiah_input_formatter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -82,7 +84,7 @@ class _InputScreenState extends State<InputScreen> {
     final provider = context.read<TransactionProvider>();
     await provider.addTransaction(
       title: _titleController.text.trim(),
-      amount: double.parse(_amountController.text.trim()),
+      amount: CalculatorParser.evaluate(_amountController.text),
       type: _type,
       category: _category,
       date: _selectedDate,
@@ -259,9 +261,9 @@ class _InputScreenState extends State<InputScreen> {
                           const SizedBox(height: 10),
                           TextFormField(
                             controller: _amountController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.text,
                             inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
+                              RupiahInputFormatter(),
                             ],
                             decoration: _fieldDecoration(
                               'Nominal',

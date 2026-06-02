@@ -94,7 +94,7 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
           else
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
+                padding: const EdgeInsets.fromLTRB(5, 16, 5, 140),
                 itemCount: transactions.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {

@@ -421,7 +421,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                           const SizedBox(height: 10),
                           TextFormField(
                             controller: _amountController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.text,
                             inputFormatters: [RupiahInputFormatter()],
                             decoration: const InputDecoration(
                               hintText: 'Nominal',
@@ -540,9 +540,11 @@ class _CategoryChip extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
-          color: selected
-              ? Theme.of(context).colorScheme.onTertiaryContainer
-              : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : (selected
+                  ? Theme.of(context).colorScheme.onTertiaryContainer
+                  : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
         ),
       ),
     );

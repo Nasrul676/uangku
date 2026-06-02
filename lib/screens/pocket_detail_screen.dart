@@ -347,7 +347,7 @@ class PocketDetailScreen extends StatelessWidget {
           title: const Text('Tambah Uang Custom'),
           content: TextField(
             controller: controller,
-            keyboardType: TextInputType.number,
+            keyboardType: TextInputType.text,
             inputFormatters: [RupiahInputFormatter()],
             decoration: const InputDecoration(
               hintText: 'Cth: 50.000',

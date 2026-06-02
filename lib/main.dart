@@ -11,6 +11,7 @@ import 'services/auth_service.dart';
 import 'services/home_balance_widget_service.dart';
 import 'services/app_settings_service.dart';
 import 'services/auto_backup_service.dart';
+import 'services/background_notification_service.dart';
 
 import 'providers/shopping_provider.dart';
 import 'widgets/custom_loading_indicator.dart';
@@ -21,6 +22,7 @@ void main() async {
   await initializeDateFormatting('id', null);
   await AutoBackupService.initialize();
   await HomeBalanceWidgetService.instance.initialize();
+  await BackgroundNotificationService.scheduleDailySummary();
   runApp(const UangKeluarApp());
 }
 

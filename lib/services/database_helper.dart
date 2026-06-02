@@ -9,6 +9,7 @@ import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
 import '../models/saving_goal.dart';
+import '../models/saving_history.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -16,7 +17,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 13;
+  static const _dbVersion = 14;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -24,6 +25,7 @@ class DatabaseHelper {
   static const pocketsTable = 'pockets';
   static const notificationsTable = 'notifications';
   static const savingGoalsTable = 'saving_goals';
+  static const savingHistoriesTable = 'saving_histories';
   static const recurringTransactionsTable = 'recurring_transactions';
 
   Database? _database;
@@ -237,6 +239,20 @@ class DatabaseHelper {
             ADD COLUMN financial_plan_id INTEGER
           ''');
         }
+        if (oldVersion < 14) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $savingHistoriesTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              saving_goal_id INTEGER NOT NULL,
+              amount REAL NOT NULL,
+              who TEXT NOT NULL,
+              date TEXT NOT NULL
+            )
+          ''');
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
+          );
+        }
       },
     );
   }
@@ -277,6 +293,16 @@ class DatabaseHelper {
         current_amount REAL NOT NULL DEFAULT 0,
         target_date TEXT,
         icon TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $savingHistoriesTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        saving_goal_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        who TEXT NOT NULL,
+        date TEXT NOT NULL
       )
     ''');
 
@@ -359,6 +385,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
     );
   }
 
@@ -677,7 +706,31 @@ class DatabaseHelper {
 
   Future<void> deleteSavingGoal(int id) async {
     final db = await database;
-    await db.delete(savingGoalsTable, where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete(savingHistoriesTable, where: 'saving_goal_id = ?', whereArgs: [id]);
+      await txn.delete(savingGoalsTable, where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  // --- SAVING HISTORIES CRUD ---
+  Future<List<SavingHistory>> getSavingHistories(int savingGoalId) async {
+    final db = await database;
+    final result = await db.query(
+      savingHistoriesTable,
+      where: 'saving_goal_id = ?',
+      whereArgs: [savingGoalId],
+      orderBy: 'date DESC, id DESC',
+    );
+    return result.map(SavingHistory.fromMap).toList();
+  }
+
+  Future<int> insertSavingHistory(SavingHistory history) async {
+    final db = await database;
+    return db.insert(
+      savingHistoriesTable,
+      history.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
   }
 
   // --- RECURRING TRANSACTIONS CRUD ---

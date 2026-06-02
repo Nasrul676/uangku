@@ -220,7 +220,7 @@ class _FinancialPlanInputDialogState extends State<FinancialPlanInputDialog> {
             const SizedBox(height: 10),
             TextField(
               controller: _amountController,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.text,
               inputFormatters: [RupiahInputFormatter()],
               decoration: const InputDecoration(hintText: 'Target nominal'),
               onChanged: (_) {

@@ -334,7 +334,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _valueController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: TextInputType.text,
                 inputFormatters: _allocationType == 'NOMINAL' ? [RupiahInputFormatter()] : [],
                 decoration: InputDecoration(
                   hintText: _allocationType == 'PERCENTAGE' ? 'Cth: 20' : 'Cth: 500.000',

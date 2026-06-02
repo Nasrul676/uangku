@@ -41,11 +41,13 @@ class _CategoryChip extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 12,
-            color: selected
-                ? Theme.of(context).colorScheme.error
-                : Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : (selected
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withOpacity(0.6)),
           ),
         ),
       ),
@@ -389,7 +391,7 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                   helperText:
                       'Kamu bisa mengisinya kembali ketika sudah membeli',
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 inputFormatters: [RupiahInputFormatter()],
               ),
               const SizedBox(height: 16),

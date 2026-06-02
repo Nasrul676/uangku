@@ -96,7 +96,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Text(
                   'Atur Uang\nJadi Lebih\nMenyenangkan',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 48,
+                    fontSize: 42,
                     height: 1.1,
                     fontWeight: FontWeight.w800,
                     color: isDark ? Colors.white : const Color(0xFF1E1E1E),

@@ -27,6 +27,7 @@ import 'book_period_recap_screen.dart';
 import 'pocket_list_screen.dart';
 import 'pocket_detail_screen.dart';
 import 'pocket_form_screen.dart';
+import 'book_transfer_screen.dart';
 import '../utils/icon_picker_utils.dart';
 import '../widgets/app_card.dart';
 import '../widgets/dashboard/dashboard_buttons.dart';
@@ -39,7 +40,6 @@ import '../widgets/dashboard/recent_section.dart';
 import '../widgets/dashboard/transactions_card.dart';
 import '../widgets/dashboard/financial_plan_dialog.dart';
 import '../widgets/dashboard/quick_menu.dart';
-
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -251,7 +251,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Konfirmasi Hapus'),
-          content: const Text('Apakah kamu yakin ingin menghapus rencana keuangan ini?'),
+          content: const Text(
+            'Apakah kamu yakin ingin menghapus rencana keuangan ini?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -282,9 +284,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openEditPlanBudgetDialog(int bookPeriodId, double currentBudget) async {
+  Future<void> _openEditPlanBudgetDialog(
+    int bookPeriodId,
+    double currentBudget,
+  ) async {
     final controller = TextEditingController(
-      text: currentBudget > 0 ? NumberFormat.decimalPattern('id_ID').format(currentBudget) : '',
+      text: currentBudget > 0
+          ? NumberFormat.decimalPattern('id_ID').format(currentBudget)
+          : '',
     );
     final result = await showZoomDialog<double>(
       context: context,
@@ -319,7 +326,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (result != null) {
       try {
-        await context.read<TransactionProvider>().updateBookPlanBudget(bookPeriodId, result);
+        await context.read<TransactionProvider>().updateBookPlanBudget(
+          bookPeriodId,
+          result,
+        );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -418,9 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await provider.openBook(startDate: picked);
       if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Buku baru berhasil dibuka. Semangat nabungnya!'),
-        ),
+        const SnackBar(content: Text('Buku baru berhasil dibuka. Semangat!')),
       );
       return true;
     } catch (e) {
@@ -884,13 +892,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? (isDark ? const Color(0xFF1A3B66) : const Color(0xFFE5F0FF))
-                                          : (isDark ? const Color(0xFF2D2D2D) : Colors.white),
+                                          ? (isDark
+                                                ? const Color(0xFF1A3B66)
+                                                : const Color(0xFFE5F0FF))
+                                          : (isDark
+                                                ? const Color(0xFF2D2D2D)
+                                                : Colors.white),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: isSelected
                                             ? const Color(0xFF0066FF)
-                                            : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                                            : (isDark
+                                                  ? Colors.grey.shade800
+                                                  : Colors.grey.shade300),
                                       ),
                                     ),
                                     child: Row(
@@ -901,7 +915,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? const Color(0xFF0066FF)
-                                                : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
+                                                : (isDark
+                                                      ? const Color(0xFF3D3D3D)
+                                                      : const Color(
+                                                          0xFFF0F0F0,
+                                                        )),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -910,7 +928,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 : Icons.lock_outline_rounded,
                                             color: isSelected
                                                 ? Colors.white
-                                                : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
+                                                : (isDark
+                                                      ? Colors.grey.shade300
+                                                      : Colors.grey.shade600),
                                             size: 20,
                                           ),
                                         ),
@@ -926,8 +946,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
                                                   color: isSelected
-                                                      ? (isDark ? const Color(0xFF66A3FF) : const Color(0xFF0066FF))
-                                                      : (isDark ? Colors.white : const Color(0xFF111111)),
+                                                      ? (isDark
+                                                            ? const Color(
+                                                                0xFF66A3FF,
+                                                              )
+                                                            : const Color(
+                                                                0xFF0066FF,
+                                                              ))
+                                                      : (isDark
+                                                            ? Colors.white
+                                                            : const Color(
+                                                                0xFF111111,
+                                                              )),
                                                 ),
                                               ),
                                               const SizedBox(height: 2),
@@ -936,8 +966,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   color: isSelected
-                                                      ? (isDark ? const Color(0xFF66A3FF).withOpacity(0.8) : const Color(0xFF0066FF).withOpacity(0.8))
-                                                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                                      ? (isDark
+                                                            ? const Color(
+                                                                0xFF66A3FF,
+                                                              ).withOpacity(0.8)
+                                                            : const Color(
+                                                                0xFF0066FF,
+                                                              ).withOpacity(
+                                                                0.8,
+                                                              ))
+                                                      : (isDark
+                                                            ? Colors
+                                                                  .grey
+                                                                  .shade400
+                                                            : Colors
+                                                                  .grey
+                                                                  .shade600),
                                                 ),
                                               ),
                                             ],
@@ -1174,6 +1218,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 return Stack(
                                   clipBehavior: Clip.none,
                                   children: [
+                                    CircleIconButton(
+                                      icon: Icons.shopping_cart_outlined,
+                                      onTap: () {
+                                        setState(() {
+                                          _previousIndex = _currentIndex;
+                                          _currentIndex = 2;
+                                        });
+                                      },
+                                    ),
                                     if (count > 0)
                                       Positioned(
                                         right: -2,
@@ -1222,8 +1275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               clipBehavior: Clip.none,
                               children: [
                                 AnimatedBellIcon(
-                                  animate:
-                                      provider.unreadNotificationCount > 0,
+                                  animate: provider.unreadNotificationCount > 0,
                                   child: CircleIconButton(
                                     icon: Icons.notifications_none_rounded,
                                     onTap: () {
@@ -1385,6 +1437,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _openExpenseInput();
                   },
                 ),
+                Consumer<TransactionProvider>(
+                  builder: (context, provider, child) {
+                    final totalBooksCount = provider.bookPeriods.length;
+                    if (totalBooksCount >= 2) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: QuickAddSheetItem(
+                          icon: Icons.swap_horiz_rounded,
+                          title: 'Transfer Antar Buku',
+                          subtitle: 'Pindahkan saldo ke buku lain',
+                          color: const Color(0xFFE3F2FD),
+                          iconColor: const Color(0xFF0066FF),
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BookTransferScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
               ],
             ),
           ),
@@ -1417,6 +1496,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           financialPlans: financialPlans,
           incomeTransactions: incomeTransactions,
           expenseTransactions: expenseTransactions,
+          totalIncome: totalIncome,
         );
       case 2:
         return const ShoppingListScreen(isEmbedded: true);
@@ -1537,6 +1617,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required List<FinancialPlan> financialPlans,
     required List<FinanceTransaction> incomeTransactions,
     required List<FinanceTransaction> expenseTransactions,
+    required double totalIncome,
   }) {
     final realizationByPlan = <int, double>{};
     for (final tx in allTransactions) {
@@ -1551,9 +1632,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           TabBar(
             isScrollable: true,
-            labelColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+            labelColor: theme.colorScheme.primary.computeLuminance() > 0.6
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.primary,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+            indicatorColor: theme.colorScheme.primary.computeLuminance() > 0.6
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.primary,
             tabs: const [
               Tab(text: 'Buku'),
               Tab(text: 'Pengeluaran'),
@@ -1588,14 +1673,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isLoading: provider.isLoading,
                   realizationByPlan: realizationByPlan,
                   isSaving: _isSavingFinancialPlan,
-                  planBudget: provider.bookPeriods.firstWhere((b) => b.id == (provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id), orElse: () => const BookPeriod(label: '', startDate: '', planBudget: 0.0)).planBudget,
+                  planBudget: totalIncome > 0 
+                      ? totalIncome 
+                      : provider.bookPeriods
+                          .firstWhere(
+                            (b) =>
+                                b.id ==
+                                (provider.selectedBookPeriodId ??
+                                    provider.activeBookPeriod?.id),
+                            orElse: () => const BookPeriod(
+                              label: '',
+                              startDate: '',
+                              planBudget: 0.0,
+                            ),
+                          )
+                          .planBudget,
+                  canEditBudget: totalIncome <= 0,
                   onAddPlan: _openAddFinancialPlanDialog,
                   onEditPlan: _openEditFinancialPlanDialog,
                   onDeletePlan: _removeFinancialPlan,
                   onEditBudget: () {
-                    final bookId = provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
+                    final bookId =
+                        provider.selectedBookPeriodId ??
+                        provider.activeBookPeriod?.id;
                     if (bookId != null) {
-                      final current = provider.bookPeriods.firstWhere((b) => b.id == bookId, orElse: () => const BookPeriod(label: '', startDate: '', planBudget: 0.0)).planBudget;
+                      final current = provider.bookPeriods
+                          .firstWhere(
+                            (b) => b.id == bookId,
+                            orElse: () => const BookPeriod(
+                              label: '',
+                              startDate: '',
+                              planBudget: 0.0,
+                            ),
+                          )
+                          .planBudget;
                       _openEditPlanBudgetDialog(bookId, current);
                     }
                   },
@@ -1624,8 +1735,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _openBookFlow,
-              icon: const Icon(Icons.add_box_rounded, color: AppTheme.incomeGreen),
-              label: const Text('Buka Buku Baru', style: TextStyle(color: AppTheme.incomeGreen)),
+              icon: const Icon(
+                Icons.add_box_rounded,
+                color: AppTheme.incomeGreen,
+              ),
+              label: const Text(
+                'Buka Buku Baru',
+                style: TextStyle(color: AppTheme.incomeGreen),
+              ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 side: const BorderSide(color: AppTheme.incomeGreen),
@@ -1642,7 +1759,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _AppEmptyState(
                       emoji: '📖',
                       title: 'Belum ada buku',
-                      subtitle: 'Buka buku pertama untuk mulai mencatat keuanganmu.',
+                      subtitle:
+                          'Buka buku pertama untuk mulai mencatat keuanganmu.',
                       ctaLabel: 'Buka Buku Pertama',
                       onCtaTap: _openBookFlow,
                     ),
@@ -1724,7 +1842,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.primary
-                                      : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
+                                      : (isDark
+                                            ? const Color(0xFF3D3D3D)
+                                            : const Color(0xFFF0F0F0)),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -1733,7 +1853,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       : Icons.lock_outline_rounded,
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.onPrimary
-                                      : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
+                                      : (isDark
+                                            ? Colors.grey.shade300
+                                            : Colors.grey.shade600),
                                   size: 20,
                                 ),
                               ),
@@ -1744,17 +1866,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   children: [
                                     Text(
                                       period.label,
-                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected
-                                            ? (isDark ? Colors.white : Colors.black)
-                                            : null,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected
+                                                ? (isDark
+                                                      ? Colors.white
+                                                      : Colors.black)
+                                                : null,
+                                          ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       subtitle,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                   ],
                                 ),
@@ -1762,7 +1891,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               if (isSelected) ...[
                                 Icon(
                                   Icons.check_circle,
-                                  color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.6 ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.primary,
+                                  color:
+                                      Theme.of(context).colorScheme.primary
+                                              .computeLuminance() >
+                                          0.6
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 8),
                               ],
@@ -1778,7 +1912,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
           ),
-
         ],
       ),
     );
@@ -1812,10 +1945,7 @@ class _AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 52),
-            ),
+            Text(emoji, style: const TextStyle(fontSize: 52)),
             const SizedBox(height: 16),
             Text(
               title,
@@ -1835,10 +1965,7 @@ class _AppEmptyState extends StatelessWidget {
             ),
             if (ctaLabel != null && onCtaTap != null) ...[
               const SizedBox(height: 20),
-              FilledButton.tonal(
-                onPressed: onCtaTap,
-                child: Text(ctaLabel!),
-              ),
+              FilledButton.tonal(onPressed: onCtaTap, child: Text(ctaLabel!)),
             ],
           ],
         ),
@@ -1858,39 +1985,3 @@ class _PlanDueAlert {
   final bool isOverdue;
   final int overdueDays;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
