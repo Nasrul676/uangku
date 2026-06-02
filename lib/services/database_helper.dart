@@ -449,7 +449,7 @@ class DatabaseHelper {
     final db = await database;
     final result = await db.query(
       transactionsTable,
-      orderBy: 'date DESC, id DESC',
+      orderBy: 'date DESC, time DESC, id DESC',
     );
 
     return result.map(FinanceTransaction.fromMap).toList();

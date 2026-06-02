@@ -227,9 +227,9 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                     child: cardContent,
                   );
 
-                  return GestureDetector(
+                  return Listener(
                     key: ValueKey(goal.id ?? index),
-                    onTapDown: (_) {
+                    onPointerDown: (_) {
                       if (!_isReorderMode) {
                         _longPressTimer = Timer(const Duration(seconds: 2), () {
                           HapticFeedback.vibrate();
@@ -239,8 +239,8 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                         });
                       }
                     },
-                    onTapUp: (_) => _longPressTimer?.cancel(),
-                    onTapCancel: () => _longPressTimer?.cancel(),
+                    onPointerUp: (_) => _longPressTimer?.cancel(),
+                    onPointerCancel: (_) => _longPressTimer?.cancel(),
                     child: _isReorderMode
                         ? ReorderableDragStartListener(
                             index: index,
