@@ -7,10 +7,25 @@ import 'package:confetti/confetti.dart';
 
 import '../models/saving_goal.dart';
 import '../models/saving_history.dart';
+import '../models/saving_expense.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../widgets/success_overlay.dart';
 import 'saving_goal_input_screen.dart';
+
+class _CombinedHistory {
+  final bool isExpense;
+  final double amount;
+  final String title;
+  final DateTime dateTime;
+  
+  _CombinedHistory({
+    required this.isExpense,
+    required this.amount,
+    required this.title,
+    required this.dateTime,
+  });
+}
 
 class SavingGoalDetailScreen extends StatefulWidget {
   const SavingGoalDetailScreen({super.key, required this.goal});
@@ -23,7 +38,7 @@ class SavingGoalDetailScreen extends StatefulWidget {
 
 class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
   late ConfettiController _confettiController;
-  List<SavingHistory> _histories = [];
+  List<_CombinedHistory> _histories = [];
   bool _isLoadingHistory = true;
 
   @override
@@ -39,9 +54,36 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
     if (widget.goal.id == null) return;
     final provider = context.read<TransactionProvider>();
     final h = await provider.getSavingHistories(widget.goal.id!);
+    final e = await provider.getSavingExpenses(widget.goal.id!);
+    
+    List<_CombinedHistory> combined = [];
+    for (var item in h) {
+      combined.add(_CombinedHistory(
+        isExpense: false,
+        amount: item.amount,
+        title: item.who,
+        dateTime: DateTime.parse(item.date),
+      ));
+    }
+    for (var item in e) {
+      DateTime dt;
+      try {
+        dt = DateTime.parse('${item.date} ${item.time}:00');
+      } catch (_) {
+        dt = DateTime.parse(item.date);
+      }
+      combined.add(_CombinedHistory(
+        isExpense: true,
+        amount: item.amount,
+        title: item.purpose,
+        dateTime: dt,
+      ));
+    }
+    combined.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
     if (mounted) {
       setState(() {
-        _histories = h;
+        _histories = combined;
         _isLoadingHistory = false;
       });
     }
@@ -196,21 +238,40 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: progress >= 1.0 
-                    ? null 
-                    : () => _showTopUpDialog(context, currentGoal, provider),
-                icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('Tambah Tabungan'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: progress >= 1.0 
+                        ? null 
+                        : () => _showTopUpDialog(context, currentGoal, provider),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: const Text('Isi Tabungan'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: currentGoal.currentAmount <= 0
+                        ? null
+                        : () => _showWithdrawDialog(context, currentGoal, provider),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    label: const Text('Ambil Tabungan'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
             if (_isLoadingHistory)
@@ -232,20 +293,23 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 itemCount: _histories.length,
                 itemBuilder: (context, index) {
                   final h = _histories[index];
-                  final dateStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.parse(h.date));
+                  final dateStr = DateFormat('dd MMM yyyy HH:mm').format(h.dateTime);
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      child: const Icon(Icons.arrow_downward, color: Colors.green),
+                      child: Icon(
+                        h.isExpense ? Icons.arrow_upward : Icons.arrow_downward, 
+                        color: h.isExpense ? Colors.red : Colors.green,
+                      ),
                     ),
-                    title: Text(h.who),
+                    title: Text(h.title),
                     subtitle: Text(dateStr),
                     trailing: Text(
-                      '+ ${currencyFormatter.format(h.amount)}',
-                      style: const TextStyle(
+                      '${h.isExpense ? '-' : '+'} ${currencyFormatter.format(h.amount)}',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        color: h.isExpense ? Colors.red : Colors.green,
                       ),
                     ),
                   );
@@ -352,6 +416,125 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
               child: const Text('Simpan'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showWithdrawDialog(BuildContext context, SavingGoal goal, TransactionProvider provider) {
+    final amountController = TextEditingController();
+    final purposeController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Ambil Tabungan'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.visiblePassword,
+                      decoration: const InputDecoration(
+                        hintText: 'Masukkan nominal (+ - k m)',
+                        prefixText: 'Rp ',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: purposeController,
+                      decoration: const InputDecoration(
+                        hintText: 'Tujuan pengambilan?',
+                        prefixIcon: Icon(Icons.outbox_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.calendar_today_rounded),
+                      title: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date != null) {
+                          setState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.access_time_rounded),
+                      title: Text(selectedTime.format(context)),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (time != null) {
+                          setState(() => selectedTime = time);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final amount = CalculatorParser.evaluate(amountController.text);
+                    final purpose = purposeController.text.trim();
+                    if (amount > 0 && purpose.isNotEmpty) {
+                      if (amount > goal.currentAmount) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Nominal melebihi saldo tabungan!')),
+                        );
+                        return;
+                      }
+                      
+                      final newGoal = goal.copyWith(
+                        currentAmount: goal.currentAmount - amount,
+                      );
+                      await provider.updateSavingGoal(newGoal);
+
+                      final expense = SavingExpense(
+                        savingGoalId: goal.id!,
+                        amount: amount,
+                        purpose: purpose,
+                        date: DateFormat('yyyy-MM-dd').format(selectedDate),
+                        time: '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                      );
+                      await provider.addSavingExpense(expense);
+                      _loadHistories();
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        SuccessOverlay.show(
+                          context,
+                          message: 'Tabungan diambil!',
+                          color: Colors.red,
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          }
         );
       },
     );

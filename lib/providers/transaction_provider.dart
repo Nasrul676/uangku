@@ -10,6 +10,7 @@ import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
 import '../models/saving_goal.dart';
 import '../models/saving_history.dart';
+import '../models/saving_expense.dart';
 import '../models/app_notification.dart';
 import '../services/app_settings_service.dart';
 import '../services/background_notification_service.dart';
@@ -1352,6 +1353,20 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> addSavingHistory(SavingHistory history) async {
     try {
       await _databaseHelper.insertSavingHistory(history);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<List<SavingExpense>> getSavingExpenses(int goalId) async {
+    return await _databaseHelper.getSavingExpenses(goalId);
+  }
+
+  Future<void> addSavingExpense(SavingExpense expense) async {
+    try {
+      await _databaseHelper.insertSavingExpense(expense);
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();

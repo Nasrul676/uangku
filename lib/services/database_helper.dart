@@ -8,6 +8,7 @@ import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
+import '../models/saving_expense.dart';
 import '../models/saving_goal.dart';
 import '../models/saving_history.dart';
 
@@ -17,7 +18,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 15;
+  static const _dbVersion = 16;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -26,6 +27,7 @@ class DatabaseHelper {
   static const notificationsTable = 'notifications';
   static const savingGoalsTable = 'saving_goals';
   static const savingHistoriesTable = 'saving_histories';
+  static const savingExpensesTable = 'saving_expenses';
   static const recurringTransactionsTable = 'recurring_transactions';
 
   Database? _database;
@@ -271,6 +273,21 @@ class DatabaseHelper {
             ''');
           }
         }
+        if (oldVersion < 16) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $savingExpensesTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              saving_goal_id INTEGER NOT NULL,
+              amount REAL NOT NULL,
+              purpose TEXT NOT NULL,
+              date TEXT NOT NULL,
+              time TEXT NOT NULL
+            )
+          ''');
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
+          );
+        }
       },
     );
   }
@@ -322,6 +339,17 @@ class DatabaseHelper {
         amount REAL NOT NULL,
         who TEXT NOT NULL,
         date TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $savingExpensesTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        saving_goal_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        purpose TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL
       )
     ''');
 
@@ -407,6 +435,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
     );
   }
 
@@ -737,6 +768,11 @@ class DatabaseHelper {
         where: 'saving_goal_id = ?',
         whereArgs: [id],
       );
+      await txn.delete(
+        savingExpensesTable,
+        where: 'saving_goal_id = ?',
+        whereArgs: [id],
+      );
       await txn.delete(savingGoalsTable, where: 'id = ?', whereArgs: [id]);
     });
   }
@@ -758,6 +794,27 @@ class DatabaseHelper {
     return db.insert(
       savingHistoriesTable,
       history.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  // --- SAVING EXPENSES CRUD ---
+  Future<List<SavingExpense>> getSavingExpenses(int savingGoalId) async {
+    final db = await database;
+    final result = await db.query(
+      savingExpensesTable,
+      where: 'saving_goal_id = ?',
+      whereArgs: [savingGoalId],
+      orderBy: 'date DESC, time DESC, id DESC',
+    );
+    return result.map(SavingExpense.fromMap).toList();
+  }
+
+  Future<int> insertSavingExpense(SavingExpense expense) async {
+    final db = await database;
+    return db.insert(
+      savingExpensesTable,
+      expense.toMap()..remove('id'),
       conflictAlgorithm: ConflictAlgorithm.abort,
     );
   }
