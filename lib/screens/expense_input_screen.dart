@@ -409,6 +409,113 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     }
   }
 
+  Future<void> _openCategoryPicker(List<String> categories) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final filteredCategories = categories
+                .where((c) => c.toLowerCase().contains(searchQuery.toLowerCase()))
+                .toList();
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  6,
+                  12,
+                  MediaQuery.of(context).viewInsets.bottom + 12,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pilih Kategori',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Cari kategori...',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          searchQuery = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filteredCategories.length + 1,
+                        separatorBuilder: (_, _) => const SizedBox(height: 2),
+                        itemBuilder: (context, index) {
+                          if (index == filteredCategories.length) {
+                            return AnimatedBouncingCard(
+                              onTap: () {
+                                Navigator.pop(sheetContext);
+                                _openAddCategoryDialog();
+                              },
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              color: Theme.of(context).cardTheme.color,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Row(
+                                children: [
+                                   Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.primary),
+                                   const SizedBox(width: 8),
+                                   Expanded(
+                                     child: Text(
+                                       'Tambah Kategori Baru',
+                                       style: TextStyle(
+                                         fontWeight: FontWeight.w700,
+                                         color: Theme.of(context).colorScheme.primary,
+                                       ),
+                                     ),
+                                   ),
+                                ],
+                              ),
+                            );
+                          }
+                          final category = filteredCategories[index];
+                          return _CategorySheetItem(
+                            title: category,
+                            selected: _category == category,
+                            onTap: () => Navigator.pop(sheetContext, category),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (selected != null && selected != _category) {
+      setState(() {
+        _category = selected;
+      });
+    }
+  }
+
   Future<void> _openAddCategoryDialog() async {
     if (_isAddingCategory) return;
 
@@ -712,28 +819,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                             color: theme.colorScheme.primary,
                           ),
                           const SizedBox(height: 10),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                ...categories.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: _CategoryChip(
-                                      label: item,
-                                      selected: _category == item,
-                                      onTap: () =>
-                                          setState(() => _category = item),
-                                    ),
-                                  ),
-                                ),
-                                _AddCategoryChip(
-                                  onTap: _openAddCategoryDialog,
-                                  isLoading: _isAddingCategory,
-                                ),
-                              ],
-                            ),
+                          _CategorySelectorField(
+                            selectedText: _category,
+                            onTap: () => _openCategoryPicker(categories),
                           ),
                           const SizedBox(height: 10),
                           _FinancialPlanSelectorField(
@@ -1004,6 +1092,51 @@ class _PocketSelectorField extends StatelessWidget {
   }
 }
 
+class _CategorySelectorField extends StatelessWidget {
+  const _CategorySelectorField({
+    required this.selectedText,
+    required this.onTap,
+  });
+
+  final String selectedText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color:
+            Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.category_rounded, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.expand_more_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FinancialPlanSheetItem extends StatelessWidget {
   const _FinancialPlanSheetItem({
     required this.title,
@@ -1037,34 +1170,79 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: selected
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: selected
                         ? Theme.of(context).colorScheme.onErrorContainer
                         : Theme.of(
                             context,
                           ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: selected
+                          ? Theme.of(context).colorScheme.onErrorContainer
+                          : Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           if (selected)
             Icon(
               Icons.check_circle_rounded,
-              color: Theme.of(context).colorScheme.error,
+              color: Theme.of(context).colorScheme.onErrorContainer,
               size: 18,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategorySheetItem extends StatelessWidget {
+  const _CategorySheetItem({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBouncingCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      color: selected
+          ? Theme.of(context).colorScheme.errorContainer
+          : Theme.of(context).cardTheme.color,
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? Theme.of(context).colorScheme.onErrorContainer
+                    : Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+          ),
+          if (selected) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+          ],
         ],
       ),
     );

@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
 import flutter_local_notifications
-import workmanager_apple
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -14,10 +13,6 @@ import workmanager_apple
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
     }
     
-    // Setup workmanager callback (jika diperlukan untuk background task Auto Backup)
-    WorkmanagerPlugin.setPluginRegistrantCallback { registry in
-        GeneratedPluginRegistrant.register(with: registry)
-    }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

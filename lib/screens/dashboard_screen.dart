@@ -28,6 +28,11 @@ import 'pocket_list_screen.dart';
 import 'pocket_detail_screen.dart';
 import 'pocket_form_screen.dart';
 import 'book_transfer_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:lottie/lottie.dart';
+import '../services/ai_assistant_service.dart';
+import 'receipt_result_screen.dart';
 import '../utils/icon_picker_utils.dart';
 import '../widgets/app_card.dart';
 import '../widgets/dashboard/dashboard_buttons.dart';
@@ -1464,12 +1469,158 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return const SizedBox.shrink();
                   },
                 ),
+                const SizedBox(height: 8),
+                QuickAddSheetItem(
+                  icon: Icons.document_scanner_rounded,
+                  title: 'Scan Struk (AI)',
+                  subtitle: 'Otomatis catat dari foto struk',
+                  color: const Color(0xFFF3E5F5),
+                  iconColor: const Color(0xFF9C27B0),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _scanReceiptProcess();
+                  },
+                ),
               ],
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _scanReceiptProcess() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pilih Sumber Gambar',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.camera_alt_rounded, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  title: const Text('Kamera', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.photo_library_rounded, color: Theme.of(context).colorScheme.secondary),
+                  ),
+                  title: const Text('Galeri Foto', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (pickedFile == null) return;
+    
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset('assets/lottie/loading.json', width: 120, height: 120),
+                const SizedBox(height: 16),
+                Text(
+                  'AI sedang memproses struk...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final inputImage = InputImage.fromFilePath(pickedFile.path);
+      final textRecognizer = TextRecognizer();
+      final recognizedText = await textRecognizer.processImage(inputImage);
+      await textRecognizer.close();
+
+      if (!mounted) return;
+      final provider = context.read<TransactionProvider>();
+      final categories = provider.expenseCategories;
+      
+      final parsedItems = await AiAssistantService.parseReceiptText(
+        ocrText: recognizedText.text,
+        categories: categories,
+      );
+
+      if (mounted) Navigator.pop(context); // Close loading dialog
+
+      if (mounted && parsedItems.isNotEmpty) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ReceiptResultScreen(
+              items: parsedItems,
+              receiptImageFilePath: pickedFile.path,
+            ),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak ada barang yang terdeteksi dari struk ini.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memproses struk: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildCurrentTab({

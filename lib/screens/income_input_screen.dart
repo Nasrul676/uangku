@@ -219,6 +219,113 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
     }
   }
 
+  Future<void> _openCategoryPicker(List<String> categories) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final filteredCategories = categories
+                .where((c) => c.toLowerCase().contains(searchQuery.toLowerCase()))
+                .toList();
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  6,
+                  12,
+                  MediaQuery.of(context).viewInsets.bottom + 12,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pilih Kategori',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Cari kategori...',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          searchQuery = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filteredCategories.length + 1,
+                        separatorBuilder: (_, _) => const SizedBox(height: 2),
+                        itemBuilder: (context, index) {
+                          if (index == filteredCategories.length) {
+                            return AnimatedBouncingCard(
+                              onTap: () {
+                                Navigator.pop(sheetContext);
+                                _openAddCategoryDialog();
+                              },
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              color: Theme.of(context).cardTheme.color,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Row(
+                                children: [
+                                   Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.primary),
+                                   const SizedBox(width: 8),
+                                   Expanded(
+                                     child: Text(
+                                       'Tambah Kategori Baru',
+                                       style: TextStyle(
+                                         fontWeight: FontWeight.w700,
+                                         color: Theme.of(context).colorScheme.primary,
+                                       ),
+                                     ),
+                                   ),
+                                ],
+                              ),
+                            );
+                          }
+                          final category = filteredCategories[index];
+                          return _CategorySheetItem(
+                            title: category,
+                            selected: _category == category,
+                            onTap: () => Navigator.pop(sheetContext, category),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (selected != null && selected != _category) {
+      setState(() {
+        _category = selected;
+      });
+    }
+  }
+
   Future<void> _openAddCategoryDialog() async {
     if (_isAddingCategory) return;
 
@@ -452,29 +559,9 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                             'Pilih Kategori',
                             style: theme.textTheme.titleMedium,
                           ),
-                          const SizedBox(height: 8),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                ...categories.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: _CategoryChip(
-                                      label: item,
-                                      selected: _category == item,
-                                      onTap: () =>
-                                          setState(() => _category = item),
-                                    ),
-                                  ),
-                                ),
-                                _AddCategoryChip(
-                                  onTap: _openAddCategoryDialog,
-                                  isLoading: _isAddingCategory,
-                                ),
-                              ],
-                            ),
+                          _CategorySelectorField(
+                            selectedText: _category,
+                            onTap: () => _openCategoryPicker(categories),
                           ),
                           const SizedBox(height: 14),
                           SwipeButton(
@@ -525,14 +612,59 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
+class _CategorySelectorField extends StatelessWidget {
+  const _CategorySelectorField({
+    required this.selectedText,
+    required this.onTap,
+  });
+
+  final String selectedText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color:
+            Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.category_rounded, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.expand_more_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategorySheetItem extends StatelessWidget {
+  const _CategorySheetItem({
+    required this.title,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
+  final String title;
   final bool selected;
   final VoidCallback onTap;
 
@@ -540,47 +672,30 @@ class _CategoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBouncingCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       color: selected
           ? Theme.of(context).colorScheme.tertiaryContainer
           : Theme.of(context).cardTheme.color,
-      borderRadius: BorderRadius.circular(10),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white
-              : (selected
-                  ? Theme.of(context).colorScheme.onTertiaryContainer
-                  : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
-        ),
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? Theme.of(context).colorScheme.onTertiaryContainer
+                    : Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+          ),
+          if (selected) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onTertiaryContainer, size: 20),
+          ],
+        ],
       ),
-    );
-  }
-}
-
-class _AddCategoryChip extends StatelessWidget {
-  const _AddCategoryChip({required this.onTap, required this.isLoading});
-
-  final VoidCallback onTap;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBouncingCard(
-      onTap: isLoading ? null : onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Theme.of(context).cardTheme.color ?? Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      child: isLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.add_rounded, size: 16),
     );
   }
 }
