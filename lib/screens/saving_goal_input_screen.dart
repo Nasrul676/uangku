@@ -23,6 +23,7 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _iconController = TextEditingController();
+  String _type = 'money';
   DateTime? _targetDate;
   bool _isSaving = false;
 
@@ -31,6 +32,8 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
+  
+  final _goldFormatter = NumberFormat('#,##0.####', 'id_ID');
 
   @override
   void initState() {
@@ -38,7 +41,16 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
     final existing = widget.existingGoal;
     if (existing != null) {
       _titleController.text = existing.title;
-      _amountController.text = existing.targetAmount.toInt().toString();
+      _type = existing.type;
+      
+      if (_type == 'gold') {
+        _amountController.text = existing.targetAmount == existing.targetAmount.truncateToDouble()
+            ? existing.targetAmount.toInt().toString()
+            : existing.targetAmount.toString();
+      } else {
+        _amountController.text = existing.targetAmount.toInt().toString();
+      }
+
       _iconController.text = existing.icon ?? '';
       if (existing.targetDate != null) {
         _targetDate = DateTime.tryParse(existing.targetDate!);
@@ -56,7 +68,12 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
     super.dispose();
   }
 
-  double get _amountValue => CalculatorParser.evaluate(_amountController.text);
+  double get _amountValue {
+    if (_type == 'gold') {
+      return double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    }
+    return CalculatorParser.evaluate(_amountController.text);
+  }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -83,6 +100,7 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
       currentAmount: widget.existingGoal?.currentAmount ?? 0.0,
       targetDate: _targetDate?.toIso8601String(),
       icon: _iconController.text.trim(),
+      type: _type,
     );
 
     await GlobalActionOverlay.run(() async {
@@ -123,6 +141,30 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
                       key: _formKey,
                       child: ListView(
                         children: [
+                          if (!isEdit) ...[
+                            SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: 'money',
+                                  label: Text('Dana'),
+                                  icon: Icon(Icons.account_balance_wallet_rounded),
+                                ),
+                                ButtonSegment(
+                                  value: 'gold',
+                                  label: Text('Emas'),
+                                  icon: Icon(Icons.diamond_rounded),
+                                ),
+                              ],
+                              selected: {_type},
+                              onSelectionChanged: (Set<String> newSelection) {
+                                setState(() {
+                                  _type = newSelection.first;
+                                  _amountController.clear();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           Row(
                             children: [
                               SizedBox(
@@ -153,12 +195,18 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _amountController,
-                            keyboardType: TextInputType.visiblePassword,
+                            keyboardType: _type == 'gold' 
+                                ? const TextInputType.numberWithOptions(decimal: true)
+                                : TextInputType.visiblePassword,
                             decoration: InputDecoration(
-                              hintText: 'Target Dana (Bisa pakai k, m, +, -)',
+                              hintText: _type == 'gold' 
+                                  ? 'Target Emas (Misal: 0.5 atau 1)' 
+                                  : 'Target Dana (Bisa pakai k, m, +, -)',
                               suffix: _amountValue > 0
                                   ? Text(
-                                      _currencyFormatter.format(_amountValue),
+                                      _type == 'gold' 
+                                          ? '${_goldFormatter.format(_amountValue)} gram'
+                                          : _currencyFormatter.format(_amountValue),
                                       style: theme.textTheme.labelSmall?.copyWith(
                                         color: theme.colorScheme.primary,
                                         fontWeight: FontWeight.w700,

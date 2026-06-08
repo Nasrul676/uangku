@@ -11,6 +11,7 @@ import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/app_card.dart';
 import '../widgets/custom_loading_indicator.dart';
+import '../widgets/custom_bottom_sheet.dart';
 
 import 'add_shopping_item_screen.dart';
 import 'saving_goals_screen.dart';
@@ -112,116 +113,118 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
     final pockets = transactionProvider.pockets;
     final plans = transactionProvider.activeBookFinancialPlans;
 
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showCustomBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Input Total Harga'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: amountController,
-                        keyboardType: TextInputType.text,
-                        inputFormatters: [RupiahInputFormatter()],
-                        decoration: const InputDecoration(
-                          hintText: 'Rp 0',
-                          labelText: 'Total Harga',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Masukkan total harga';
-                          }
-                          final amount = CalculatorParser.evaluate(value);
-                          if (amount <= 0) {
-                            return 'Total harga tidak valid';
-                          }
-                          return null;
-                        },
-                      ),
-                      if (pockets.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<int?>(
-                          value: selectedPocketId,
-                          decoration: const InputDecoration(
-                            labelText: 'Sumber Dana (Opsional)',
-                            prefixIcon: Icon(Icons.account_balance_wallet_rounded, size: 20),
-                          ),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('Tanpa Sumber Dana'),
-                            ),
-                            ...pockets.map((p) => DropdownMenuItem<int?>(
-                                  value: p.id,
-                                  child: Text(p.name),
-                                )),
-                          ],
-                          onChanged: (val) {
-                            setState(() {
-                              selectedPocketId = val;
-                            });
-                          },
-                        ),
-                      ],
-                      if (plans.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<int?>(
-                          value: selectedPlanId,
-                          decoration: const InputDecoration(
-                            labelText: 'Rencana Keuangan (Opsional)',
-                            prefixIcon: Icon(Icons.flag_rounded, size: 20),
-                          ),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('Tanpa Rencana'),
-                            ),
-                            ...plans.map((p) => DropdownMenuItem<int?>(
-                                  value: p.id,
-                                  child: Text(p.title),
-                                )),
-                          ],
-                          onChanged: (val) {
-                            setState(() {
-                              selectedPlanId = val;
-                            });
-                          },
-                        ),
-                      ],
-                    ],
+      title: 'Input Total Harga',
+      child: StatefulBuilder(
+        builder: (context, setState) {
+          return Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.text,
+                  inputFormatters: [RupiahInputFormatter()],
+                  decoration: const InputDecoration(
+                    hintText: 'Rp 0',
+                    labelText: 'Total Harga',
                   ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Batal'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (formKey.currentState?.validate() != true) return;
-                    final amount = CalculatorParser.evaluate(
-                      amountController.text,
-                    );
-                    Navigator.pop(dialogContext, {
-                      'amount': amount,
-                      'pocketId': selectedPocketId,
-                      'planId': selectedPlanId,
-                    });
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Masukkan total harga';
+                    }
+                    final amount = CalculatorParser.evaluate(value);
+                    if (amount <= 0) {
+                      return 'Total harga tidak valid';
+                    }
+                    return null;
                   },
-                  child: const Text('Simpan'),
+                ),
+                if (pockets.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int?>(
+                    value: selectedPocketId,
+                    decoration: const InputDecoration(
+                      labelText: 'Sumber Dana (Opsional)',
+                      prefixIcon: Icon(Icons.account_balance_wallet_rounded, size: 20),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Tanpa Sumber Dana'),
+                      ),
+                      ...pockets.map((p) => DropdownMenuItem<int?>(
+                            value: p.id,
+                            child: Text(p.name),
+                          )),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        selectedPocketId = val;
+                      });
+                    },
+                  ),
+                ],
+                if (plans.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int?>(
+                    value: selectedPlanId,
+                    decoration: const InputDecoration(
+                      labelText: 'Rencana Keuangan (Opsional)',
+                      prefixIcon: Icon(Icons.flag_rounded, size: 20),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Tanpa Rencana'),
+                      ),
+                      ...plans.map((p) => DropdownMenuItem<int?>(
+                            value: p.id,
+                            child: Text(p.title),
+                          )),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        selectedPlanId = val;
+                      });
+                    },
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Batal'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          if (formKey.currentState?.validate() != true) return;
+                          final amount = CalculatorParser.evaluate(
+                            amountController.text,
+                          );
+                          Navigator.pop(context, {
+                            'amount': amount,
+                            'pocketId': selectedPocketId,
+                            'planId': selectedPlanId,
+                          });
+                        },
+                        child: const Text('Simpan'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
 
     if (!mounted || result == null) return;

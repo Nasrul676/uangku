@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import 'package:confetti/confetti.dart';
 
+import '../widgets/custom_bottom_sheet.dart';
+
 import '../models/saving_goal.dart';
 import '../models/saving_history.dart';
 import '../models/saving_expense.dart';
@@ -18,12 +20,14 @@ class _CombinedHistory {
   final double amount;
   final String title;
   final DateTime dateTime;
+  final dynamic originalItem;
   
   _CombinedHistory({
     required this.isExpense,
     required this.amount,
     required this.title,
     required this.dateTime,
+    required this.originalItem,
   });
 }
 
@@ -63,6 +67,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
         amount: item.amount,
         title: item.who,
         dateTime: DateTime.parse(item.date),
+        originalItem: item,
       ));
     }
     for (var item in e) {
@@ -77,6 +82,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
         amount: item.amount,
         title: item.purpose,
         dateTime: dt,
+        originalItem: item,
       ));
     }
     combined.sort((a, b) => b.dateTime.compareTo(a.dateTime));
@@ -105,11 +111,16 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
     );
 
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final greenBg = isDark ? const Color(0xFF2E7D32) : const Color(0xFF388E3C);
+    final redBg = isDark ? const Color(0xFFC62828) : const Color(0xFFD32F2F);
+
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
       decimalDigits: 0,
     );
+    final goldFormatter = NumberFormat('#,##0.####', 'id_ID');
     
     final progress = currentGoal.targetAmount > 0
         ? (currentGoal.currentAmount / currentGoal.targetAmount).clamp(0.0, 1.0)
@@ -190,7 +201,9 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                               style: theme.textTheme.labelMedium,
                             ),
                             Text(
-                              currencyFormatter.format(currentGoal.currentAmount),
+                              currentGoal.type == 'gold'
+                                  ? '${goldFormatter.format(currentGoal.currentAmount)} gram'
+                                  : currencyFormatter.format(currentGoal.currentAmount),
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.primary,
@@ -206,7 +219,9 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                               style: theme.textTheme.labelMedium,
                             ),
                             Text(
-                              currencyFormatter.format(currentGoal.targetAmount),
+                              currentGoal.type == 'gold'
+                                  ? '${goldFormatter.format(currentGoal.targetAmount)} gram'
+                                  : currencyFormatter.format(currentGoal.targetAmount),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -248,6 +263,10 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                     icon: const Icon(Icons.add_circle_outline_rounded),
                     label: const Text('Isi Tabungan'),
                     style: FilledButton.styleFrom(
+                      backgroundColor: greenBg,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: greenBg.withOpacity(0.3),
+                      disabledForegroundColor: Colors.white.withOpacity(0.5),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -257,13 +276,17 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton.tonalIcon(
+                  child: FilledButton.icon(
                     onPressed: currentGoal.currentAmount <= 0
                         ? null
                         : () => _showWithdrawDialog(context, currentGoal, provider),
                     icon: const Icon(Icons.remove_circle_outline_rounded),
                     label: const Text('Ambil Tabungan'),
                     style: FilledButton.styleFrom(
+                      backgroundColor: redBg,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: redBg.withOpacity(0.3),
+                      disabledForegroundColor: Colors.white.withOpacity(0.5),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -296,6 +319,9 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                   final dateStr = DateFormat('dd MMM yyyy HH:mm').format(h.dateTime);
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
+                    onTap: () {
+                      _showEditDeleteHistoryOptions(context, h, currentGoal, provider);
+                    },
                     leading: CircleAvatar(
                       backgroundColor: theme.colorScheme.primaryContainer,
                       child: Icon(
@@ -306,7 +332,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                     title: Text(h.title),
                     subtitle: Text(dateStr),
                     trailing: Text(
-                      '${h.isExpense ? '-' : '+'} ${currencyFormatter.format(h.amount)}',
+                      '${h.isExpense ? '-' : '+'} ${currentGoal.type == 'gold' ? '${goldFormatter.format(h.amount)} gram' : currencyFormatter.format(h.amount)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: h.isExpense ? Colors.red : Colors.green,
@@ -334,131 +360,65 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
 );
   }
 
-  void _showTopUpDialog(BuildContext context, SavingGoal goal, TransactionProvider provider) {
-    final amountController = TextEditingController();
-    final whoController = TextEditingController();
+  void _showTopUpDialog(BuildContext context, SavingGoal goal, TransactionProvider provider, {SavingHistory? existingHistory}) {
+    final amountController = TextEditingController(text: existingHistory != null ? (goal.type == 'gold' ? existingHistory.amount.toString() : existingHistory.amount.toInt().toString()) : '');
+    final whoController = TextEditingController(text: existingHistory?.who ?? '');
+    DateTime selectedDate = existingHistory != null ? DateTime.parse(existingHistory.date) : DateTime.now();
+    TimeOfDay selectedTime = existingHistory != null ? TimeOfDay.fromDateTime(DateTime.parse(existingHistory.date)) : TimeOfDay.now();
     
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Tambah Tabungan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Text(
+                existingHistory != null ? 'Edit Isi Tabungan' : 'Isi Tabungan',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
               TextField(
                 controller: amountController,
-                keyboardType: TextInputType.visiblePassword,
-                decoration: const InputDecoration(
-                  hintText: 'Masukkan nominal (+ - k m)',
-                  prefixText: 'Rp ',
+                keyboardType: goal.type == 'gold' 
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.visiblePassword,
+                decoration: InputDecoration(
+                  labelText: 'Nominal',
+                  hintText: goal.type == 'gold' ? 'Masukkan gram (misal: 0.5)' : 'Masukkan nominal (+ - k m)',
+                  prefixText: goal.type == 'gold' ? null : 'Rp ',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: whoController,
                 decoration: const InputDecoration(
+                  labelText: 'Siapa yang menabung?',
                   hintText: 'Siapa yang menabung?',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final amount = CalculatorParser.evaluate(amountController.text);
-                final who = whoController.text.trim();
-                if (amount > 0 && who.isNotEmpty) {
-                  final newGoal = goal.copyWith(
-                    currentAmount: goal.currentAmount + amount,
-                  );
-                  await provider.updateSavingGoal(newGoal);
-
-                  final history = SavingHistory(
-                    savingGoalId: goal.id!,
-                    amount: amount,
-                    who: who,
-                    date: DateTime.now().toIso8601String(),
-                  );
-                  await provider.addSavingHistory(history);
-                  _loadHistories();
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    
-                    final newProgress = newGoal.targetAmount > 0 
-                        ? (newGoal.currentAmount / newGoal.targetAmount).clamp(0.0, 1.0)
-                        : 0.0;
-                    
-                    if (newProgress >= 0.90) {
-                      _confettiController.play();
-                      SuccessOverlay.show(
-                        context,
-                        message: 'Yeay! Tabungan Impianmu tercapai! 🎉',
-                        color: Colors.green,
-                        lottieAsset: 'assets/lottie/tercapai.json',
-                      );
-                    } else {
-                      SuccessOverlay.show(
-                        context,
-                        message: 'Tabungan bertambah!',
-                        color: Theme.of(context).colorScheme.primary,
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showWithdrawDialog(BuildContext context, SavingGoal goal, TransactionProvider provider) {
-    final amountController = TextEditingController();
-    final purposeController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-    TimeOfDay selectedTime = TimeOfDay.now();
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Ambil Tabungan'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.visiblePassword,
-                      decoration: const InputDecoration(
-                        hintText: 'Masukkan nominal (+ - k m)',
-                        prefixText: 'Rp ',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: purposeController,
-                      decoration: const InputDecoration(
-                        hintText: 'Tujuan pengambilan?',
-                        prefixIcon: Icon(Icons.outbox_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.calendar_today_rounded),
-                      title: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -470,11 +430,18 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                           setState(() => selectedDate = date);
                         }
                       },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Tanggal',
+                          prefixIcon: Icon(Icons.calendar_today_rounded),
+                        ),
+                        child: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                      ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.access_time_rounded),
-                      title: Text(selectedTime.format(context)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
                       onTap: () async {
                         final time = await showTimePicker(
                           context: context,
@@ -484,55 +451,271 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                           setState(() => selectedTime = time);
                         }
                       },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Waktu',
+                          prefixIcon: Icon(Icons.access_time_rounded),
+                        ),
+                        child: Text(selectedTime.format(context)),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    final amount = CalculatorParser.evaluate(amountController.text);
-                    final purpose = purposeController.text.trim();
-                    if (amount > 0 && purpose.isNotEmpty) {
-                      if (amount > goal.currentAmount) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nominal melebihi saldo tabungan!')),
-                        );
-                        return;
-                      }
-                      
-                      final newGoal = goal.copyWith(
-                        currentAmount: goal.currentAmount - amount,
-                      );
-                      await provider.updateSavingGoal(newGoal);
+              const SizedBox(height: 32),
+              FilledButton(
+                onPressed: () async {
+                  final amount = goal.type == 'gold' 
+                      ? (double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0) 
+                      : CalculatorParser.evaluate(amountController.text);
+                  final who = whoController.text.trim();
+                  if (amount > 0 && who.isNotEmpty) {
+                    final double amountDifference = existingHistory != null ? amount - existingHistory.amount : amount;
 
-                      final expense = SavingExpense(
+                    final newGoal = goal.copyWith(
+                      currentAmount: goal.currentAmount + amountDifference,
+                    );
+                    await provider.updateSavingGoal(newGoal);
+
+                    final combinedDate = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      selectedTime.hour,
+                      selectedTime.minute,
+                    );
+
+                    if (existingHistory != null) {
+                      final history = SavingHistory(
+                        id: existingHistory.id,
                         savingGoalId: goal.id!,
                         amount: amount,
-                        purpose: purpose,
-                        date: DateFormat('yyyy-MM-dd').format(selectedDate),
-                        time: '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                        who: who,
+                        date: combinedDate.toIso8601String(),
                       );
-                      await provider.addSavingExpense(expense);
-                      _loadHistories();
+                      await provider.updateSavingHistory(history);
+                    } else {
+                      final history = SavingHistory(
+                        savingGoalId: goal.id!,
+                        amount: amount,
+                        who: who,
+                        date: combinedDate.toIso8601String(),
+                      );
+                      await provider.addSavingHistory(history);
+                    }
+                    _loadHistories();
 
-                      if (context.mounted) {
-                        Navigator.pop(context);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      
+                      final newProgress = newGoal.targetAmount > 0 
+                          ? (newGoal.currentAmount / newGoal.targetAmount).clamp(0.0, 1.0)
+                          : 0.0;
+                      
+                      if (newProgress >= 0.90) {
+                        _confettiController.play();
                         SuccessOverlay.show(
                           context,
-                          message: 'Tabungan diambil!',
-                          color: Colors.red,
+                          message: 'Yeay! Tabungan Impianmu tercapai! 🎉',
+                          color: Colors.green,
+                          lottieAsset: 'assets/lottie/tercapai.json',
+                        );
+                      } else {
+                        SuccessOverlay.show(
+                          context,
+                          message: 'Tabungan bertambah!',
+                          color: Theme.of(context).colorScheme.primary,
                         );
                       }
                     }
-                  },
-                  child: const Text('Simpan'),
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ],
+                child: const Text('Simpan'),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+          }
+        );
+      },
+    );
+  }
+
+  void _showWithdrawDialog(BuildContext context, SavingGoal goal, TransactionProvider provider, {SavingExpense? existingExpense}) {
+    final amountController = TextEditingController(text: existingExpense != null ? (goal.type == 'gold' ? existingExpense.amount.toString() : existingExpense.amount.toInt().toString()) : '');
+    final purposeController = TextEditingController(text: existingExpense?.purpose ?? '');
+    DateTime selectedDate = existingExpense != null ? DateTime.parse(existingExpense.date) : DateTime.now();
+    TimeOfDay selectedTime = existingExpense != null ? TimeOfDay(hour: int.parse(existingExpense.time.split(':')[0]), minute: int.parse(existingExpense.time.split(':')[1])) : TimeOfDay.now();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    existingExpense != null ? 'Edit Ambil Tabungan' : 'Ambil Tabungan',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: goal.type == 'gold' 
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : TextInputType.visiblePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Nominal',
+                      hintText: goal.type == 'gold' ? 'Masukkan gram (misal: 0.5)' : 'Masukkan nominal (+ - k m)',
+                      prefixText: goal.type == 'gold' ? null : 'Rp ',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: purposeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tujuan Pengambilan',
+                      hintText: 'Tujuan pengambilan?',
+                      prefixIcon: Icon(Icons.outbox_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (date != null) {
+                              setState(() => selectedDate = date);
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Tanggal',
+                              prefixIcon: Icon(Icons.calendar_today_rounded),
+                            ),
+                            child: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                            );
+                            if (time != null) {
+                              setState(() => selectedTime = time);
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Waktu',
+                              prefixIcon: Icon(Icons.access_time_rounded),
+                            ),
+                            child: Text(selectedTime.format(context)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  FilledButton(
+                    onPressed: () async {
+                      final amount = goal.type == 'gold' 
+                          ? (double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0) 
+                          : CalculatorParser.evaluate(amountController.text);
+                      final purpose = purposeController.text.trim();
+                      if (amount > 0 && purpose.isNotEmpty) {
+                        final availableAmount = goal.currentAmount + (existingExpense != null ? existingExpense.amount : 0);
+                        if (amount > availableAmount) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Nominal melebihi saldo tabungan!')),
+                          );
+                          return;
+                        }
+                        
+                        final newGoal = goal.copyWith(
+                          currentAmount: availableAmount - amount,
+                        );
+                        await provider.updateSavingGoal(newGoal);
+
+                        if (existingExpense != null) {
+                          final expense = SavingExpense(
+                            id: existingExpense.id,
+                            savingGoalId: goal.id!,
+                            amount: amount,
+                            purpose: purpose,
+                            date: DateFormat('yyyy-MM-dd').format(selectedDate),
+                            time: '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                          );
+                          await provider.updateSavingExpense(expense);
+                        } else {
+                          final expense = SavingExpense(
+                            savingGoalId: goal.id!,
+                            amount: amount,
+                            purpose: purpose,
+                            date: DateFormat('yyyy-MM-dd').format(selectedDate),
+                            time: '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                          );
+                          await provider.addSavingExpense(expense);
+                        }
+                        _loadHistories();
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          SuccessOverlay.show(
+                            context,
+                            message: 'Tabungan diambil!',
+                            color: Colors.red,
+                          );
+                        }
+                      }
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Ambil Tabungan'),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             );
           }
         );
@@ -541,31 +724,137 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
   }
 
   void _confirmDelete(BuildContext context, SavingGoal goal, TransactionProvider provider) {
-    showDialog(
+    showCustomBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Tabungan?'),
-        content: const Text('Tabungan yang dihapus tidak bisa dikembalikan.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      title: 'Hapus Tabungan?',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Tabungan yang dihapus tidak bisa dikembalikan.',
+            textAlign: TextAlign.center,
           ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () async {
-              if (goal.id != null) {
-                await provider.deleteSavingGoal(goal.id!);
-              }
-              if (context.mounted) {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Hapus'),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  onPressed: () async {
+                    if (goal.id != null) {
+                      await provider.deleteSavingGoal(goal.id!);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Hapus'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditDeleteHistoryOptions(BuildContext context, _CombinedHistory h, SavingGoal goal, TransactionProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Opsi Riwayat',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.edit_rounded, color: Colors.blue),
+                title: const Text('Edit Riwayat'),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (h.isExpense) {
+                    _showWithdrawDialog(context, goal, provider, existingExpense: h.originalItem as SavingExpense);
+                  } else {
+                    _showTopUpDialog(context, goal, provider, existingHistory: h.originalItem as SavingHistory);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_rounded, color: Colors.red),
+                title: const Text('Hapus Riwayat', style: TextStyle(color: Colors.red)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  bool confirm = await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Hapus Riwayat?'),
+                      content: const Text('Riwayat ini akan dihapus dan saldo tabungan akan disesuaikan kembali.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Batal'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text('Hapus'),
+                        ),
+                      ],
+                    ),
+                  ) ?? false;
+                  
+                  if (confirm && context.mounted) {
+                    if (h.isExpense) {
+                      final expense = h.originalItem as SavingExpense;
+                      final newGoal = goal.copyWith(currentAmount: goal.currentAmount + expense.amount);
+                      await provider.updateSavingGoal(newGoal);
+                      await provider.deleteSavingExpense(expense.id!);
+                    } else {
+                      final history = h.originalItem as SavingHistory;
+                      final newGoal = goal.copyWith(currentAmount: goal.currentAmount - history.amount);
+                      await provider.updateSavingGoal(newGoal);
+                      await provider.deleteSavingHistory(history.id!);
+                    }
+                    _loadHistories();
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Riwayat berhasil dihapus.')),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 }

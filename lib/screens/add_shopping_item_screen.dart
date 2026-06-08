@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/custom_loading_indicator.dart';
+import '../widgets/custom_bottom_sheet.dart';
 
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
@@ -170,27 +171,28 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
   Future<void> _openAddCategoryDialog() async {
     if (_isAddingCategory) return;
 
-    final newCategory = await showDialog<String>(
+    String inputValue = '';
+    bool isSubmitting = false;
+
+    final newCategory = await showCustomBottomSheet<String>(
       context: context,
-      builder: (context) {
-        String inputValue = '';
-        bool isSubmitting = false;
+      title: 'Tambah Kategori Baru',
+      child: StatefulBuilder(
+        builder: (context, setDialogState) {
+          void submit([String? submittedValue]) {
+            if (isSubmitting) return;
+            final value = (submittedValue ?? inputValue).trim();
+            if (value.isEmpty) return;
 
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void submit([String? submittedValue]) {
-              if (isSubmitting) return;
-              final value = (submittedValue ?? inputValue).trim();
-              if (value.isEmpty) return;
+            setDialogState(() => isSubmitting = true);
+            FocusManager.instance.primaryFocus?.unfocus();
+            Navigator.pop(context, value);
+          }
 
-              setDialogState(() => isSubmitting = true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              Navigator.pop(context, value);
-            }
-
-            return AlertDialog(
-              title: const Text('Tambah Kategori Baru'),
-              content: TextField(
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
                 autofocus: true,
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
@@ -199,22 +201,30 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 onChanged: (value) => inputValue = value,
                 onSubmitted: submit,
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
-                  child: const Text('Nanti Dulu'),
-                ),
-                FilledButton(
-                  onPressed: isSubmitting ? null : submit,
-                  child: isSubmitting
-                      ? const CustomLoadingIndicator(size: 20)
-                      : const Text('Tambah'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                      child: const Text('Nanti Dulu'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: isSubmitting ? null : submit,
+                      child: isSubmitting
+                          ? const CustomLoadingIndicator(size: 20)
+                          : const Text('Tambah'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
     );
 
     if (!mounted || newCategory == null || newCategory.trim().isEmpty) return;

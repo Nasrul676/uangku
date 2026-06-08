@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/icon_picker_utils.dart';
 import '../utils/rupiah_input_formatter.dart';
+import '../widgets/custom_bottom_sheet.dart';
 import 'expense_input_screen.dart';
 import 'pocket_form_screen.dart';
 
@@ -46,31 +47,44 @@ class PocketDetailScreen extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
             onPressed: () {
-              showDialog(
+              showCustomBottomSheet(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Hapus Kantong?'),
-                  content: const Text(
-                    'Apakah Anda yakin ingin menghapus kantong ini? Semua transaksi yang memakai kantong ini tidak akan ikut terhapus, hanya tidak memiliki label kantong lagi.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Batal'),
+                title: 'Hapus Kantong?',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Apakah Anda yakin ingin menghapus kantong ini? Semua transaksi yang memakai kantong ini tidak akan ikut terhapus, hanya tidak memiliki label kantong lagi.',
+                      textAlign: TextAlign.center,
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Provider.of<TransactionProvider>(
-                          context,
-                          listen: false,
-                        ).deletePocket(pocketId);
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Hapus',
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              Provider.of<TransactionProvider>(
+                                context,
+                                listen: false,
+                              ).deletePocket(pocketId);
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.error,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Hapus'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -340,12 +354,13 @@ class PocketDetailScreen extends StatelessWidget {
   ) {
     final controller = TextEditingController();
 
-    showDialog(
+    showCustomBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Tambah Uang Custom'),
-          content: TextField(
+      title: 'Tambah Uang Custom',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
             controller: controller,
             keyboardType: TextInputType.text,
             inputFormatters: [RupiahInputFormatter()],
@@ -354,27 +369,32 @@ class PocketDetailScreen extends StatelessWidget {
               prefixText: 'Rp ',
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final amount = RupiahInputFormatter.parse(controller.text);
-                if (amount > 0) {
-                  await provider.addCustomAmountToPocket(pocketId, amount);
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
               ),
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () async {
+                    final amount = RupiahInputFormatter.parse(controller.text);
+                    if (amount > 0) {
+                      await provider.addCustomAmountToPocket(pocketId, amount);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

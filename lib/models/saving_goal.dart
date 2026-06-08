@@ -7,6 +7,7 @@ class SavingGoal {
     this.targetDate,
     this.icon,
     this.orderIndex = 0,
+    this.type = 'money',
   });
 
   final int? id;
@@ -16,6 +17,7 @@ class SavingGoal {
   final String? targetDate;
   final String? icon;
   final int orderIndex;
+  final String type;
 
   Map<String, dynamic> toMap() {
     return {
@@ -26,6 +28,7 @@ class SavingGoal {
       if (targetDate != null) 'target_date': targetDate,
       if (icon != null) 'icon': icon,
       'order_index': orderIndex,
+      'type': type,
     };
   }
 
@@ -38,6 +41,7 @@ class SavingGoal {
       targetDate: map['target_date'] as String?,
       icon: map['icon'] as String?,
       orderIndex: map['order_index'] as int? ?? 0,
+      type: map['type'] as String? ?? 'money',
     );
   }
 
@@ -49,6 +53,7 @@ class SavingGoal {
     String? targetDate,
     String? icon,
     int? orderIndex,
+    String? type,
   }) {
     return SavingGoal(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class SavingGoal {
       targetDate: targetDate ?? this.targetDate,
       icon: icon ?? this.icon,
       orderIndex: orderIndex ?? this.orderIndex,
+      type: type ?? this.type,
     );
   }
 }

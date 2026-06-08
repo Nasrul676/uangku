@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
@@ -43,10 +44,20 @@ class BackupService {
     final sqlContent = await _generateSqlDump(db);
     final sqlBytes = utf8.encode(sqlContent);
 
-    // 3. Buat archive dalam memori
+    // 3. Backup SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final prefsData = <String, dynamic>{};
+    for (final key in prefs.getKeys()) {
+      prefsData[key] = prefs.get(key);
+    }
+    final prefsJson = jsonEncode(prefsData);
+    final prefsBytes = utf8.encode(prefsJson);
+
+    // 4. Buat archive dalam memori
     final archive = Archive();
     archive.addFile(ArchiveFile(_dbName, dbBytes.length, dbBytes));
     archive.addFile(ArchiveFile(_sqlName, sqlBytes.length, sqlBytes));
+    archive.addFile(ArchiveFile('settings.json', prefsBytes.length, prefsBytes));
 
     // 4. Encode ke ZIP bytes (dengan password jika ada)
     final zipBytes = ZipEncoder(password: password).encode(archive);
@@ -113,6 +124,7 @@ class BackupService {
     // - Nama bisa disimpan sebagai 'uangkeluar.db' atau 'path/to/uangkeluar.db'
     // - Abaikan entry direktori (nama diakhiri '/')
     ArchiveFile? dbEntry;
+    ArchiveFile? prefsEntry;
     for (final file in archive.files) {
       // Entry direktori diakhiri '/' — lewati
       if (file.name.endsWith('/')) continue;
@@ -124,7 +136,8 @@ class BackupService {
 
       if (entryBasename == _dbName.toLowerCase()) {
         dbEntry = file;
-        break;
+      } else if (entryBasename == 'settings.json') {
+        prefsEntry = file;
       }
     }
 
@@ -143,6 +156,36 @@ class BackupService {
 
     final dbPath = await _getDbPath();
     await File(dbPath).writeAsBytes(dbEntry.content as List<int>);
+
+    if (prefsEntry != null) {
+      try {
+        final prefsBytes = prefsEntry.content as List<int>;
+        final prefsJson = utf8.decode(prefsBytes);
+        final prefsData = jsonDecode(prefsJson) as Map<String, dynamic>;
+
+        final prefs = await SharedPreferences.getInstance();
+        for (final entry in prefsData.entries) {
+          final key = entry.key;
+          final value = entry.value;
+          if (value is String) {
+            await prefs.setString(key, value);
+          } else if (value is bool) {
+            await prefs.setBool(key, value);
+          } else if (value is int) {
+            await prefs.setInt(key, value);
+          } else if (value is double) {
+            await prefs.setDouble(key, value);
+          } else if (value is List) {
+            await prefs.setStringList(
+              key,
+              value.map((e) => e.toString()).toList(),
+            );
+          }
+        }
+      } catch (e) {
+        // Abaikan error restore prefs (jangan sampai menggagalkan restore database)
+      }
+    }
   }
 
   /// Membuat SQL dump dari database SQLite menggunakan koneksi yang sudah ada.

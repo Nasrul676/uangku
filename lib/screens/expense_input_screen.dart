@@ -18,6 +18,7 @@ import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
+import '../widgets/custom_bottom_sheet.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
   const ExpenseInputScreen({
@@ -411,27 +412,28 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   Future<void> _openAddCategoryDialog() async {
     if (_isAddingCategory) return;
 
-    final newCategory = await showDialog<String>(
+    String inputValue = '';
+    bool isSubmitting = false;
+
+    final newCategory = await showCustomBottomSheet<String>(
       context: context,
-      builder: (context) {
-        String inputValue = '';
-        bool isSubmitting = false;
+      title: 'Tambah Kategori Baru',
+      child: StatefulBuilder(
+        builder: (context, setDialogState) {
+          void submit([String? submittedValue]) {
+            if (isSubmitting) return;
+            final value = (submittedValue ?? inputValue).trim();
+            if (value.isEmpty) return;
 
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void submit([String? submittedValue]) {
-              if (isSubmitting) return;
-              final value = (submittedValue ?? inputValue).trim();
-              if (value.isEmpty) return;
+            setDialogState(() => isSubmitting = true);
+            FocusManager.instance.primaryFocus?.unfocus();
+            Navigator.pop(context, value);
+          }
 
-              setDialogState(() => isSubmitting = true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              Navigator.pop(context, value);
-            }
-
-            return AlertDialog(
-              title: const Text('Tambah Kategori Baru'),
-              content: TextField(
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
                 autofocus: true,
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
@@ -440,26 +442,34 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 onChanged: (value) => inputValue = value,
                 onSubmitted: submit,
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
-                  child: const Text('Nanti Dulu'),
-                ),
-                FilledButton(
-                  onPressed: isSubmitting ? null : submit,
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Tambah'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                      child: const Text('Nanti Dulu'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: isSubmitting ? null : submit,
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Tambah'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
     );
 
     if (!mounted || newCategory == null || newCategory.trim().isEmpty) return;

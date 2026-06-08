@@ -1374,6 +1374,46 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateSavingHistory(SavingHistory history) async {
+    try {
+      await _databaseHelper.updateSavingHistory(history);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteSavingHistory(int id) async {
+    try {
+      await _databaseHelper.deleteSavingHistory(id);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateSavingExpense(SavingExpense expense) async {
+    try {
+      await _databaseHelper.updateSavingExpense(expense);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteSavingExpense(int id) async {
+    try {
+      await _databaseHelper.deleteSavingExpense(id);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
   // --- RECURRING TRANSACTIONS ---
   Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
     try {

@@ -11,6 +11,7 @@ import '../widgets/custom_loading_indicator.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../widgets/animated_bouncing_card.dart';
+import '../widgets/custom_bottom_sheet.dart';
 
 class RecurringTransactionInputScreen extends StatefulWidget {
   const RecurringTransactionInputScreen({super.key, this.existingTransaction});
@@ -566,30 +567,44 @@ class _RecurringTransactionInputScreenState
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog(
+    showCustomBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Transaksi Rutin?'),
-        content: const Text('Jadwal akan dihapus dan tidak akan diproses otomatis lagi.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      title: 'Hapus Transaksi Rutin?',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Jadwal akan dihapus dan tidak akan diproses otomatis lagi.',
+            textAlign: TextAlign.center,
           ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () async {
-              if (widget.existingTransaction?.id != null) {
-                await context
-                    .read<TransactionProvider>()
-                    .deleteRecurringTransaction(widget.existingTransaction!.id!);
-              }
-              if (context.mounted) {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Hapus'),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  onPressed: () async {
+                    if (widget.existingTransaction?.id != null) {
+                      await context
+                          .read<TransactionProvider>()
+                          .deleteRecurringTransaction(widget.existingTransaction!.id!);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Hapus'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

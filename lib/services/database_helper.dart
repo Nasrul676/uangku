@@ -18,7 +18,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 16;
+  static const _dbVersion = 17;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -288,6 +288,20 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
           );
         }
+        if (oldVersion < 17) {
+          var columns = await db.rawQuery(
+            'PRAGMA table_info($savingGoalsTable)',
+          );
+          bool columnExists = columns.any(
+            (column) => column['name'] == 'type',
+          );
+          if (!columnExists) {
+            await db.execute('''
+              ALTER TABLE $savingGoalsTable
+              ADD COLUMN type TEXT NOT NULL DEFAULT 'money'
+            ''');
+          }
+        }
       },
     );
   }
@@ -328,7 +342,8 @@ class DatabaseHelper {
         current_amount REAL NOT NULL DEFAULT 0,
         target_date TEXT,
         icon TEXT,
-        order_index INTEGER NOT NULL DEFAULT 0
+        order_index INTEGER NOT NULL DEFAULT 0,
+        type TEXT NOT NULL DEFAULT 'money'
       )
     ''');
 
@@ -798,6 +813,25 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> updateSavingHistory(SavingHistory history) async {
+    final db = await database;
+    return db.update(
+      savingHistoriesTable,
+      history.toMap(),
+      where: 'id = ?',
+      whereArgs: [history.id],
+    );
+  }
+
+  Future<int> deleteSavingHistory(int id) async {
+    final db = await database;
+    return db.delete(
+      savingHistoriesTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // --- SAVING EXPENSES CRUD ---
   Future<List<SavingExpense>> getSavingExpenses(int savingGoalId) async {
     final db = await database;
@@ -816,6 +850,25 @@ class DatabaseHelper {
       savingExpensesTable,
       expense.toMap()..remove('id'),
       conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<int> updateSavingExpense(SavingExpense expense) async {
+    final db = await database;
+    return db.update(
+      savingExpensesTable,
+      expense.toMap(),
+      where: 'id = ?',
+      whereArgs: [expense.id],
+    );
+  }
+
+  Future<int> deleteSavingExpense(int id) async {
+    final db = await database;
+    return db.delete(
+      savingExpensesTable,
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 

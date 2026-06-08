@@ -12,6 +12,7 @@ import '../widgets/app_card.dart';
 import '../widgets/backup_restore_tile.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_loading_indicator.dart';
+import '../widgets/custom_bottom_sheet.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -277,24 +278,36 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   }
 
   Future<void> _logout() async {
-    final shouldLogout = await showDialog<bool>(
+    final shouldLogout = await showCustomBottomSheet<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Keluar Akun'),
-          content: const Text('Yakin mau keluar dulu dari akun ini?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Nanti Dulu'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Ya, Keluar'),
-            ),
-          ],
-        );
-      },
+      title: 'Keluar Akun',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Yakin mau keluar dulu dari akun ini?',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Nanti Dulu'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Ya, Keluar'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
 
     if (shouldLogout != true) return;

@@ -25,6 +25,8 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
+  
+  final _goldFormatter = NumberFormat('#,##0.####', 'id_ID');
 
   bool _isReorderMode = false;
   Timer? _longPressTimer;
@@ -45,6 +47,55 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
+          if (goals.isNotEmpty) ...[
+            Builder(
+              builder: (context) {
+                double totalDanaTerkumpul = 0;
+                double totalDanaTarget = 0;
+                double totalEmasTerkumpul = 0;
+                double totalEmasTarget = 0;
+
+                for (var goal in goals) {
+                  if (goal.type == 'gold') {
+                    totalEmasTerkumpul += goal.currentAmount;
+                    totalEmasTarget += goal.targetAmount;
+                  } else {
+                    totalDanaTerkumpul += goal.currentAmount;
+                    totalDanaTarget += goal.targetAmount;
+                  }
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryCard(
+                          context,
+                          title: 'Total Dana',
+                          terkumpul: _currencyFormatter.format(totalDanaTerkumpul),
+                          target: _currencyFormatter.format(totalDanaTarget),
+                          icon: Icons.account_balance_wallet_rounded,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          context,
+                          title: 'Total Emas',
+                          terkumpul: '${_goldFormatter.format(totalEmasTerkumpul)} g',
+                          target: '${_goldFormatter.format(totalEmasTarget)} g',
+                          icon: Icons.diamond_rounded,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            ),
+          ],
           Padding(
             padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
             child: SizedBox(
@@ -182,7 +233,9 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Terkumpul: ${_currencyFormatter.format(goal.currentAmount)}',
+                                goal.type == 'gold'
+                                    ? 'Terkumpul: ${_goldFormatter.format(goal.currentAmount)} gram'
+                                    : 'Terkumpul: ${_currencyFormatter.format(goal.currentAmount)}',
                                 style: theme.textTheme.bodySmall,
                               ),
                               const SizedBox(height: 8),
@@ -210,7 +263,9 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                                     ),
                                   ),
                                   Text(
-                                    'Target: ${_currencyFormatter.format(goal.targetAmount)}',
+                                    goal.type == 'gold'
+                                        ? 'Target: ${_goldFormatter.format(goal.targetAmount)} gram'
+                                        : 'Target: ${_currencyFormatter.format(goal.targetAmount)}',
                                     style: theme.textTheme.labelSmall,
                                   ),
                                 ],
@@ -257,6 +312,63 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                 },
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(
+    BuildContext context, {
+    required String title,
+    required String terkumpul,
+    required String target,
+    required IconData icon,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            terkumpul,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Target: $target',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

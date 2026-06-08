@@ -14,6 +14,7 @@ import '../models/app_notification.dart';
 import '../services/auto_backup_service.dart';
 import 'auto_backup_settings_sheet.dart';
 import 'custom_loading_indicator.dart';
+import 'custom_bottom_sheet.dart';
 
 // ─── Progress Model ──────────────────────────────────────────────────────────
 
@@ -25,16 +26,16 @@ class _ProgressData {
 
 // ─── Password Dialog ─────────────────────────────────────────────────────────
 
-class _PasswordDialog extends StatefulWidget {
+class _PasswordContent extends StatefulWidget {
   final bool isRestore;
   final bool forcePassword; // Jika true, paksa user isi password (hide switch)
-  const _PasswordDialog({required this.isRestore, this.forcePassword = false});
+  const _PasswordContent({required this.isRestore, this.forcePassword = false});
 
   @override
-  State<_PasswordDialog> createState() => _PasswordDialogState();
+  State<_PasswordContent> createState() => _PasswordContentState();
 }
 
-class _PasswordDialogState extends State<_PasswordDialog> {
+class _PasswordContentState extends State<_PasswordContent> {
   late bool _usePassword = widget.forcePassword;
   final _pwdCtrl = TextEditingController();
   bool _obscure = true;
@@ -48,52 +49,57 @@ class _PasswordDialogState extends State<_PasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.isRestore ? 'Masukkan Password' : 'Opsi Backup'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!widget.forcePassword)
-            SwitchListTile(
-              title: const Text('Gunakan password'),
-              value: _usePassword,
-              onChanged: (val) => setState(() {
-                _usePassword = val;
-                _errorText = null;
-              }),
-              contentPadding: EdgeInsets.zero,
-            ),
-          if (_usePassword)
-            TextField(
-              controller: _pwdCtrl,
-              obscureText: _obscure,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                errorText: _errorText,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscure ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!widget.forcePassword)
+          SwitchListTile(
+            title: const Text('Gunakan password'),
+            value: _usePassword,
+            onChanged: (val) => setState(() {
+              _usePassword = val;
+              _errorText = null;
+            }),
+            contentPadding: EdgeInsets.zero,
+          ),
+        if (_usePassword)
+          TextField(
+            controller: _pwdCtrl,
+            obscureText: _obscure,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              errorText: _errorText,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscure ? Icons.visibility_off : Icons.visibility,
                 ),
+                onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          onPressed: () {
-            if (_usePassword && _pwdCtrl.text.isEmpty) {
-              setState(() => _errorText = 'Password tidak boleh kosong');
-              return;
-            }
-            Navigator.pop(context, _usePassword ? _pwdCtrl.text : '');
-          },
-          child: const Text('Lanjut'),
+          ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                onPressed: () {
+                  if (_usePassword && _pwdCtrl.text.isEmpty) {
+                    setState(() => _errorText = 'Password tidak boleh kosong');
+                    return;
+                  }
+                  Navigator.pop(context, _usePassword ? _pwdCtrl.text : '');
+                },
+                child: const Text('Lanjut'),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -102,22 +108,20 @@ class _PasswordDialogState extends State<_PasswordDialog> {
 
 // ─── Progress Dialog ─────────────────────────────────────────────────────────
 
-class _BackupProgressDialog extends StatefulWidget {
-  final String title;
+class _BackupProgressContent extends StatefulWidget {
   final bool isRestore;
   final ValueNotifier<_ProgressData> notifier;
 
-  const _BackupProgressDialog({
-    required this.title,
+  const _BackupProgressContent({
     required this.isRestore,
     required this.notifier,
   });
 
   @override
-  State<_BackupProgressDialog> createState() => _BackupProgressDialogState();
+  State<_BackupProgressContent> createState() => _BackupProgressContentState();
 }
 
-class _BackupProgressDialogState extends State<_BackupProgressDialog> {
+class _BackupProgressContentState extends State<_BackupProgressContent> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -125,122 +129,106 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog> {
 
     return PopScope(
       canPop: false, // cegah back button menutup dialog
-      child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-          child: ValueListenableBuilder<_ProgressData>(
-            valueListenable: widget.notifier,
-            builder: (context, data, _) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Lottie.asset(
-                    'assets/lottie/loading.json',
-                    width: 120,
-                    height: 120,
-                  ),
+      child: ValueListenableBuilder<_ProgressData>(
+        valueListenable: widget.notifier,
+        builder: (context, data, _) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset(
+                'assets/lottie/loading.json',
+                width: 120,
+                height: 120,
+              ),
 
-                  const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-                  // ── Title ──
-                  Text(
-                    widget.title,
-                    style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Animated Progress Bar ──
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: data.progress),
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeOut,
-                    builder: (ctx, animValue, _) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+              // ── Animated Progress Bar ──
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: data.progress),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOut,
+                builder: (ctx, animValue, _) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Stack(
                         children: [
-                          Stack(
-                            children: [
-                              // Background track
-                              Container(
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: cs.primaryContainer.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                          // Background track
+                          Container(
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: cs.primaryContainer.withValues(
+                                alpha: 0.5,
                               ),
-                              // Fill
-                              FractionallySizedBox(
-                                widthFactor: animValue.clamp(0.0, 1.0),
-                                child: Container(
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        cs.primary.withValues(alpha: 0.7),
-                                        cs.primary,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${(animValue * 100).toInt()}%',
-                                style: tt.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.primary,
+                          // Fill
+                          FractionallySizedBox(
+                            widthFactor: animValue.clamp(0.0, 1.0),
+                            child: Container(
+                              height: 12,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    cs.primary.withValues(alpha: 0.7),
+                                    cs.primary,
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ],
+                            ),
                           ),
                         ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // ── Animated Status Text ──
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
                       ),
-                    ),
-                    child: Text(
-                      data.status,
-                      key: ValueKey(data.status),
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${(animValue * 100).toInt()}%',
+                            style: tt.labelMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                    ],
+                  );
+                },
+              ),
 
-                  const SizedBox(height: 4),
-                ],
-              );
-            },
-          ),
-        ),
+              const SizedBox(height: 4),
+
+              // ── Animated Status Text ──
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.3),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Text(
+                  data.status,
+                  key: ValueKey(data.status),
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+            ],
+          );
+        },
       ),
     );
   }
@@ -265,9 +253,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
   Future<void> _handleBackup() async {
     // Tanyakan password dulu
-    final passwordResult = await showDialog<String>(
+    final passwordResult = await showCustomBottomSheet<String>(
       context: context,
-      builder: (_) => const _PasswordDialog(isRestore: false),
+      title: 'Opsi Backup',
+      child: const _PasswordContent(isRestore: false),
     );
     if (passwordResult == null) return; // User membatalkan
     final password = passwordResult.isEmpty ? null : passwordResult;
@@ -286,11 +275,12 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
       setState(() => _isBackingUp = false);
       return;
     }
-    showDialog(
+    showCustomBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => _BackupProgressDialog(
-        title: 'Membuat Backup',
+      title: 'Membuat Backup',
+      isDismissible: false,
+      enableDrag: false,
+      child: _BackupProgressContent(
         isRestore: false,
         notifier: progressNotifier,
       ),
@@ -531,22 +521,34 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
   Future<void> _handleRestore() async {
     // Konfirmasi dulu
-    final confirm = await showDialog<bool>(
+    final confirm = await showCustomBottomSheet<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Restore Backup?'),
-        content: const Text(
-          'Data saat ini akan diganti dengan data dari file backup. '
-          'Aksi ini tidak bisa dibatalkan. Lanjutkan?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+      title: 'Restore Backup?',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Data saat ini akan diganti dengan data dari file backup. '
+            'Aksi ini tidak bisa dibatalkan. Lanjutkan?',
+            textAlign: TextAlign.center,
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Restore'),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Batal'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Restore'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -578,10 +580,10 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
         if (!mounted) return;
 
         // Tanyakan password jika terenkripsi
-        final passwordResult = await showDialog<String>(
+        final passwordResult = await showCustomBottomSheet<String>(
           context: context,
-          builder: (_) =>
-              const _PasswordDialog(isRestore: true, forcePassword: true),
+          title: 'Masukkan Password',
+          child: const _PasswordContent(isRestore: true, forcePassword: true),
         );
 
         if (passwordResult == null) return; // User membatalkan
@@ -599,17 +601,23 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
 
         if (!isPasswordValid) {
           // Password salah -> muncul popup
-          await showDialog(
+          await showCustomBottomSheet(
             context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Password Salah'),
-              content: const Text(
-                'Password yang Anda masukkan tidak cocok dengan file backup ini. Silakan coba lagi.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+            title: 'Password Salah',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Password yang Anda masukkan tidak cocok dengan file backup ini. Silakan coba lagi.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
                 ),
               ],
             ),
@@ -629,11 +637,12 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
     Object? caughtError;
 
     // Tampilkan dialog loading
-    showDialog(
+    showCustomBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => _BackupProgressDialog(
-        title: 'Memulihkan Data',
+      title: 'Memulihkan Data',
+      isDismissible: false,
+      enableDrag: false,
+      child: _BackupProgressContent(
         isRestore: true,
         notifier: progressNotifier,
       ),
