@@ -13,52 +13,8 @@ class AiAssistantService {
   }) async {
     final categoriesStr = categories.join(', ');
     
-    final prompt = '''You are a receipt item extractor. Your only job is to output a JSON object.
-
-[CRITICAL OUTPUT RULE]
-Output ONLY the raw JSON object. No explanation, no preamble, no "Here is...", 
-no markdown fences (no ```json). Your entire response must start with { and end with }.
-
-[TASK]
-Extract purchased items from the Indonesian receipt OCR text below.
-
-[IGNORE THESE — DO NOT include in output]
-- Store name, address, phone number
-- Transaction ID / receipt code lines (e.g. "31.05.26-09:11/FEN5-35330/...")
-- Cashier name, date, time
-- SUBTOTAL, TOTAL BELANJA, TUNAI, KEMBALI (change)
-- PPN, DPP, HARGA JUAL, tax lines
-- Discount lines (DISC, DISKON, POTONGAN)
-- Footer/promotional text
-
-[JSON SCHEMA — follow exactly]
-{"items": [{"name": "...", "qty": 1.0, "price": 10000.0, "category": "..."}]}
-
-[FIELD RULES]
-- "name"   : Copy the item name exactly as it appears in the OCR text.
-
-- "qty"    : The quantity as a number. Default to 1.0 if not explicitly shown.
-
-- "price"  : The final line-total price as a plain integer (no separators).
-              Indonesian receipts use either dot OR comma as thousand separators.
-              Convert both: 11.000 → 11000, and 11,000 → 11000.
-              Line format is typically: NAME | QTY | UNIT_PRICE | LINE_TOTAL
-              Always take the LAST number on the item row as the price.
-              Never multiply or recalculate — just clean and copy the last number.
-
-- "category": Choose EXACTLY one from: [$categoriesStr]
-              If none fits, use "Lain-lain".
-
-[EXAMPLE — based on real Indomaret receipt]
-Input OCR:
-MY BB SOAP SWT.FL075   2   5500   11,000
-TOTAL BELANJA :        11,000
-
-Output:
-{"items": [{"name": "MY BB SOAP SWT.FL075", "qty": 2.0, "price": 11000.0, "category": "Lain-lain"}]}
-
-[OCR TEXT TO PROCESS]
-$ocrText''';
+    // Menggunakan prompt bahasa Inggris agar model Llama 3.2 lebih akurat memahaminya
+    final prompt = 'You are an expert receipt data extractor. Extract purchased items from this receipt OCR into a JSON array. RULES: 1. Return ONLY a valid JSON array, no other text. 2. Extract ONLY the purchased items (IGNORE store name, address, tax, subtotal, total, cash, change, dates). 3. Format: [{"name":"item name","qty":1.0,"price":10000.0,"category":"category"}]. 4. "name" MUST use the original text from receipt. 5. "price" MUST be the TOTAL price for that row (unit price multiplied by qty). It MUST be a pure number without commas (e.g. 11000, NOT 11,000). 6. "category" MUST be exactly one of: [$categoriesStr] or "Lain-lain". 7. MUST use double quotes (") for all strings. OCR TEXT:\n$ocrText';
 
     try {
       final response = await http.post(
@@ -75,17 +31,18 @@ $ocrText''';
         final data = jsonDecode(response.body);
         final String replyText = data['reply'] ?? '';
         
-        // Mengekstrak murni bagian JSON object dengan menghitung kurung kurawal
-        // Ini mencegah error jika AI secara tidak sengaja menambahkan teks pembuka
+        // Mengekstrak murni bagian JSON array dengan menghitung kurung siku
+        // Ini mencegah error jika AI secara tidak sengaja mereturn dua array berurutan: [..] [..]
         String cleanJson = replyText.trim();
-        final startIndex = cleanJson.indexOf('{');
+        
+        final startIndex = cleanJson.indexOf('[');
         
         if (startIndex != -1) {
           int openBrackets = 0;
           int endIndex = -1;
           for (int i = startIndex; i < cleanJson.length; i++) {
-            if (cleanJson[i] == '{') openBrackets++;
-            if (cleanJson[i] == '}') openBrackets--;
+            if (cleanJson[i] == '[') openBrackets++;
+            if (cleanJson[i] == ']') openBrackets--;
             if (openBrackets == 0) {
               endIndex = i;
               break;
@@ -94,16 +51,16 @@ $ocrText''';
           if (endIndex != -1) {
             cleanJson = cleanJson.substring(startIndex, endIndex + 1);
           } else {
-            // Fallback jika kurung kurawal tidak seimbang, coba cari yang terakhir
-            final lastIndex = cleanJson.lastIndexOf('}');
+            // Fallback jika kurung siku tidak seimbang, coba cari yang terakhir
+            final lastIndex = cleanJson.lastIndexOf(']');
             if (lastIndex > startIndex) {
               cleanJson = cleanJson.substring(startIndex, lastIndex + 1);
             } else {
-              throw Exception('AI tidak mengembalikan format JSON object. Balasan: $replyText');
+              throw Exception('AI tidak mengembalikan format list array JSON. Balasan: $replyText');
             }
           }
         } else {
-          throw Exception('AI tidak mengembalikan format JSON object. Balasan: $replyText');
+          throw Exception('AI tidak mengembalikan format list array JSON. Balasan: $replyText');
         }
 
         // Hapus komentar inline (// ...) jika AI masih bandel menambahkannya (LAKUKAN SEBELUM newline diganti)
@@ -125,9 +82,7 @@ $ocrText''';
         cleanJson = cleanJson.replaceAll('\r', ' ');
 
         try {
-          final Map<String, dynamic> jsonMap = jsonDecode(cleanJson);
-          final List<dynamic> jsonList = jsonMap['items'] ?? [];
-          
+          final List<dynamic> jsonList = jsonDecode(cleanJson);
           return jsonList.map((item) {
             return ParsedReceiptItem(
               name: item['name']?.toString() ?? 'Barang',
