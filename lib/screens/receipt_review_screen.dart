@@ -230,7 +230,7 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                 category: _category,
                 date: DateTime.now().toIso8601String(),
                 quantity: item.quantity,
-                unit: 'pcs',
+                unit: item.unit,
                 isBought: 1, // Marked as bought since it's from a receipt
                 expenseTransactionId: transactionId,
               );

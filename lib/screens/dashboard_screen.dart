@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:image_cropper/image_cropper.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -1489,6 +1491,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<String?> _cropImage(String imagePath) async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Struk',
+          toolbarColor: isDark ? const Color(0xFF1E1E2E) : theme.colorScheme.primary,
+          toolbarWidgetColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF121212) : Colors.black,
+          activeControlsWidgetColor: theme.colorScheme.primary,
+          dimmedLayerColor: Colors.black54,
+          cropFrameColor: theme.colorScheme.primary,
+          cropGridColor: theme.colorScheme.primary.withAlpha(80),
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: 'Crop Struk',
+          doneButtonTitle: 'Selesai',
+          cancelButtonTitle: 'Batal',
+          resetAspectRatioEnabled: true,
+          aspectRatioLockEnabled: false,
+          rotateButtonsHidden: false,
+          rotateClockwiseButtonHidden: true,
+        ),
+      ],
+    );
+
+    return croppedFile?.path;
+  }
+
   Future<void> _scanReceiptProcess() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -1551,6 +1588,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (pickedFile == null) return;
     
     if (!mounted) return;
+    
+    // Buka cropper agar user bisa memotong area struk
+    final croppedPath = await _cropImage(pickedFile.path);
+    if (croppedPath == null) return; // User membatalkan crop
+
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1582,7 +1625,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     try {
-      final inputImage = InputImage.fromFilePath(pickedFile.path);
+      final inputImage = InputImage.fromFilePath(croppedPath);
       final textRecognizer = TextRecognizer();
       final recognizedText = await textRecognizer.processImage(inputImage);
       await textRecognizer.close();
@@ -1604,7 +1647,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           MaterialPageRoute(
             builder: (_) => ReceiptResultScreen(
               items: parsedItems,
-              receiptImageFilePath: pickedFile.path,
+              receiptImageFilePath: croppedPath,
             ),
           ),
         );
