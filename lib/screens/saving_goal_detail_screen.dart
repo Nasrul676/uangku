@@ -177,11 +177,45 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
             ),
             if (currentGoal.targetDate != null) ...[
               const SizedBox(height: 8),
-              Text(
-                'Target: ${DateFormat('dd MMM yyyy', 'id').format(DateTime.parse(currentGoal.targetDate!))}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
+              Builder(
+                builder: (context) {
+                  final targetDateTime = DateTime.parse(currentGoal.targetDate!);
+                  final now = DateTime.now();
+                  final today = DateTime(now.year, now.month, now.day);
+                  final targetDay = DateTime(targetDateTime.year, targetDateTime.month, targetDateTime.day);
+                  final difference = targetDay.difference(today).inDays;
+                  
+                  String countdownText = '';
+                  Color? countdownColor = theme.colorScheme.primary;
+                  if (difference > 0) {
+                    countdownText = ' ($difference hari lagi)';
+                  } else if (difference == 0) {
+                    countdownText = ' (Batas waktu hari ini)';
+                    countdownColor = Colors.orange;
+                  } else {
+                    countdownText = ' (Terlewat ${difference.abs()} hari)';
+                    countdownColor = Colors.red;
+                  }
+                  
+                  return Text.rich(
+                    TextSpan(
+                      text: 'Target: ${DateFormat('dd MMM yyyy', 'id').format(targetDateTime)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: countdownText,
+                          style: TextStyle(
+                            color: countdownColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  );
+                }
               ),
             ],
             const SizedBox(height: 32),
