@@ -303,7 +303,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Riwayat Penambahan',
+                  'Riwayat Transaksi',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -772,7 +772,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -796,7 +796,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 leading: const Icon(Icons.edit_rounded, color: Colors.blue),
                 title: const Text('Edit Riwayat'),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   if (h.isExpense) {
                     _showWithdrawDialog(context, goal, provider, existingExpense: h.originalItem as SavingExpense);
                   } else {
@@ -808,19 +808,19 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 leading: const Icon(Icons.delete_rounded, color: Colors.red),
                 title: const Text('Hapus Riwayat', style: TextStyle(color: Colors.red)),
                 onTap: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   bool confirm = await showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: const Text('Hapus Riwayat?'),
                       content: const Text('Riwayat ini akan dihapus dan saldo tabungan akan disesuaikan kembali.'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogContext, false),
                           child: const Text('Batal'),
                         ),
                         FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogContext, true),
                           style: FilledButton.styleFrom(backgroundColor: Colors.red),
                           child: const Text('Hapus'),
                         ),

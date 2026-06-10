@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/parsed_receipt_item.dart';
 
 class AiAssistantService {
-  static const String _baseUrl = 'https://figures-prefer-subsequent-gardens.trycloudflare.com/api/chat';
+  static const String _baseUrl = 'https://influence-willow-enormous-ancient.trycloudflare.com/api/chat';
 
   /// Kata kunci yang menandakan baris bukan merupakan item belanjaan.
   /// Baris yang mengandung salah satu keyword ini akan dibuang sebelum dikirim ke AI.
