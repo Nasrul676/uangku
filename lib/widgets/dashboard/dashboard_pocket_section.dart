@@ -6,6 +6,7 @@ import '../../utils/icon_picker_utils.dart';
 import '../../screens/pocket_form_screen.dart';
 import '../../screens/pocket_detail_screen.dart';
 import '../app_card.dart';
+import '../entrance_animation.dart';
 
 class DashboardPocketSection extends StatelessWidget {
   final TransactionProvider provider;
@@ -36,13 +37,17 @@ class DashboardPocketSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            'Kantong Kamu',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+        EntranceAnimation(
+          type: EntranceType.fadeScale,
+          delay: const Duration(milliseconds: 300),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Kantong Kamu',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -58,8 +63,13 @@ class DashboardPocketSection extends StatelessWidget {
           ),
           itemCount: pockets.length + 1,
           itemBuilder: (context, index) {
+            final animationDelay = 350 + (index * 100);
+
             if (index == pockets.length) {
-              return AppCard(
+              return EntranceAnimation(
+                type: EntranceType.fadeScale,
+                delay: Duration(milliseconds: animationDelay),
+                child: AppCard(
                 color: const Color(0xFFFDF0FC), // Light purple
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.purple.shade50),
@@ -105,7 +115,7 @@ class DashboardPocketSection extends StatelessWidget {
                     ],
                   ),
                 ),
-              );
+              ));
             }
 
             final pocket = pockets[index];
@@ -115,7 +125,10 @@ class DashboardPocketSection extends StatelessWidget {
             final isNegative = effectiveBalance < 0;
             final cardColor = _cardColors[index % _cardColors.length];
 
-            return AppCard(
+            return EntranceAnimation(
+              type: EntranceType.fadeScale,
+              delay: Duration(milliseconds: animationDelay),
+              child: AppCard(
               color: cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.grey.shade200),
@@ -182,7 +195,7 @@ class DashboardPocketSection extends StatelessWidget {
                   ],
                 ),
               ),
-            );
+            ));
           },
         ),
       ],

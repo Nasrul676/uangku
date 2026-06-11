@@ -1723,13 +1723,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Pockets — slide from right
-              EntranceAnimation(
-                type: EntranceType.slideRight,
-                delay: const Duration(milliseconds: 300),
-                duration: const Duration(milliseconds: 700),
-                child: DashboardPocketSection(provider: provider),
-              ),
+              // Pockets — muncul satu per satu (animasi di dalam widget)
+              DashboardPocketSection(provider: provider),
               const SizedBox(height: 10),
               // Chart — slide from bottom
               EntranceAnimation(
