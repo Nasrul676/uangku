@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import 'dart:async';
 
 import '../models/book_period.dart';
@@ -18,6 +19,9 @@ import '../services/database_helper.dart';
 import '../services/home_balance_widget_service.dart';
 import '../services/notification_service.dart';
 import '../services/sync_api_service.dart';
+import '../services/ai_chat_service.dart';
+import '../models/chat_session.dart';
+import '../models/chat_message.dart';
 
 class TransactionProvider extends ChangeNotifier {
   TransactionProvider({
@@ -48,6 +52,10 @@ class TransactionProvider extends ChangeNotifier {
   List<AppNotification> _persistentNotifications = [];
   List<SavingGoal> _savingGoals = [];
   List<RecurringTransaction> _recurringTransactions = [];
+  List<ChatSession> _chatSessions = [];
+  List<ChatMessage> _currentChatMessages = [];
+  int? _activeChatSessionId;
+  
   int? _selectedBookPeriodId;
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -60,6 +68,7 @@ class TransactionProvider extends ChangeNotifier {
   int _planNotificationMinute = 0;
   bool _isBalanceHidden = false;
   bool _isRemovingBookPeriod = false;
+  String _geminiApiKey = '';
 
   List<FinanceTransaction> get transactions {
     final selectedId = _selectedBookPeriodId;
@@ -94,6 +103,10 @@ class TransactionProvider extends ChangeNotifier {
   List<RecurringTransaction> get recurringTransactions =>
       _recurringTransactions;
 
+  List<ChatSession> get chatSessions => _chatSessions;
+  List<ChatMessage> get currentChatMessages => _currentChatMessages;
+  int? get activeChatSessionId => _activeChatSessionId;
+
   int? get selectedBookPeriodId => _selectedBookPeriodId;
   BookPeriod? get activeBookPeriod {
     for (final period in _bookPeriods) {
@@ -115,6 +128,7 @@ class TransactionProvider extends ChangeNotifier {
   int get planNotificationMinute => _planNotificationMinute;
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isRemovingBookPeriod => _isRemovingBookPeriod;
+  String get geminiApiKey => _geminiApiKey;
   double get currentTotalIncome {
     final scoped = transactions;
     return scoped
@@ -162,6 +176,7 @@ class TransactionProvider extends ChangeNotifier {
     await loadRecurringTransactions();
     await loadNotifications();
     await loadTransactions();
+    await loadChatSessions();
     await _processRecurringTransactions();
   }
 
@@ -246,14 +261,197 @@ class TransactionProvider extends ChangeNotifier {
 
     notifyListeners();
 
+    for (int i = 0; i < _savingGoals.length; i++) {
+      await _databaseHelper.updateSavingGoal(_savingGoals[i].copyWith(orderIndex: i));
+    }
+  }
+
+  // --- AI CHAT LOGIC ---
+  Future<void> loadChatSessions() async {
     try {
-      for (int i = 0; i < _savingGoals.length; i++) {
-        _savingGoals[i] = _savingGoals[i].copyWith(orderIndex: i);
-        await _databaseHelper.updateSavingGoal(_savingGoals[i]);
-      }
+      _chatSessions = await _databaseHelper.getAllChatSessions();
     } catch (e) {
-      debugPrint('Failed to update saving goals order: $e');
-      await loadSavingGoals();
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadChatMessages(int sessionId) async {
+    try {
+      _activeChatSessionId = sessionId;
+      _currentChatMessages = await _databaseHelper.getChatMessages(sessionId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> startNewChatSession() async {
+    _activeChatSessionId = null;
+    _currentChatMessages = [];
+    notifyListeners();
+  }
+
+  Future<void> deleteChatSession(int sessionId) async {
+    try {
+      await _databaseHelper.deleteChatSession(sessionId);
+      if (_activeChatSessionId == sessionId) {
+        _activeChatSessionId = null;
+        _currentChatMessages = [];
+      }
+      await loadChatSessions();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> sendChatMessage(String text, String currentContext) async {
+    if (text.trim().isEmpty) return;
+    
+    // Create new session if none active
+    if (_activeChatSessionId == null) {
+      final newSessionId = await _databaseHelper.insertChatSession(
+        ChatSession(
+          title: text.length > 20 ? '${text.substring(0, 20)}...' : text,
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      _activeChatSessionId = newSessionId;
+      await loadChatSessions();
+    }
+
+    final sessionId = _activeChatSessionId!;
+    
+    // Insert user message
+    final userMsg = ChatMessage(
+      sessionId: sessionId,
+      role: 'user',
+      text: text,
+      timestamp: DateTime.now().toIso8601String(),
+    );
+    await _databaseHelper.insertChatMessage(userMsg);
+    
+    // Add to local state immediately for UI response
+    _currentChatMessages.add(userMsg);
+    notifyListeners();
+
+    try {
+      final response = await AiChatService.sendMessage(
+        apiKey: _geminiApiKey,
+        message: text,
+        history: _currentChatMessages.where((m) => m.id != null).toList(), // existing history
+        currentContext: currentContext,
+        categories: [..._incomeCategories, ..._expenseCategories, 'Lain-lain'],
+        onFunctionCall: (String name, Map<String, dynamic> args) async {
+          return await _handleAiFunctionCall(name, args);
+        },
+      );
+
+      // Execute action if any
+      final String? action = response['action'];
+      final actionData = response['action_data'];
+
+      // Insert bot message
+      final botMsg = ChatMessage(
+        sessionId: sessionId,
+        role: 'model',
+        text: response['message'],
+        action: action,
+        actionData: actionData != null ? jsonEncode(actionData) : null,
+        timestamp: DateTime.now().toIso8601String(),
+      );
+      await _databaseHelper.insertChatMessage(botMsg);
+      
+      // Update session timestamp
+      final session = _chatSessions.firstWhere((s) => s.id == sessionId);
+      await _databaseHelper.updateChatSession(session.copyWith(updatedAt: DateTime.now().toIso8601String()));
+      
+      // Reload messages
+      await loadChatMessages(sessionId);
+      await loadChatSessions(); // to refresh order
+    } catch (e) {
+      // Create error message
+      final errorMsg = ChatMessage(
+        sessionId: sessionId,
+        role: 'model',
+        text: 'Maaf, terjadi kesalahan: ${e.toString()}',
+        timestamp: DateTime.now().toIso8601String(),
+      );
+      await _databaseHelper.insertChatMessage(errorMsg);
+      await loadChatMessages(sessionId);
+    }
+  }
+
+  Future<Map<String, dynamic>> _handleAiFunctionCall(String name, Map<String, dynamic> args) async {
+    final now = DateTime.now();
+    try {
+      if (name == 'get_current_balance') {
+        return {
+          'status': 'success',
+          'data': {
+            'total_income': currentTotalIncome,
+            'total_expense': currentTotalExpense,
+            'current_balance': currentNetBalance,
+          }
+        };
+      } else if (name == 'get_recent_transactions') {
+        final limit = args['limit'] as int? ?? 5;
+        final transactions = _allTransactions.take(limit).map((t) => t.toMap()).toList();
+        return {
+          'status': 'success',
+          'data': transactions,
+        };
+      } else if (name == 'add_transaction') {
+        final title = args['title'] ?? 'Transaksi AI';
+        final amount = (args['amount'] as num).toDouble();
+        final type = args['type'] == 'INCOME' ? 'INCOME' : 'EXPENSE';
+        final category = args['category'] ?? 'Lain-lain';
+        final dateStr = args['date'];
+        final date = dateStr != null ? DateTime.tryParse(dateStr) ?? now : now;
+        
+        await addTransaction(
+          title: title,
+          amount: amount,
+          type: type,
+          category: category,
+          date: date,
+          time: DateFormat('HH:mm').format(now),
+        );
+        return {'status': 'success', 'message': 'Transaksi berhasil ditambahkan'};
+      } else if (name == 'get_financial_plans') {
+        final plans = _allFinancialPlans.map((p) {
+          final progress = getFinancialPlanProgress(p.id!);
+          final map = p.toMap();
+          map['progress_percentage'] = progress * 100;
+          return map;
+        }).toList();
+        return {
+          'status': 'success',
+          'data': plans,
+        };
+      } else if (name == 'add_financial_plan') {
+        final title = args['title'] ?? 'Rencana AI';
+        final targetAmount = (args['target_amount'] as num).toDouble();
+        final dateStr = args['target_date'];
+        final date = dateStr != null ? DateTime.tryParse(dateStr) ?? now.add(const Duration(days: 30)) : now.add(const Duration(days: 30));
+        
+        await addFinancialPlan(
+          title: title,
+          targetAmount: targetAmount,
+          targetDate: date,
+        );
+        return {'status': 'success', 'message': 'Rencana keuangan berhasil ditambahkan'};
+      } else if (name == 'navigate_to_page') {
+        final pageName = args['page_name'];
+        return {'status': 'success', 'message': 'Akan mengarahkan pengguna ke halaman $pageName'};
+      }
+      return {'status': 'error', 'message': 'Fungsi tidak dikenali'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
     }
   }
 
@@ -638,6 +836,7 @@ class TransactionProvider extends ChangeNotifier {
     _planNotificationMinute = await _settingsService
         .getPlanNotificationMinute();
     _isBalanceHidden = await _settingsService.getHideBalance();
+    _geminiApiKey = await _settingsService.getGeminiApiKey();
     notifyListeners();
   }
 
@@ -685,6 +884,12 @@ class TransactionProvider extends ChangeNotifier {
     _jsonKeyMapping = jsonKeyMapping;
     _incomeCategories = incomeCategories;
     _expenseCategories = expenseCategories;
+    notifyListeners();
+  }
+
+  Future<void> saveGeminiApiKey(String apiKey) async {
+    await _settingsService.saveGeminiApiKey(apiKey.trim());
+    _geminiApiKey = apiKey.trim();
     notifyListeners();
   }
 

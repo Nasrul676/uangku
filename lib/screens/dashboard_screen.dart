@@ -47,6 +47,7 @@ import '../widgets/dashboard/recent_section.dart';
 import '../widgets/dashboard/transactions_card.dart';
 import '../widgets/dashboard/financial_plan_dialog.dart';
 import '../widgets/dashboard/quick_menu.dart';
+import '../widgets/ai_chat_bubble.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -1139,11 +1140,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  String _getScreenContext() {
+    switch (_currentIndex) {
+      case 0:
+        return "Beranda - Menampilkan ringkasan saldo, pengeluaran, pemasukan dan transaksi terakhir bulan ini.";
+      case 1:
+        return "Daftar Transaksi - Menampilkan seluruh riwayat pengeluaran dan pemasukan pengguna.";
+      case 2:
+        return "Daftar Belanja - Menampilkan daftar barang yang akan dibeli oleh pengguna.";
+      default:
+        return "Aplikasi Uangku - Halaman utama.";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return Stack(
+      children: [
+        Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
@@ -1396,8 +1412,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onMenuTap: _onMenuTap,
         onOpenQuickAdd: _openQuickAddSheet,
       ),
-    );
-  }
+    ),
+    if (_currentIndex != 3) // Jangan tampilkan di halaman settings
+      AiChatBubble(currentContext: _getScreenContext()),
+    ],
+  );
+}
 
   Future<void> _openQuickAddSheet() async {
     if (!mounted) return;
@@ -1637,6 +1657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final parsedItems = await AiAssistantService.parseReceiptText(
         ocrText: recognizedText.text,
         categories: categories,
+        apiKey: provider.geminiApiKey,
       );
 
       if (mounted) Navigator.pop(context); // Close loading dialog

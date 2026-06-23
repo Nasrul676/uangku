@@ -11,6 +11,7 @@ class AppSettingsService {
   static const appThemeKey = 'app_theme';
   static const themeModeKey = 'theme_mode';
   static const appFontFamilyKey = 'app_font_family';
+  static const geminiApiKeyKey = 'gemini_api_key';
 
   static const defaultMapping = {
     'id': 'id',
@@ -156,5 +157,15 @@ class AppSettingsService {
   Future<void> saveAppFontFamily(String fontName) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(appFontFamilyKey, fontName);
+  }
+
+  Future<String> getGeminiApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(geminiApiKeyKey) ?? '';
+  }
+
+  Future<void> saveGeminiApiKey(String apiKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(geminiApiKeyKey, apiKey);
   }
 }

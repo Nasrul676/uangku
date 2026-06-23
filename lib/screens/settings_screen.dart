@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,6 +45,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   late final TextEditingController _payloadRootController;
   late final TextEditingController _incomeCategoriesController;
   late final TextEditingController _expenseCategoriesController;
+  late final TextEditingController _geminiApiKeyController;
   late final Map<String, TextEditingController> _mappingControllers;
   final _authService = AuthService();
   String _currentUserName = '';
@@ -53,6 +55,8 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   bool _isSendingNotificationDemo = false;
   bool _isNotificationGranted = false;
   bool _isExactAlarmGranted = false;
+  bool _isGeminiKeyObscured = true;
+  bool _isSavingGeminiKey = false;
 
   @override
   void initState() {
@@ -69,6 +73,9 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     );
     _expenseCategoriesController = TextEditingController(
       text: provider.expenseCategories.join(', '),
+    );
+    _geminiApiKeyController = TextEditingController(
+      text: provider.geminiApiKey,
     );
     _notificationTime = TimeOfDay(
       hour: provider.planNotificationHour,
@@ -128,7 +135,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   }
 
   Future<void> _checkPermissions() async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       final notifStatus = await Permission.notification.status;
       final exactStatus = await Permission.scheduleExactAlarm.status;
       if (!mounted) return;
@@ -146,6 +153,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     _payloadRootController.dispose();
     _incomeCategoriesController.dispose();
     _expenseCategoriesController.dispose();
+    _geminiApiKeyController.dispose();
     for (final controller in _mappingControllers.values) {
       controller.dispose();
     }
@@ -193,6 +201,29 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     ).showSnackBar(const SnackBar(content: Text('Setelan berhasil disimpan.')));
   }
 
+  Future<void> _saveGeminiApiKey() async {
+    if (_isSavingGeminiKey) return;
+    setState(() => _isSavingGeminiKey = true);
+
+    try {
+      final provider = context.read<TransactionProvider>();
+      await provider.saveGeminiApiKey(_geminiApiKeyController.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('API Key Gemini berhasil disimpan.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan API Key: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingGeminiKey = false);
+      }
+    }
+  }
+
   Future<void> _pickNotificationTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -207,7 +238,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     setState(() => _isSavingNotificationTime = true);
 
     try {
-      if (Platform.isAndroid) {
+      if (!kIsWeb && Platform.isAndroid) {
         final notifStatus = await Permission.notification.status;
         if (!notifStatus.isGranted) {
           await Permission.notification.request();
@@ -245,7 +276,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     setState(() => _isSendingNotificationDemo = true);
 
     try {
-      if (Platform.isAndroid) {
+      if (!kIsWeb && Platform.isAndroid) {
         final notifStatus = await Permission.notification.status;
         if (!notifStatus.isGranted) {
           await Permission.notification.request();
@@ -489,10 +520,78 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
             ],
           ),
         ),
-        if (Platform.isAndroid || Platform.isIOS) ...[
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ...[
           const SizedBox(height: 10),
           _buildPermissionCard(theme),
         ],
+        const SizedBox(height: 10),
+        AppCard(isInteractive: true,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.smart_toy_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI Scan Struk (Gemini)',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Masukkan API Key dari Google AI Studio untuk mengaktifkan fitur scan struk otomatis dengan AI.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _geminiApiKeyController,
+                obscureText: _isGeminiKeyObscured,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan Gemini API Key',
+                  prefixIcon: const Icon(Icons.key_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isGeminiKeyObscured
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isGeminiKeyObscured = !_isGeminiKeyObscured;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 46,
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: _isSavingGeminiKey ? null : _saveGeminiApiKey,
+                  child: _isSavingGeminiKey
+                      ? const CustomLoadingIndicator(size: 20)
+                      : const Text('Simpan API Key'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Dapatkan API Key gratis di ai.google.dev',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 10),
         AppCard(isInteractive: true,
           padding: const EdgeInsets.all(12),

@@ -11,6 +11,8 @@ import '../models/recurring_transaction.dart';
 import '../models/saving_expense.dart';
 import '../models/saving_goal.dart';
 import '../models/saving_history.dart';
+import '../models/chat_session.dart';
+import '../models/chat_message.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -18,7 +20,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 17;
+  static const _dbVersion = 18;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -29,6 +31,8 @@ class DatabaseHelper {
   static const savingHistoriesTable = 'saving_histories';
   static const savingExpensesTable = 'saving_expenses';
   static const recurringTransactionsTable = 'recurring_transactions';
+  static const chatSessionsTable = 'chat_sessions';
+  static const chatMessagesTable = 'chat_messages';
 
   Database? _database;
 
@@ -302,6 +306,30 @@ class DatabaseHelper {
             ''');
           }
         }
+        if (oldVersion < 18) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $chatSessionsTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS $chatMessagesTable (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              session_id INTEGER NOT NULL,
+              role TEXT NOT NULL,
+              text TEXT NOT NULL,
+              action TEXT,
+              action_data TEXT,
+              timestamp TEXT NOT NULL
+            )
+          ''');
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON $chatMessagesTable(session_id)',
+          );
+        }
       },
     );
   }
@@ -433,6 +461,27 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE $chatSessionsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $chatMessagesTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        text TEXT NOT NULL,
+        action TEXT,
+        action_data TEXT,
+        timestamp TEXT NOT NULL
+      )
+    ''');
+
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_book_period_id ON $transactionsTable(book_period_id)',
     );
@@ -453,6 +502,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON $chatMessagesTable(session_id)',
     );
   }
 
@@ -883,13 +935,79 @@ class DatabaseHelper {
   }
 
   Future<int> insertRecurringTransaction(
-    RecurringTransaction transaction,
+    RecurringTransaction tx,
   ) async {
     final db = await database;
     return db.insert(
       recurringTransactionsTable,
-      transaction.toMap()..remove('id'),
+      tx.toMap()..remove('id'),
       conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  // --- AI CHAT HISTORY CRUD ---
+  Future<List<ChatSession>> getAllChatSessions() async {
+    final db = await database;
+    final result = await db.query(
+      chatSessionsTable,
+      orderBy: 'updated_at DESC',
+    );
+    return result.map((map) => ChatSession.fromMap(map)).toList();
+  }
+
+  Future<int> insertChatSession(ChatSession session) async {
+    final db = await database;
+    return db.insert(
+      chatSessionsTable,
+      session.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateChatSession(ChatSession session) async {
+    if (session.id == null) return;
+    final db = await database;
+    await db.update(
+      chatSessionsTable,
+      session.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [session.id],
+    );
+  }
+
+  Future<void> deleteChatSession(int sessionId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        chatMessagesTable,
+        where: 'session_id = ?',
+        whereArgs: [sessionId],
+      );
+      await txn.delete(
+        chatSessionsTable,
+        where: 'id = ?',
+        whereArgs: [sessionId],
+      );
+    });
+  }
+
+  Future<List<ChatMessage>> getChatMessages(int sessionId) async {
+    final db = await database;
+    final result = await db.query(
+      chatMessagesTable,
+      where: 'session_id = ?',
+      whereArgs: [sessionId],
+      orderBy: 'timestamp ASC',
+    );
+    return result.map((map) => ChatMessage.fromMap(map)).toList();
+  }
+
+  Future<int> insertChatMessage(ChatMessage message) async {
+    final db = await database;
+    return db.insert(
+      chatMessagesTable,
+      message.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
