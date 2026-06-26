@@ -12,6 +12,7 @@ class AppSettingsService {
   static const themeModeKey = 'theme_mode';
   static const appFontFamilyKey = 'app_font_family';
   static const geminiApiKeyKey = 'gemini_api_key';
+  static const geminiModelKey = 'gemini_model';
 
   static const defaultMapping = {
     'id': 'id',
@@ -167,5 +168,15 @@ class AppSettingsService {
   Future<void> saveGeminiApiKey(String apiKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(geminiApiKeyKey, apiKey);
+  }
+
+  Future<String> getGeminiModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(geminiModelKey) ?? 'gemini-flash-lite-latest';
+  }
+
+  Future<void> saveGeminiModel(String model) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(geminiModelKey, model);
   }
 }

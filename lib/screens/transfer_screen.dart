@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ai_chat_bubble.dart';
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({super.key});
@@ -38,168 +39,198 @@ class _TransferScreenState extends State<TransferScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Transfer Dana',
-                      style: theme.textTheme.displaySmall,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(999),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardTheme.color ?? Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
-                          width: 1.2,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Transfer Dana',
+                          style: theme.textTheme.displaySmall,
                         ),
                       ),
-                      child: const Icon(Icons.close_rounded),
+                      InkWell(
+                        onTap: () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).cardTheme.color ??
+                                Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color:
+                                  (Theme.of(context)
+                                      .extension<AppThemeExtension>()
+                                      ?.cardBorder
+                                      ?.top
+                                      .color ??
+                                  const Color(0xFF2D2D2D)),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Icon(Icons.close_rounded),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(context).cardTheme.color ??
+                                    Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color:
+                                      (Theme.of(context)
+                                          .extension<AppThemeExtension>()
+                                          ?.cardBorder
+                                          ?.top
+                                          .color ??
+                                      const Color(0xFF2D2D2D)),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF4D284),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color:
+                                            (Theme.of(context)
+                                                .extension<AppThemeExtension>()
+                                                ?.cardBorder
+                                                ?.top
+                                                .color ??
+                                            const Color(0xFF2D2D2D)),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: const Icon(Icons.person_rounded),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Murad Hossain',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'muradde06@gmail.com',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {},
+                                    child: const Text(
+                                      'Ubah',
+                                      style: TextStyle(
+                                        color: Color(0xFFC24545),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Transaksi Terbaru',
+                              style: theme.textTheme.headlineMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            Center(
+                              child: Text(
+                                '\$$_input',
+                                style: theme.textTheme.displayLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Center(
+                              child: Text(
+                                'Saldo tersedia: \$54,908.00',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Expanded(
+                              child: GridView.count(
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                children: [
+                                  ...[
+                                    '1',
+                                    '2',
+                                    '3',
+                                    '4',
+                                    '5',
+                                    '6',
+                                    '7',
+                                    '8',
+                                    '9',
+                                    '.',
+                                    '0',
+                                  ].map(
+                                    (e) => _KeyButton(
+                                      label: e,
+                                      onTap: () => _onTapKey(e),
+                                    ),
+                                  ),
+                                  _KeyButton(label: '⌫', onTap: _onBackspace),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: FilledButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Kirim'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardTheme.color ?? Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF4D284),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: (Theme.of(context).extension<AppThemeExtension>()?.cardBorder?.top.color ?? const Color(0xFF2D2D2D)),
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: const Icon(Icons.person_rounded),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Murad Hossain',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'muradde06@gmail.com',
-                                      style: TextStyle(fontSize: 11),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {},
-                                child: const Text(
-                                  'Ubah',
-                                  style: TextStyle(color: Color(0xFFC24545)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Transaksi Terbaru',
-                          style: theme.textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            '\$$_input',
-                            style: theme.textTheme.displayLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Center(
-                          child: Text(
-                            'Saldo tersedia: \$54,908.00',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Expanded(
-                          child: GridView.count(
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            children: [
-                              ...[
-                                '1',
-                                '2',
-                                '3',
-                                '4',
-                                '5',
-                                '6',
-                                '7',
-                                '8',
-                                '9',
-                                '.',
-                                '0',
-                              ].map(
-                                (e) => _KeyButton(
-                                  label: e,
-                                  onTap: () => _onTapKey(e),
-                                ),
-                              ),
-                              _KeyButton(label: '⌫', onTap: _onBackspace),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: FilledButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Kirim'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          const AiChatBubble(currentContext: 'Transfer Screen'),
+        ],
       ),
     );
   }

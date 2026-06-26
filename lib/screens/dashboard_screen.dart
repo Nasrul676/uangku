@@ -1658,6 +1658,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ocrText: recognizedText.text,
         categories: categories,
         apiKey: provider.geminiApiKey,
+        model: provider.geminiModel,
       );
 
       if (mounted) Navigator.pop(context); // Close loading dialog

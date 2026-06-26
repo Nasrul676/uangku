@@ -46,6 +46,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   late final TextEditingController _incomeCategoriesController;
   late final TextEditingController _expenseCategoriesController;
   late final TextEditingController _geminiApiKeyController;
+  late final TextEditingController _geminiModelController;
   late final Map<String, TextEditingController> _mappingControllers;
   final _authService = AuthService();
   String _currentUserName = '';
@@ -76,6 +77,9 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     );
     _geminiApiKeyController = TextEditingController(
       text: provider.geminiApiKey,
+    );
+    _geminiModelController = TextEditingController(
+      text: provider.geminiModel,
     );
     _notificationTime = TimeOfDay(
       hour: provider.planNotificationHour,
@@ -154,6 +158,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     _incomeCategoriesController.dispose();
     _expenseCategoriesController.dispose();
     _geminiApiKeyController.dispose();
+    _geminiModelController.dispose();
     for (final controller in _mappingControllers.values) {
       controller.dispose();
     }
@@ -208,6 +213,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     try {
       final provider = context.read<TransactionProvider>();
       await provider.saveGeminiApiKey(_geminiApiKeyController.text);
+      await provider.saveGeminiModel(_geminiModelController.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('API Key Gemini berhasil disimpan.')),
@@ -568,6 +574,14 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
                       });
                     },
                   ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _geminiModelController,
+                decoration: const InputDecoration(
+                  hintText: 'Model AI (contoh: gemini-flash-lite-latest)',
+                  prefixIcon: Icon(Icons.memory_rounded),
                 ),
               ),
               const SizedBox(height: 10),

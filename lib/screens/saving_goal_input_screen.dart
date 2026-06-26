@@ -8,6 +8,7 @@ import '../utils/calculator_parser.dart';
 import '../widgets/global_action_overlay.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_loading_indicator.dart';
+import '../widgets/ai_chat_bubble.dart';
 
 class SavingGoalInputScreen extends StatefulWidget {
   const SavingGoalInputScreen({super.key, this.existingGoal});
@@ -32,7 +33,7 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
-  
+
   final _goldFormatter = NumberFormat('#,##0.####', 'id_ID');
 
   @override
@@ -42,9 +43,10 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
     if (existing != null) {
       _titleController.text = existing.title;
       _type = existing.type;
-      
+
       if (_type == 'gold') {
-        _amountController.text = existing.targetAmount == existing.targetAmount.truncateToDouble()
+        _amountController.text =
+            existing.targetAmount == existing.targetAmount.truncateToDouble()
             ? existing.targetAmount.toInt().toString()
             : existing.targetAmount.toString();
       } else {
@@ -70,7 +72,8 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
 
   double get _amountValue {
     if (_type == 'gold') {
-      return double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+      return double.tryParse(_amountController.text.replaceAll(',', '.')) ??
+          0.0;
     }
     return CalculatorParser.evaluate(_amountController.text);
   }
@@ -128,161 +131,186 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Form(
-                      key: _formKey,
-                      child: ListView(
-                        children: [
-                          if (!isEdit) ...[
-                            SegmentedButton<String>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: 'money',
-                                  label: Text('Dana'),
-                                  icon: Icon(Icons.account_balance_wallet_rounded),
-                                ),
-                                ButtonSegment(
-                                  value: 'gold',
-                                  label: Text('Emas'),
-                                  icon: Icon(Icons.diamond_rounded),
-                                ),
-                              ],
-                              selected: {_type},
-                              onSelectionChanged: (Set<String> newSelection) {
-                                setState(() {
-                                  _type = newSelection.first;
-                                  _amountController.clear();
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Form(
+                          key: _formKey,
+                          child: ListView(
                             children: [
-                              SizedBox(
-                                width: 60,
-                                child: TextFormField(
-                                  controller: _iconController,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 24),
-                                  decoration: const InputDecoration(
-                                    hintText: '🎯',
-                                  ),
+                              if (!isEdit) ...[
+                                SegmentedButton<String>(
+                                  segments: const [
+                                    ButtonSegment(
+                                      value: 'money',
+                                      label: Text('Dana'),
+                                      icon: Icon(
+                                        Icons.account_balance_wallet_rounded,
+                                      ),
+                                    ),
+                                    ButtonSegment(
+                                      value: 'gold',
+                                      label: Text('Emas'),
+                                      icon: Icon(Icons.diamond_rounded),
+                                    ),
+                                  ],
+                                  selected: {_type},
+                                  onSelectionChanged:
+                                      (Set<String> newSelection) {
+                                        setState(() {
+                                          _type = newSelection.first;
+                                          _amountController.clear();
+                                        });
+                                      },
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _titleController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Nama Impian (Membeli Laptop)',
+                                const SizedBox(height: 16),
+                              ],
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    child: TextFormField(
+                                      controller: _iconController,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 24),
+                                      decoration: const InputDecoration(
+                                        hintText: '🎯',
+                                      ),
+                                    ),
                                   ),
-                                  validator: (v) => v == null || v.trim().isEmpty
-                                      ? 'Wajib diisi'
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _titleController,
+                                      decoration: const InputDecoration(
+                                        hintText:
+                                            'Nama Impian (Membeli Laptop)',
+                                      ),
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                          ? 'Wajib diisi'
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _amountController,
+                                keyboardType: _type == 'gold'
+                                    ? const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      )
+                                    : TextInputType.visiblePassword,
+                                decoration: InputDecoration(
+                                  hintText: _type == 'gold'
+                                      ? 'Target Emas (Misal: 0.5 atau 1)'
+                                      : 'Target Dana (Bisa pakai k, m, +, -)',
+                                  suffix: _amountValue > 0
+                                      ? Text(
+                                          _type == 'gold'
+                                              ? '${_goldFormatter.format(_amountValue)} gram'
+                                              : _currencyFormatter.format(
+                                                  _amountValue,
+                                                ),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        )
                                       : null,
+                                ),
+                                onChanged: (_) => setState(() {}),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty)
+                                    return 'Wajib diisi';
+                                  if (_amountValue <= 0) return 'Tidak valid';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              InkWell(
+                                onTap: _pickDate,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    hintText: 'Tanggal Target (Opsional)',
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _targetDate == null
+                                              ? 'Pilih Target Tanggal (Opsional)'
+                                              : DateFormat(
+                                                  'dd MMM yyyy',
+                                                  'id',
+                                                ).format(_targetDate!),
+                                        ),
+                                      ),
+                                      if (_targetDate != null)
+                                        InkWell(
+                                          onTap: () => setState(
+                                            () => _targetDate = null,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      const SizedBox(width: 8),
+                                      const Icon(Icons.calendar_month_rounded),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _amountController,
-                            keyboardType: _type == 'gold' 
-                                ? const TextInputType.numberWithOptions(decimal: true)
-                                : TextInputType.visiblePassword,
-                            decoration: InputDecoration(
-                              hintText: _type == 'gold' 
-                                  ? 'Target Emas (Misal: 0.5 atau 1)' 
-                                  : 'Target Dana (Bisa pakai k, m, +, -)',
-                              suffix: _amountValue > 0
-                                  ? Text(
-                                      _type == 'gold' 
-                                          ? '${_goldFormatter.format(_amountValue)} gram'
-                                          : _currencyFormatter.format(_amountValue),
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: theme.colorScheme.primary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                              if (_amountValue <= 0) return 'Tidak valid';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          InkWell(
-                            onTap: _pickDate,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                hintText: 'Tanggal Target (Opsional)',
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _targetDate == null
-                                          ? 'Pilih Target Tanggal (Opsional)'
-                                          : DateFormat('dd MMM yyyy', 'id').format(_targetDate!),
-                                    ),
-                                  ),
-                                  if (_targetDate != null)
-                                    InkWell(
-                                      onTap: () => setState(() => _targetDate = null),
-                                      child: const Icon(Icons.close_rounded, size: 18),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.calendar_month_rounded),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isSaving ? null : _save,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _isSaving ? null : _save,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const CustomLoadingIndicator(
+                              size: 24,
+                              color: Colors.white,
+                            )
+                          : const Text(
+                              'Simpan Tabungan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
-                  child: _isSaving
-                      ? const CustomLoadingIndicator(
-                          size: 24,
-                          color: Colors.white,
-                        )
-                      : const Text(
-                          'Simpan Tabungan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          const AiChatBubble(currentContext: 'Saving Goal Input Screen'),
+        ],
       ),
     );
   }

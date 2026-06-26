@@ -5,9 +5,6 @@ import '../models/chat_message.dart';
 typedef FunctionCallHandler = Future<Map<String, dynamic>> Function(String name, Map<String, dynamic> args);
 
 class AiChatService {
-  // We use 1.5 flash for better function calling reliability
-  static const String _model = 'gemini-flash-lite-latest';
-
   static final List<Map<String, dynamic>> _tools = [
     {
       'functionDeclarations': [
@@ -80,6 +77,7 @@ class AiChatService {
 
   static Future<Map<String, dynamic>> sendMessage({
     required String apiKey,
+    required String model,
     required String message,
     required List<ChatMessage> history,
     required String currentContext,
@@ -90,7 +88,7 @@ class AiChatService {
       throw Exception('API Key Gemini belum diatur. Silakan masukkan API Key di halaman Setelan.');
     }
 
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent');
+    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent');
     final categoriesStr = categories.join(', ');
 
     final systemInstruction = '''

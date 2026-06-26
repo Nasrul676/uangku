@@ -44,6 +44,8 @@ class TransactionProvider extends ChangeNotifier {
 
   List<String> _incomeCategories = AppSettingsService.defaultIncomeCategories;
   List<String> _expenseCategories = AppSettingsService.defaultExpenseCategories;
+  String _geminiApiKey = '';
+  String _geminiModel = 'gemini-flash-lite-latest';
 
   List<FinanceTransaction> _allTransactions = [];
   List<BookPeriod> _bookPeriods = [];
@@ -68,7 +70,6 @@ class TransactionProvider extends ChangeNotifier {
   int _planNotificationMinute = 0;
   bool _isBalanceHidden = false;
   bool _isRemovingBookPeriod = false;
-  String _geminiApiKey = '';
 
   List<FinanceTransaction> get transactions {
     final selectedId = _selectedBookPeriodId;
@@ -129,6 +130,8 @@ class TransactionProvider extends ChangeNotifier {
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isRemovingBookPeriod => _isRemovingBookPeriod;
   String get geminiApiKey => _geminiApiKey;
+  String get geminiModel => _geminiModel;
+
   double get currentTotalIncome {
     final scoped = transactions;
     return scoped
@@ -342,6 +345,7 @@ class TransactionProvider extends ChangeNotifier {
     try {
       final response = await AiChatService.sendMessage(
         apiKey: _geminiApiKey,
+        model: _geminiModel,
         message: text,
         history: _currentChatMessages.where((m) => m.id != null).toList(), // existing history
         currentContext: currentContext,
@@ -832,11 +836,12 @@ class TransactionProvider extends ChangeNotifier {
     _jsonKeyMapping = await _settingsService.getJsonKeyMapping();
     _incomeCategories = await _settingsService.getIncomeCategories();
     _expenseCategories = await _settingsService.getExpenseCategories();
+    _geminiApiKey = await _settingsService.getGeminiApiKey();
+    _geminiModel = await _settingsService.getGeminiModel();
     _planNotificationHour = await _settingsService.getPlanNotificationHour();
     _planNotificationMinute = await _settingsService
         .getPlanNotificationMinute();
     _isBalanceHidden = await _settingsService.getHideBalance();
-    _geminiApiKey = await _settingsService.getGeminiApiKey();
     notifyListeners();
   }
 
@@ -888,8 +893,14 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> saveGeminiApiKey(String apiKey) async {
-    await _settingsService.saveGeminiApiKey(apiKey.trim());
     _geminiApiKey = apiKey.trim();
+    await _settingsService.saveGeminiApiKey(_geminiApiKey);
+    notifyListeners();
+  }
+
+  Future<void> saveGeminiModel(String model) async {
+    _geminiModel = model.trim();
+    await _settingsService.saveGeminiModel(_geminiModel);
     notifyListeners();
   }
 

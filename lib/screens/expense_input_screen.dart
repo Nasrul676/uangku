@@ -19,6 +19,7 @@ import '../utils/rupiah_input_formatter.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 import '../widgets/custom_bottom_sheet.dart';
+import '../widgets/ai_chat_bubble.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
   const ExpenseInputScreen({
@@ -422,7 +423,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final filteredCategories = categories
-                .where((c) => c.toLowerCase().contains(searchQuery.toLowerCase()))
+                .where(
+                  (c) => c.toLowerCase().contains(searchQuery.toLowerCase()),
+                )
                 .toList();
 
             return SafeArea(
@@ -439,14 +442,20 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                   children: [
                     const Text(
                       'Pilih Kategori',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       decoration: InputDecoration(
                         hintText: 'Cari kategori...',
                         prefixIcon: const Icon(Icons.search_rounded),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 0,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -470,22 +479,32 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                 Navigator.pop(sheetContext);
                                 _openAddCategoryDialog();
                               },
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 12,
+                              ),
                               color: Theme.of(context).cardTheme.color,
                               borderRadius: BorderRadius.circular(12),
                               child: Row(
                                 children: [
-                                   Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.primary),
-                                   const SizedBox(width: 8),
-                                   Expanded(
-                                     child: Text(
-                                       'Tambah Kategori Baru',
-                                       style: TextStyle(
-                                         fontWeight: FontWeight.w700,
-                                         color: Theme.of(context).colorScheme.primary,
-                                       ),
-                                     ),
-                                   ),
+                                  Icon(
+                                    Icons.add_rounded,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Tambah Kategori Baru',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             );
@@ -554,7 +573,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       child: const Text('Nanti Dulu'),
                     ),
                   ),
@@ -566,7 +587,10 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Tambah'),
                     ),
@@ -779,218 +803,228 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.existingTransaction == null
+                              ? 'Catat Pengeluaran'
+                              : 'Edit Pengeluaran',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _CircleButton(
+                        icon: Icons.close_rounded,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Expanded(
-                    child: Text(
-                      widget.existingTransaction == null
-                          ? 'Catat Pengeluaran'
-                          : 'Edit Pengeluaran',
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Form(
+                          key: _formKey,
+                          child: ListView(
+                            children: [
+                              // ── Section 1: Kategori & Label ─────────────────
+                              _SectionHeader(
+                                emoji: '🏷️',
+                                label: 'Kategori & Label',
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(height: 10),
+                              _CategorySelectorField(
+                                selectedText: _category,
+                                onTap: () => _openCategoryPicker(categories),
+                              ),
+                              const SizedBox(height: 10),
+                              _FinancialPlanSelectorField(
+                                plans: financialPlans,
+                                selectedPlanId: _selectedFinancialPlanId,
+                                onTap: () =>
+                                    _openFinancialPlanPicker(financialPlans),
+                                selectedText: selectedPlanText,
+                              ),
+                              const SizedBox(height: 10),
+                              _PocketSelectorField(
+                                selectedPocketId: _selectedPocketId,
+                                onTap: () => _openPocketPicker(pockets),
+                                selectedText: selectedPocketText,
+                              ),
+
+                              // ── Section 2: Nominal & Judul ──────────────────
+                              const SizedBox(height: 16),
+                              const _SectionDivider(),
+                              const SizedBox(height: 12),
+                              _SectionHeader(
+                                emoji: '📝',
+                                label: 'Detail Pengeluaran',
+                                color: theme.colorScheme.error,
+                              ),
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _amountController,
+                                keyboardType: TextInputType.text,
+                                inputFormatters: [RupiahInputFormatter()],
+                                decoration: InputDecoration(
+                                  hintText: 'Nominal pengeluaran',
+                                  suffix: _amountValue > 0
+                                      ? Text(
+                                          _currencyFormatter.format(
+                                            _amountValue,
+                                          ),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.error,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        )
+                                      : null,
+                                ),
+                                onChanged: (_) => setState(() {}),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Nominal wajib diisi';
+                                  }
+                                  final amount = RupiahInputFormatter.parse(
+                                    value,
+                                  );
+                                  if (amount <= 0) return 'Nominal tidak valid';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              TextFormField(
+                                controller: _titleController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Catatan / judul pengeluaran',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Judul wajib diisi';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _qtyController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      decoration: const InputDecoration(
+                                        hintText: 'Jml (ops.)',
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _unitController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Satuan (ops.)',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // ── Section 3: Waktu ────────────────────────────
+                              const SizedBox(height: 16),
+                              const _SectionDivider(),
+                              const SizedBox(height: 12),
+                              _SectionHeader(
+                                emoji: '📅',
+                                label: 'Kapan?',
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(height: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  InkWell(
+                                    onTap: _pickDate,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InputDecorator(
+                                      decoration: const InputDecoration(
+                                        hintText: 'Tanggal',
+                                      ),
+                                      child: Text(
+                                        DateFormat(
+                                          'dd MMM yyyy',
+                                          'id',
+                                        ).format(_selectedDate),
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  InkWell(
+                                    onTap: _pickTime,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        hintText: 'Jam',
+                                        suffix: _selectedTime != null
+                                            ? GestureDetector(
+                                                onTap: () => setState(
+                                                  () => _selectedTime = null,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.close_rounded,
+                                                  size: 16,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      child: Text(
+                                        _timeLabel(),
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // ── Save Button ──────────────────────────────────
+                              const SizedBox(height: 20),
+                              SwipeButton(
+                                label: widget.existingTransaction == null
+                                    ? 'Swipe untuk simpan'
+                                    : 'Swipe untuk update',
+                                onSwipeComplete: _saveExpense,
+                                isLoading: _isSaving,
+                                isDark:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _CircleButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Navigator.pop(context),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Form(
-                      key: _formKey,
-                      child: ListView(
-                        children: [
-                          // ── Section 1: Kategori & Label ─────────────────
-                          _SectionHeader(
-                            emoji: '🏷️',
-                            label: 'Kategori & Label',
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 10),
-                          _CategorySelectorField(
-                            selectedText: _category,
-                            onTap: () => _openCategoryPicker(categories),
-                          ),
-                          const SizedBox(height: 10),
-                          _FinancialPlanSelectorField(
-                            plans: financialPlans,
-                            selectedPlanId: _selectedFinancialPlanId,
-                            onTap: () =>
-                                _openFinancialPlanPicker(financialPlans),
-                            selectedText: selectedPlanText,
-                          ),
-                          const SizedBox(height: 10),
-                          _PocketSelectorField(
-                            selectedPocketId: _selectedPocketId,
-                            onTap: () => _openPocketPicker(pockets),
-                            selectedText: selectedPocketText,
-                          ),
-
-                          // ── Section 2: Nominal & Judul ──────────────────
-                          const SizedBox(height: 16),
-                          const _SectionDivider(),
-                          const SizedBox(height: 12),
-                          _SectionHeader(
-                            emoji: '📝',
-                            label: 'Detail Pengeluaran',
-                            color: theme.colorScheme.error,
-                          ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _amountController,
-                            keyboardType: TextInputType.text,
-                            inputFormatters: [RupiahInputFormatter()],
-                            decoration: InputDecoration(
-                              hintText: 'Nominal pengeluaran',
-                              suffix: _amountValue > 0
-                                  ? Text(
-                                      _currencyFormatter.format(_amountValue),
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                            color: theme.colorScheme.error,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    )
-                                  : null,
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nominal wajib diisi';
-                              }
-                              final amount = RupiahInputFormatter.parse(value);
-                              if (amount <= 0) return 'Nominal tidak valid';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: const InputDecoration(
-                              hintText: 'Catatan / judul pengeluaran',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Judul wajib diisi';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _qtyController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  decoration: const InputDecoration(
-                                    hintText: 'Jml (ops.)',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _unitController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Satuan (ops.)',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // ── Section 3: Waktu ────────────────────────────
-                          const SizedBox(height: 16),
-                          const _SectionDivider(),
-                          const SizedBox(height: 12),
-                          _SectionHeader(
-                            emoji: '📅',
-                            label: 'Kapan?',
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              InkWell(
-                                onTap: _pickDate,
-                                borderRadius: BorderRadius.circular(12),
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(
-                                    hintText: 'Tanggal',
-                                  ),
-                                  child: Text(
-                                    DateFormat(
-                                      'dd MMM yyyy',
-                                      'id',
-                                    ).format(_selectedDate),
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              InkWell(
-                                onTap: _pickTime,
-                                borderRadius: BorderRadius.circular(12),
-                                child: InputDecorator(
-                                  decoration: InputDecoration(
-                                    hintText: 'Jam',
-                                    suffix: _selectedTime != null
-                                        ? GestureDetector(
-                                            onTap: () => setState(
-                                              () => _selectedTime = null,
-                                            ),
-                                            child: const Icon(
-                                              Icons.close_rounded,
-                                              size: 16,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    _timeLabel(),
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          // ── Save Button ──────────────────────────────────
-                          const SizedBox(height: 20),
-                          SwipeButton(
-                            label: widget.existingTransaction == null
-                                ? 'Swipe untuk simpan'
-                                : 'Swipe untuk update',
-                            onSwipeComplete: _saveExpense,
-                            isLoading: _isSaving,
-                            isDark:
-                                Theme.of(context).brightness == Brightness.dark,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          const AiChatBubble(currentContext: 'Expense Input Screen'),
+        ],
       ),
     );
   }
@@ -1241,7 +1275,11 @@ class _CategorySheetItem extends StatelessWidget {
           ),
           if (selected) ...[
             const SizedBox(width: 8),
-            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+            Icon(
+              Icons.check_circle_rounded,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+              size: 20,
+            ),
           ],
         ],
       ),
@@ -1368,8 +1406,10 @@ class _CategoryChip extends StatelessWidget {
                 color: theme.brightness == Brightness.dark
                     ? Colors.white
                     : (selected
-                        ? theme.colorScheme.error
-                        : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
+                          ? theme.colorScheme.error
+                          : theme.textTheme.bodyMedium?.color?.withValues(
+                              alpha: 0.7,
+                            )),
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
+import '../widgets/custom_loading_indicator.dart';
 import 'settings_screen.dart';
 import 'saving_goals_screen.dart';
 import 'shopping_list_screen.dart';
@@ -161,14 +162,11 @@ class _AiChatPanelState extends State<AiChatPanel> {
       }
     }
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
           // Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -220,8 +218,25 @@ class _AiChatPanelState extends State<AiChatPanel> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: messages.length,
+              itemCount: messages.length + (_isSending ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == messages.length && _isSending) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(16).copyWith(
+                          bottomLeft: const Radius.circular(0),
+                        ),
+                      ),
+                      child: const CustomLoadingIndicator(size: 30),
+                    ),
+                  );
+                }
+
                 final msg = messages[index];
                 final isUser = msg.role == 'user';
                 return Align(
@@ -294,6 +309,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                 Expanded(
                   child: TextField(
                     controller: _textController,
+                    enabled: !_isSending,
                     decoration: InputDecoration(
                       hintText: 'Ketik pesan atau instruksi...',
                       border: OutlineInputBorder(
@@ -307,31 +323,23 @@ class _AiChatPanelState extends State<AiChatPanel> {
                         vertical: 10,
                       ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
+                    onSubmitted: _isSending ? null : (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(
                   backgroundColor: _isSending ? Colors.grey : theme.colorScheme.primary,
-                  child: _isSending
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: theme.colorScheme.onPrimary,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : IconButton(
-                          icon: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary),
-                          onPressed: _sendMessage,
-                        ),
+                  child: IconButton(
+                    icon: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary),
+                    onPressed: _isSending ? null : _sendMessage,
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

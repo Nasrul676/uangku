@@ -127,6 +127,7 @@ $cleanedOcrText''';
     required String ocrText,
     required List<String> categories,
     required String apiKey,
+    required String model,
   }) async {
     if (apiKey.isEmpty) {
       throw Exception(
@@ -152,9 +153,6 @@ RULES:
 9. Keep it strictly JSON.
 OCR TEXT:
 $cleanedOcrText''';
-    
-    // Model yang diminta: gemini-flash-lite-latest (dapat disesuaikan jika menggunakan model identifier lain)
-    const model = 'gemini-flash-lite-latest'; // atau gemini-1.5-flash / gemini-1.5-flash-8b jika tidak ditemukan
     
     final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent');
 
@@ -275,4 +273,4 @@ $cleanedOcrText''';
       throw Exception('Format JSON dari AI tidak valid. Error: $e\n\nTeks JSON (setelah dibersihkan):\n$cleanJson');
     }
   }
-}å
+}

@@ -26,11 +26,11 @@ class _AiChatBubbleState extends State<AiChatBubble> {
   }
 
   void _openChatPanel() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AiChatPanel(currentContext: widget.currentContext),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AiChatPanel(currentContext: widget.currentContext),
+      ),
     );
   }
 

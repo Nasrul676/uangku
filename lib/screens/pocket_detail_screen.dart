@@ -7,6 +7,7 @@ import '../utils/rupiah_input_formatter.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import 'expense_input_screen.dart';
 import 'pocket_form_screen.dart';
+import '../widgets/ai_chat_bubble.dart';
 
 class PocketDetailScreen extends StatelessWidget {
   final int pocketId;
@@ -112,7 +113,9 @@ class PocketDetailScreen extends StatelessWidget {
             decimalDigits: 0,
           );
 
-          return SingleChildScrollView(
+          return Stack(
+            children: [
+              SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -341,7 +344,10 @@ class PocketDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-          );
+          ),
+          const AiChatBubble(currentContext: 'Pocket Detail Screen'),
+        ],
+      );
         },
       ),
     );
