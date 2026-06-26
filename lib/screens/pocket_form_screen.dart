@@ -7,6 +7,7 @@ import '../widgets/global_action_overlay.dart';
 import '../models/pocket.dart';
 import 'package:intl/intl.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class PocketFormScreen extends StatefulWidget {
   final Pocket? pocket;
@@ -451,6 +452,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Pocket Form Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

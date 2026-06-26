@@ -8,6 +8,7 @@ import '../widgets/custom_bottom_sheet.dart';
 import 'expense_input_screen.dart';
 import 'pocket_form_screen.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class PocketDetailScreen extends StatelessWidget {
   final int pocketId;
@@ -33,7 +34,10 @@ class PocketDetailScreen extends StatelessWidget {
               if (pocket == null) return const SizedBox();
 
               return IconButton(
-                icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                icon: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -46,7 +50,10 @@ class PocketDetailScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+            icon: Icon(
+              Icons.delete_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () {
               showCustomBottomSheet(
                 context: context,
@@ -79,7 +86,9 @@ class PocketDetailScreen extends StatelessWidget {
                               Navigator.pop(context);
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.error,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
                               foregroundColor: Colors.white,
                             ),
                             child: const Text('Hapus'),
@@ -116,238 +125,262 @@ class PocketDetailScreen extends StatelessWidget {
           return Stack(
             children: [
               SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 16),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      IconPickerUtils.getIcon(pocket.icon),
-                      style: const TextStyle(fontSize: 40),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  pocket.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: Text(
-                    pocket.allocationType == 'PERCENTAGE'
-                        ? 'Target: ${pocket.allocationValue.toInt()}% Pemasukan'
-                        : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).shadowColor.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Saldo Kantong Tersisa',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 8),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                      child: Center(
                         child: Text(
-                          currencyFormatter.format(effectiveBalance),
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: isNegative
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
+                          IconPickerUtils.getIcon(pocket.icon),
+                          style: const TextStyle(fontSize: 40),
                         ),
                       ),
-                      if (isNegative) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      pocket.name,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).cardTheme.color ??
+                            Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor,
+                        ),
+                      ),
+                      child: Text(
+                        pocket.allocationType == 'PERCENTAGE'
+                            ? 'Target: ${pocket.allocationValue.toInt()}% Pemasukan'
+                            : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).cardTheme.color ??
+                            Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).shadowColor.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(4),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Saldo Kantong Tersisa',
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          child: Text(
-                            'OVER BUDGET',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.w700,
+                          const SizedBox(height: 8),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            child: Text(
+                              currencyFormatter.format(effectiveBalance),
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: isNegative
+                                        ? Theme.of(context).colorScheme.error
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.color,
+                                  ),
                             ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
+                          if (isNegative) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'OVER BUDGET',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
 
-                // ACTION BUTTONS
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showAddMoneyOptionsDialog(context, provider, pocketId);
-                    },
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Tambah Uang'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ExpenseInputScreen(
-                            initialPocketId: pocketId,
+                    // ACTION BUTTONS
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _showAddMoneyOptionsDialog(
+                            context,
+                            provider,
+                            pocketId,
+                          );
+                        },
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Tambah Uang'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.remove_circle_outline),
-                    label: const Text('Tambah Pengeluaran'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Riwayat Pengeluaran Kantong',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Builder(
-                  builder: (context) {
-                    final expenses = provider.transactions
-                        .where(
-                          (tx) =>
-                              tx.pocketId == pocketId && tx.type == 'EXPENSE',
-                        )
-                        .toList();
-                    if (expenses.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Text(
-                          'Belum ada pengeluaran dengan kantong ini.',
-                          style: Theme.of(context).textTheme.bodySmall,
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ExpenseInputScreen(initialPocketId: pocketId),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.remove_circle_outline),
+                        label: const Text('Tambah Pengeluaran'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      );
-                    }
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: expenses.length,
-                      separatorBuilder: (context, index) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final tx = expenses[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFEBEE),
-                              shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Riwayat Pengeluaran Kantong',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Builder(
+                      builder: (context) {
+                        final expenses = provider.transactions
+                            .where(
+                              (tx) =>
+                                  tx.pocketId == pocketId &&
+                                  tx.type == 'EXPENSE',
+                            )
+                            .toList();
+                        if (expenses.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Text(
+                              'Belum ada pengeluaran dengan kantong ini.',
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
-                            child: Icon(
-                              Icons.arrow_upward,
-                              color: Theme.of(context).colorScheme.error,
-                              size: 16,
-                            ),
-                          ),
-                          title: Text(
-                            tx.title,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            DateFormat(
-                              'dd MMM yyyy',
-                            ).format(DateTime.parse(tx.date)),
-                          ),
-                          trailing: Text(
-                            '- ${currencyFormatter.format(tx.amount)}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          );
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: expenses.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final tx = expenses[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFFEBEE),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_upward,
+                                  color: Theme.of(context).colorScheme.error,
+                                  size: 16,
+                                ),
+                              ),
+                              title: Text(
+                                tx.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                DateFormat(
+                                  'dd MMM yyyy',
+                                ).format(DateTime.parse(tx.date)),
+                              ),
+                              trailing: Text(
+                                '- ${currencyFormatter.format(tx.amount)}',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const AiChatBubble(currentContext: 'Pocket Detail Screen'),
-        ],
-      );
+              ),
+              const AiChatBubble(currentContext: 'Pocket Detail Screen'),
+              const CalculatorBubble(),
+            ],
+          );
         },
       ),
     );
@@ -429,7 +462,9 @@ class PocketDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
                     child: Icon(
                       Icons.calculate_outlined,
                       color: Theme.of(context).colorScheme.primary,
@@ -453,8 +488,13 @@ class PocketDetailScreen extends StatelessWidget {
                 const Divider(),
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.add,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                   title: const Text('Tambah Nominal Lain'),
                   onTap: () {

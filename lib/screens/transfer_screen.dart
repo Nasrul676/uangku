@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({super.key});
@@ -230,6 +231,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Transfer Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

@@ -20,6 +20,7 @@ import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
   const ExpenseInputScreen({
@@ -1024,6 +1025,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Expense Input Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

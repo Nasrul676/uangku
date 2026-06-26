@@ -14,6 +14,7 @@ import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../widgets/success_overlay.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 import 'saving_goal_input_screen.dart';
 
 class _CombinedHistory {
@@ -454,6 +455,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Saving Goal Detail Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

@@ -9,6 +9,7 @@ import '../widgets/global_action_overlay.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_loading_indicator.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class SavingGoalInputScreen extends StatefulWidget {
   const SavingGoalInputScreen({super.key, this.existingGoal});
@@ -310,6 +311,7 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Saving Goal Input Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

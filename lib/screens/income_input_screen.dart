@@ -15,6 +15,7 @@ import '../utils/rupiah_input_formatter.dart';
 import '../utils/calculator_parser.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class IncomeInputScreen extends StatefulWidget {
   const IncomeInputScreen({super.key, this.existingTransaction});
@@ -616,6 +617,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
             ),
           ),
           const AiChatBubble(currentContext: 'Income Input Screen'),
+          const CalculatorBubble(),
         ],
       ),
     );

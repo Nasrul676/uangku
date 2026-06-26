@@ -48,6 +48,7 @@ import '../widgets/dashboard/transactions_card.dart';
 import '../widgets/dashboard/financial_plan_dialog.dart';
 import '../widgets/dashboard/quick_menu.dart';
 import '../widgets/ai_chat_bubble.dart';
+import '../widgets/calculator_bubble.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -1160,264 +1161,277 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Stack(
       children: [
         Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(5, 10, 5, 0),
-          child: Consumer<TransactionProvider>(
-            builder: (context, provider, _) {
-              final allTransactions = provider.transactions;
-              final bookPeriods = provider.bookPeriods;
-              final financialPlans = provider.financialPlans;
-              final selectedBookId = provider.selectedBookPeriodId;
-              final activeBook = provider.activeBookPeriod;
-              final chartBookId = selectedBookId ?? activeBook?.id;
-              final chartTransactions = chartBookId == null
-                  ? const <FinanceTransaction>[]
-                  : allTransactions
-                        .where((item) => item.bookPeriodId == chartBookId)
-                        .toList(growable: false);
-              final incomeTransactions = allTransactions
-                  .where((item) => item.type == 'INCOME')
-                  .toList();
-              final expenseTransactions = allTransactions
-                  .where((item) => item.type == 'EXPENSE')
-                  .toList();
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(5, 10, 5, 0),
+              child: Consumer<TransactionProvider>(
+                builder: (context, provider, _) {
+                  final allTransactions = provider.transactions;
+                  final bookPeriods = provider.bookPeriods;
+                  final financialPlans = provider.financialPlans;
+                  final selectedBookId = provider.selectedBookPeriodId;
+                  final activeBook = provider.activeBookPeriod;
+                  final chartBookId = selectedBookId ?? activeBook?.id;
+                  final chartTransactions = chartBookId == null
+                      ? const <FinanceTransaction>[]
+                      : allTransactions
+                            .where((item) => item.bookPeriodId == chartBookId)
+                            .toList(growable: false);
+                  final incomeTransactions = allTransactions
+                      .where((item) => item.type == 'INCOME')
+                      .toList();
+                  final expenseTransactions = allTransactions
+                      .where((item) => item.type == 'EXPENSE')
+                      .toList();
 
-              final filteredRecent = _recentFilter == 'INCOME'
-                  ? incomeTransactions
-                  : _recentFilter == 'EXPENSE'
-                  ? expenseTransactions
-                  : allTransactions;
+                  final filteredRecent = _recentFilter == 'INCOME'
+                      ? incomeTransactions
+                      : _recentFilter == 'EXPENSE'
+                      ? expenseTransactions
+                      : allTransactions;
 
-              final totalIncome = incomeTransactions.fold<double>(
-                0,
-                (sum, tx) => sum + tx.amount,
-              );
-              final totalExpense = expenseTransactions.fold<double>(
-                0,
-                (sum, tx) => sum + tx.amount,
-              );
-              final netBalance = totalIncome - totalExpense;
-              final currentTabKey = ValueKey(_currentIndex);
-              final currentTitle = _currentIndex == 1
-                  ? 'Transaksi'
-                  : _currentIndex == 2
-                  ? 'Belanja'
-                  : _currentIndex == 3
-                  ? 'Pengaturan'
-                  : 'Beranda';
-              final userName = _userName;
-              final greeting = userName.isEmpty ? 'Hai,' : 'Hai, $userName';
+                  final totalIncome = incomeTransactions.fold<double>(
+                    0,
+                    (sum, tx) => sum + tx.amount,
+                  );
+                  final totalExpense = expenseTransactions.fold<double>(
+                    0,
+                    (sum, tx) => sum + tx.amount,
+                  );
+                  final netBalance = totalIncome - totalExpense;
+                  final currentTabKey = ValueKey(_currentIndex);
+                  final currentTitle = _currentIndex == 1
+                      ? 'Transaksi'
+                      : _currentIndex == 2
+                      ? 'Belanja'
+                      : _currentIndex == 3
+                      ? 'Pengaturan'
+                      : 'Beranda';
+                  final userName = _userName;
+                  final greeting = userName.isEmpty ? 'Hai,' : 'Hai, $userName';
 
-              return Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  return Stack(
                     children: [
-                      if (_currentIndex == 0) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    greeting,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_currentIndex == 0) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        greeting,
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      Text(
+                                        currentTitle,
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    currentTitle,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Consumer<ShoppingProvider>(
-                              builder: (context, shoppingProvider, child) {
-                                final count = shoppingProvider.unboughtCount;
-                                return Stack(
+                                ),
+                                Consumer<ShoppingProvider>(
+                                  builder: (context, shoppingProvider, child) {
+                                    final count =
+                                        shoppingProvider.unboughtCount;
+                                    return Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        CircleIconButton(
+                                          icon: Icons.shopping_cart_outlined,
+                                          onTap: () {
+                                            setState(() {
+                                              _previousIndex = _currentIndex;
+                                              _currentIndex = 2;
+                                            });
+                                          },
+                                        ),
+                                        if (count > 0)
+                                          Positioned(
+                                            right: -2,
+                                            top: -2,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFFF9F1C),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFF111111,
+                                                  ),
+                                                  width: 1.5,
+                                                ),
+                                                boxShadow: [
+                                                  const BoxShadow(
+                                                    color: Color(0xFF111111),
+                                                    offset: Offset(1, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 16,
+                                                minHeight: 16,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  count > 99
+                                                      ? '99+'
+                                                      : count.toString(),
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF111111),
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.w900,
+                                                    height: 1.0,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    CircleIconButton(
-                                      icon: Icons.shopping_cart_outlined,
-                                      onTap: () {
-                                        setState(() {
-                                          _previousIndex = _currentIndex;
-                                          _currentIndex = 2;
-                                        });
-                                      },
+                                    AnimatedBellIcon(
+                                      animate:
+                                          provider.unreadNotificationCount > 0,
+                                      child: CircleIconButton(
+                                        icon: Icons.notifications_none_rounded,
+                                        onTap: () {
+                                          _showNotificationsBottomSheet(
+                                            context,
+                                            provider,
+                                            theme,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                    if (count > 0)
+                                    if (provider.unreadNotificationCount > 0)
                                       Positioned(
-                                        right: -2,
-                                        top: -2,
+                                        right: 0,
+                                        top: 0,
                                         child: Container(
-                                          padding: const EdgeInsets.all(3),
+                                          width: 10,
+                                          height: 10,
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFF9F1C),
+                                            color: const Color(0xFFE53935),
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: const Color(0xFF111111),
+                                              color: Colors.white,
                                               width: 1.5,
-                                            ),
-                                            boxShadow: [
-                                              const BoxShadow(
-                                                color: Color(0xFF111111),
-                                                offset: Offset(1, 1),
-                                              ),
-                                            ],
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 16,
-                                            minHeight: 16,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              count > 99
-                                                  ? '99+'
-                                                  : count.toString(),
-                                              style: const TextStyle(
-                                                color: Color(0xFF111111),
-                                                fontSize: 8,
-                                                fontWeight: FontWeight.w900,
-                                                height: 1.0,
-                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                   ],
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                AnimatedBellIcon(
-                                  animate: provider.unreadNotificationCount > 0,
-                                  child: CircleIconButton(
-                                    icon: Icons.notifications_none_rounded,
-                                    onTap: () {
-                                      _showNotificationsBottomSheet(
-                                        context,
-                                        provider,
-                                        theme,
-                                      );
-                                    },
-                                  ),
                                 ),
-                                if (provider.unreadNotificationCount > 0)
-                                  Positioned(
-                                    right: 0,
-                                    top: 0,
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE53935),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                               ],
                             ),
+                            const SizedBox(height: 12),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          reverseDuration: const Duration(milliseconds: 260),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder: (child, animation) {
-                            final isForward = _currentIndex >= _previousIndex;
-                            final isIncoming = child.key == currentTabKey;
-                            final horizontalShift = isForward ? 0.16 : -0.16;
-
-                            final offsetTween = isIncoming
-                                ? Tween<Offset>(
-                                    begin: Offset(horizontalShift, 0),
-                                    end: Offset.zero,
-                                  )
-                                : Tween<Offset>(
-                                    begin: Offset.zero,
-                                    end: Offset(-horizontalShift, 0),
-                                  );
-
-                            final positionAnimation = offsetTween.animate(
-                              CurvedAnimation(
-                                parent: isIncoming
-                                    ? animation
-                                    : ReverseAnimation(animation),
-                                curve: Curves.easeOutCubic,
+                          Expanded(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              reverseDuration: const Duration(
+                                milliseconds: 260,
                               ),
-                            );
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder: (child, animation) {
+                                final isForward =
+                                    _currentIndex >= _previousIndex;
+                                final isIncoming = child.key == currentTabKey;
+                                final horizontalShift = isForward
+                                    ? 0.16
+                                    : -0.16;
 
-                            final opacityAnimation = CurvedAnimation(
-                              parent: animation,
-                              curve: isIncoming
-                                  ? Curves.easeOut
-                                  : Curves.easeIn,
-                            );
+                                final offsetTween = isIncoming
+                                    ? Tween<Offset>(
+                                        begin: Offset(horizontalShift, 0),
+                                        end: Offset.zero,
+                                      )
+                                    : Tween<Offset>(
+                                        begin: Offset.zero,
+                                        end: Offset(-horizontalShift, 0),
+                                      );
 
-                            return FadeTransition(
-                              opacity: opacityAnimation,
-                              child: SlideTransition(
-                                position: positionAnimation,
-                                child: child,
+                                final positionAnimation = offsetTween.animate(
+                                  CurvedAnimation(
+                                    parent: isIncoming
+                                        ? animation
+                                        : ReverseAnimation(animation),
+                                    curve: Curves.easeOutCubic,
+                                  ),
+                                );
+
+                                final opacityAnimation = CurvedAnimation(
+                                  parent: animation,
+                                  curve: isIncoming
+                                      ? Curves.easeOut
+                                      : Curves.easeIn,
+                                );
+
+                                return FadeTransition(
+                                  opacity: opacityAnimation,
+                                  child: SlideTransition(
+                                    position: positionAnimation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: KeyedSubtree(
+                                key: currentTabKey,
+                                child: _buildCurrentTab(
+                                  theme: theme,
+                                  provider: provider,
+                                  allTransactions: allTransactions,
+                                  chartTransactions: chartTransactions,
+                                  financialPlans: financialPlans,
+                                  incomeTransactions: incomeTransactions,
+                                  expenseTransactions: expenseTransactions,
+                                  filteredRecent: filteredRecent,
+                                  totalIncome: totalIncome,
+                                  totalExpense: totalExpense,
+                                  netBalance: netBalance,
+                                  onAddIncome: _openIncomeInput,
+                                  onAddExpense: _openExpenseInput,
+                                ),
                               ),
-                            );
-                          },
-                          child: KeyedSubtree(
-                            key: currentTabKey,
-                            child: _buildCurrentTab(
-                              theme: theme,
-                              provider: provider,
-                              allTransactions: allTransactions,
-                              chartTransactions: chartTransactions,
-                              financialPlans: financialPlans,
-                              incomeTransactions: incomeTransactions,
-                              expenseTransactions: expenseTransactions,
-                              filteredRecent: filteredRecent,
-                              totalIncome: totalIncome,
-                              totalExpense: totalExpense,
-                              netBalance: netBalance,
-                              onAddIncome: _openIncomeInput,
-                              onAddExpense: _openExpenseInput,
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: ExpandableQuickMenu(
+            selectedIndex: _currentIndex,
+            onMenuTap: _onMenuTap,
+            onOpenQuickAdd: _openQuickAddSheet,
           ),
         ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: ExpandableQuickMenu(
-        selectedIndex: _currentIndex,
-        onMenuTap: _onMenuTap,
-        onOpenQuickAdd: _openQuickAddSheet,
-      ),
-    ),
-    if (_currentIndex != 3) // Jangan tampilkan di halaman settings
-      AiChatBubble(currentContext: _getScreenContext()),
-    ],
-  );
-}
+        if (_currentIndex != 3)
+          AiChatBubble(currentContext: _getScreenContext()),
+        if (_currentIndex != 3) const CalculatorBubble(),
+      ],
+    );
+  }
 
   Future<void> _openQuickAddSheet() async {
     if (!mounted) return;
@@ -1481,7 +1495,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const BookTransferScreen(),
+                                builder: (context) =>
+                                    const BookTransferScreen(),
                               ),
                             );
                           },
@@ -1520,7 +1535,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Crop Struk',
-          toolbarColor: isDark ? const Color(0xFF1E1E2E) : theme.colorScheme.primary,
+          toolbarColor: isDark
+              ? const Color(0xFF1E1E2E)
+              : theme.colorScheme.primary,
           toolbarWidgetColor: Colors.white,
           backgroundColor: isDark ? const Color(0xFF121212) : Colors.black,
           activeControlsWidgetColor: theme.colorScheme.primary,
@@ -1573,9 +1590,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Theme.of(context).colorScheme.primaryContainer,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.camera_alt_rounded, color: Theme.of(context).colorScheme.primary),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  title: const Text('Kamera', style: TextStyle(fontWeight: FontWeight.w500)),
+                  title: const Text(
+                    'Kamera',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
                 ),
                 ListTile(
@@ -1585,9 +1608,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Theme.of(context).colorScheme.secondaryContainer,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.photo_library_rounded, color: Theme.of(context).colorScheme.secondary),
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
                   ),
-                  title: const Text('Galeri Foto', style: TextStyle(fontWeight: FontWeight.w500)),
+                  title: const Text(
+                    'Galeri Foto',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
                 ),
               ],
@@ -1606,9 +1635,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       maxHeight: 1600,
     );
     if (pickedFile == null) return;
-    
+
     if (!mounted) return;
-    
+
     // Buka cropper agar user bisa memotong area struk
     final croppedPath = await _cropImage(pickedFile.path);
     if (croppedPath == null) return; // User membatalkan crop
@@ -1623,19 +1652,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+              color:
+                  Theme.of(context).cardTheme.color ??
+                  Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Lottie.asset('assets/lottie/loading.json', width: 120, height: 120),
+                Lottie.asset(
+                  'assets/lottie/loading.json',
+                  width: 120,
+                  height: 120,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'AI sedang memproses struk...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -1653,7 +1688,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       final provider = context.read<TransactionProvider>();
       final categories = provider.expenseCategories;
-      
+
       final parsedItems = await AiAssistantService.parseReceiptText(
         ocrText: recognizedText.text,
         categories: categories,
@@ -1675,15 +1710,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak ada barang yang terdeteksi dari struk ini.')),
+          const SnackBar(
+            content: Text('Tidak ada barang yang terdeteksi dari struk ini.'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memproses struk: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memproses struk: $e')));
       }
     }
   }
@@ -1841,8 +1878,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ..sort((a, b) {
         final realizationA = realizationByPlan[a.id] ?? 0;
         final realizationB = realizationByPlan[b.id] ?? 0;
-        final progressA = a.targetAmount > 0 ? (realizationA / a.targetAmount).clamp(0.0, 1.0) : 0.0;
-        final progressB = b.targetAmount > 0 ? (realizationB / b.targetAmount).clamp(0.0, 1.0) : 0.0;
+        final progressA = a.targetAmount > 0
+            ? (realizationA / a.targetAmount).clamp(0.0, 1.0)
+            : 0.0;
+        final progressB = b.targetAmount > 0
+            ? (realizationB / b.targetAmount).clamp(0.0, 1.0)
+            : 0.0;
         return progressA.compareTo(progressB);
       });
 
@@ -1893,21 +1934,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isLoading: provider.isLoading,
                   realizationByPlan: realizationByPlan,
                   isSaving: _isSavingFinancialPlan,
-                  planBudget: totalIncome > 0 
-                      ? totalIncome 
+                  planBudget: totalIncome > 0
+                      ? totalIncome
                       : provider.bookPeriods
-                          .firstWhere(
-                            (b) =>
-                                b.id ==
-                                (provider.selectedBookPeriodId ??
-                                    provider.activeBookPeriod?.id),
-                            orElse: () => const BookPeriod(
-                              label: '',
-                              startDate: '',
-                              planBudget: 0.0,
-                            ),
-                          )
-                          .planBudget,
+                            .firstWhere(
+                              (b) =>
+                                  b.id ==
+                                  (provider.selectedBookPeriodId ??
+                                      provider.activeBookPeriod?.id),
+                              orElse: () => const BookPeriod(
+                                label: '',
+                                startDate: '',
+                                planBudget: 0.0,
+                              ),
+                            )
+                            .planBudget,
                   canEditBudget: totalIncome <= 0,
                   onAddPlan: _openAddFinancialPlanDialog,
                   onEditPlan: _openEditFinancialPlanDialog,
