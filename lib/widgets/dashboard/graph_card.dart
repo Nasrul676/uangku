@@ -23,7 +23,12 @@ class BarData {
 }
 
 class Bar extends StatefulWidget {
-  const Bar({super.key, required this.data, required this.selected, required this.onTap});
+  const Bar({
+    super.key,
+    required this.data,
+    required this.selected,
+    required this.onTap,
+  });
 
   final BarData data;
   final bool selected;
@@ -76,7 +81,7 @@ class _BarState extends State<Bar> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: widget.selected
-                              ? const Color(0xFF1F5A62)
+                              ? AppTheme.fabIconColor
                               : const Color(0xFF111111),
                           width: widget.selected ? 1.8 : 1.2,
                         ),
@@ -94,7 +99,7 @@ class _BarState extends State<Bar> {
               fontSize: 9,
               fontWeight: FontWeight.w600,
               color: widget.selected
-                  ? const Color(0xFF1F5A62)
+                  ? AppTheme.fabIconColor
                   : (Theme.of(context).brightness == Brightness.dark
                         ? Colors.white70
                         : const Color(0xFF3B3B55)),
@@ -144,6 +149,7 @@ class GraphCard extends StatelessWidget {
             child: Row(
               children: [
                 CircleIconButton(
+                  tooltip: 'Ganti tampilan grafik',
                   icon: Icons.show_chart_rounded,
                   onTap: () {},
                 ),
@@ -176,19 +182,17 @@ class GraphCard extends StatelessWidget {
                   width: 1,
                   height: 28,
                   color:
-                      (Theme.of(context)
-                          .extension<AppThemeExtension>()
-                          ?.cardBorder
-                          ?.top
-                          .color ??
+                      (Theme.of(
+                        context,
+                      ).extension<AppThemeExtension>()?.cardBorder?.top.color ??
                       const Color(0xFF2D2D2D)),
                 ),
                 const SizedBox(width: 10),
                 IconFilterButton(
                   icon: Icons.north_east_rounded,
                   selected: selectedType == 'EXPENSE',
-                  selectedColor: const Color(0xFFF0C8C8),
-                  iconColor: const Color(0xFFC24545),
+                  selectedColor: AppTheme.expenseLight,
+                  iconColor: AppTheme.expenseRed,
                   onTap: () => onSelectType('EXPENSE'),
                 ),
                 const SizedBox(width: 6),
@@ -304,12 +308,12 @@ class GraphCard extends StatelessWidget {
       Color(0xFFEC9090),
       Color(0xFFE37979),
       Color(0xFFD96565),
-      Color(0xFFC24545),
+      AppTheme.expenseRed,
       Color(0xFFA13A3A),
     ];
     const incomeColors = [
       Color(0xFFBEE7C8),
-      Color(0xFFA4DBB2),
+      AppTheme.incomeLight,
       Color(0xFF93D5A1),
       Color(0xFF85C793),
       Color(0xFF74B886),

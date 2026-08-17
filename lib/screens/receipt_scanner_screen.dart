@@ -16,7 +16,9 @@ class ReceiptScannerScreen extends StatefulWidget {
 
 class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
   final ImagePicker _picker = ImagePicker();
-  final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  final TextRecognizer _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
   bool _isProcessing = false;
   String _statusMessage = 'Memilih gambar...';
 
@@ -46,7 +48,10 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Pilih Sumber Gambar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Pilih Sumber Gambar',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt_rounded),
@@ -63,6 +68,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (source != null) {
       _processImage(source);
     } else {
@@ -81,7 +87,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Crop Struk',
-          toolbarColor: isDark ? const Color(0xFF1E1E2E) : theme.colorScheme.primary,
+          toolbarColor: isDark
+              ? const Color(0xFF1E1E2E)
+              : theme.colorScheme.primary,
           toolbarWidgetColor: Colors.white,
 
           backgroundColor: isDark ? const Color(0xFF121212) : Colors.black,
@@ -142,7 +150,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       });
 
       final inputImage = InputImage.fromFilePath(croppedPath);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      final RecognizedText recognizedText = await _textRecognizer.processImage(
+        inputImage,
+      );
 
       setState(() {
         _statusMessage = 'Menganalisis item...';
@@ -153,7 +163,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       if (!mounted) return;
       if (items.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak ada item atau harga yang terbaca dari struk.')),
+          const SnackBar(
+            content: Text('Tidak ada item atau harga yang terbaca dari struk.'),
+          ),
         );
         Navigator.pop(context);
         return;
@@ -163,18 +175,15 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ReceiptReviewScreen(
-            items: items,
-            imagePath: croppedPath,
-          ),
+          builder: (context) =>
+              ReceiptReviewScreen(items: items, imagePath: croppedPath),
         ),
       );
-
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
         Navigator.pop(context);
       }
     } finally {
@@ -193,6 +202,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       appBar: AppBar(
         title: const Text('Scan Struk'),
         leading: IconButton(
+          tooltip: 'Tutup pemindai',
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),

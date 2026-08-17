@@ -296,9 +296,7 @@ class DatabaseHelper {
           var columns = await db.rawQuery(
             'PRAGMA table_info($savingGoalsTable)',
           );
-          bool columnExists = columns.any(
-            (column) => column['name'] == 'type',
-          );
+          bool columnExists = columns.any((column) => column['name'] == 'type');
           if (!columnExists) {
             await db.execute('''
               ALTER TABLE $savingGoalsTable
@@ -334,7 +332,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> _createSchema(Database db) async {
+  static Future<void> _createSchema(Database db) async {
     await db.execute('''
       CREATE TABLE $transactionsTable (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -673,7 +671,20 @@ class DatabaseHelper {
 
   Future<void> deleteBookPeriod(int bookPeriodId) async {
     final db = await database;
+    await deleteBookPeriodIn(db, bookPeriodId);
+  }
 
+  /// Membuat skema di database mana pun. Dipisah dari `_initDatabase` supaya
+  /// test bisa menyiapkan database in-memory tanpa menyentuh singleton.
+  static Future<void> createSchemaForTesting(Database db) => _createSchema(db);
+
+  /// Menghapus buku beserta seluruh baris yang bergantung padanya.
+  ///
+  /// Menerima [db] sebagai parameter (bukan lewat singleton) supaya perilaku
+  /// kaskadenya bisa diverifikasi test. Keempat tabel dengan kolom
+  /// `book_period_id NOT NULL` harus ikut dibersihkan — kalau ada yang
+  /// terlewat, barisnya menggantung selamanya.
+  static Future<void> deleteBookPeriodIn(Database db, int bookPeriodId) async {
     await db.transaction((txn) async {
       await txn.delete(
         transactionsTable,
@@ -683,6 +694,12 @@ class DatabaseHelper {
 
       await txn.delete(
         financialPlansTable,
+        where: 'book_period_id = ?',
+        whereArgs: [bookPeriodId],
+      );
+
+      await txn.delete(
+        shoppingItemsTable,
         where: 'book_period_id = ?',
         whereArgs: [bookPeriodId],
       );
@@ -877,11 +894,7 @@ class DatabaseHelper {
 
   Future<int> deleteSavingHistory(int id) async {
     final db = await database;
-    return db.delete(
-      savingHistoriesTable,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete(savingHistoriesTable, where: 'id = ?', whereArgs: [id]);
   }
 
   // --- SAVING EXPENSES CRUD ---
@@ -917,11 +930,7 @@ class DatabaseHelper {
 
   Future<int> deleteSavingExpense(int id) async {
     final db = await database;
-    return db.delete(
-      savingExpensesTable,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete(savingExpensesTable, where: 'id = ?', whereArgs: [id]);
   }
 
   // --- RECURRING TRANSACTIONS CRUD ---
@@ -934,9 +943,7 @@ class DatabaseHelper {
     return result.map(RecurringTransaction.fromMap).toList();
   }
 
-  Future<int> insertRecurringTransaction(
-    RecurringTransaction tx,
-  ) async {
+  Future<int> insertRecurringTransaction(RecurringTransaction tx) async {
     final db = await database;
     return db.insert(
       recurringTransactionsTable,

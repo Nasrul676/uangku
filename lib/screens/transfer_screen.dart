@@ -154,7 +154,7 @@ class _TransferScreenState extends State<TransferScreen> {
                                     child: const Text(
                                       'Ubah',
                                       style: TextStyle(
-                                        color: Color(0xFFC24545),
+                                        color: AppTheme.expenseRed,
                                       ),
                                     ),
                                   ),

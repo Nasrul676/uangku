@@ -82,8 +82,12 @@ class _SkeletonItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
-    final shimmerColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
+    final baseColor = isDark
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFE8E8E8);
+    final shimmerColor = isDark
+        ? const Color(0xFF3A3A3A)
+        : const Color(0xFFF5F5F5);
 
     // Wave effect dengan delay per item
     final adjustedAnim = ((animValue + delay) % 1.0);
@@ -118,12 +122,7 @@ class _SkeletonItem extends StatelessWidget {
                   color: color,
                 ),
                 const SizedBox(height: 8),
-                _SkeletonBox(
-                  width: 120,
-                  height: 10,
-                  radius: 5,
-                  color: color,
-                ),
+                _SkeletonBox(width: 120, height: 10, radius: 5, color: color),
               ],
             ),
           ),
@@ -196,8 +195,12 @@ class _SkeletonCardState extends State<SkeletonCard>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
-    final shimmerColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
+    final baseColor = isDark
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFE8E8E8);
+    final shimmerColor = isDark
+        ? const Color(0xFF3A3A3A)
+        : const Color(0xFFF5F5F5);
 
     return AnimatedBuilder(
       animation: _animation,

@@ -5,10 +5,7 @@ import '../screens/ai_chat_panel.dart';
 class AiChatBubble extends StatefulWidget {
   final String currentContext;
 
-  const AiChatBubble({
-    super.key,
-    required this.currentContext,
-  });
+  const AiChatBubble({super.key, required this.currentContext});
 
   @override
   State<AiChatBubble> createState() => _AiChatBubbleState();
@@ -29,7 +26,8 @@ class _AiChatBubbleState extends State<AiChatBubble> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AiChatPanel(currentContext: widget.currentContext),
+        builder: (context) =>
+            AiChatPanel(currentContext: widget.currentContext),
       ),
     );
   }
@@ -68,16 +66,13 @@ class _AiChatBubbleState extends State<AiChatBubble> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Lottie.asset(
-            'assets/lottie/AI.json',
-            fit: BoxFit.cover,
-          ),
+          child: Lottie.asset('assets/lottie/AI.json', fit: BoxFit.cover),
         ),
       ),
     );

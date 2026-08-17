@@ -70,9 +70,8 @@ class _PasswordContentState extends State<_PasswordContent> {
               labelText: 'Password',
               errorText: _errorText,
               suffixIcon: IconButton(
-                icon: Icon(
-                  _obscure ? Icons.visibility_off : Icons.visibility,
-                ),
+                tooltip: 'Tampilkan atau sembunyikan',
+                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -158,9 +157,7 @@ class _BackupProgressContentState extends State<_BackupProgressContent> {
                           Container(
                             height: 12,
                             decoration: BoxDecoration(
-                              color: cs.primaryContainer.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: cs.primaryContainer.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
@@ -218,9 +215,7 @@ class _BackupProgressContentState extends State<_BackupProgressContent> {
                 child: Text(
                   data.status,
                   key: ValueKey(data.status),
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -715,6 +710,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
       );
     }
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -740,6 +736,7 @@ class _BackupRestoreTileState extends State<BackupRestoreTile> {
   }
 
   void _showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));

@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/custom_loading_indicator.dart';
 import '../widgets/custom_bottom_sheet.dart';
+import '../utils/error_message.dart';
 
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
@@ -45,10 +46,10 @@ class _CategoryChip extends StatelessWidget {
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white
                 : (selected
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
           ),
         ),
       ),
@@ -206,7 +207,9 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       child: const Text('Nanti Dulu'),
                     ),
                   ),
@@ -257,7 +260,7 @@ class _AddShoppingItemScreenState extends State<AddShoppingItemScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = friendlyError(e);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

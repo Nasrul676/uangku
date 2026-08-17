@@ -20,9 +20,7 @@ class SheetApiService {
           response.statusCode == 302) {
         return true;
       } else {
-        throw Exception(
-          'Gagal mengirim data. Status: ${response.statusCode}',
-        );
+        throw Exception('Gagal mengirim data. Status: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error: $e');

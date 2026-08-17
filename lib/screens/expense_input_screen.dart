@@ -16,11 +16,10 @@ import '../models/pocket.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
-import 'settings_screen.dart';
-import 'shopping_list_screen.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
+import '../utils/error_message.dart';
 
 class ExpenseInputScreen extends StatefulWidget {
   const ExpenseInputScreen({
@@ -45,7 +44,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   final _unitController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _selectedTime = TimeOfDay.now();
   String _category = 'Pengeluaran';
   int? _selectedFinancialPlanId;
   int? _selectedPocketId;
@@ -79,6 +78,8 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
             minute: int.tryParse(parts[1]) ?? 0,
           );
         }
+      } else {
+        _selectedTime = null;
       }
       _category = existing.category;
       _selectedFinancialPlanId = existing.financialPlanId;
@@ -634,7 +635,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = friendlyError(e);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -675,7 +676,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     final qtyText = _qtyController.text.trim();
     final unitText = _unitController.text.trim();
-    final qty = qtyText.isEmpty ? null : int.tryParse(qtyText);
+    final qty = qtyText.isEmpty
+        ? null
+        : double.tryParse(qtyText.replaceAll(',', '.'));
 
     if (qtyText.isNotEmpty && (qty == null || qty <= 0)) {
       ScaffoldMessenger.of(
@@ -685,8 +688,8 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     }
 
     final detailParts = <String>[];
-    if (qty != null) {
-      detailParts.add('$qty');
+    if (qtyText.isNotEmpty) {
+      detailParts.add(qtyText);
     }
     if (unitText.isNotEmpty) {
       detailParts.add(unitText);
@@ -746,7 +749,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       return false;
     } catch (e) {
       if (!mounted) return false;
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = friendlyError(e);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $message')));
@@ -925,9 +928,14 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _qtyController,
-                                      keyboardType: TextInputType.number,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
+                                        FilteringTextInputFormatter.allow(
+                                          RegExp(r'[0-9.,]'),
+                                        ),
                                       ],
                                       decoration: const InputDecoration(
                                         hintText: 'Jml (ops.)',
@@ -1209,7 +1217,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                         ? Theme.of(context).colorScheme.onErrorContainer
                         : Theme.of(
                             context,
-                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                   ),
                 ),
                 if (subtitle.isNotEmpty) ...[
@@ -1221,9 +1229,8 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: selected
                           ? Theme.of(context).colorScheme.onErrorContainer
-                          : Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          : Theme.of(context).textTheme.bodyMedium?.color
+                                ?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -1355,123 +1362,6 @@ class _SectionDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.errorContainer
-              : theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(12),
-          border: selected
-              ? Border.all(color: theme.colorScheme.error, width: 1.5)
-              : theme.extension<AppThemeExtension>()?.cardBorder,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (selected) ...[
-              Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: theme.brightness == Brightness.dark
-                    ? Colors.white
-                    : theme.colorScheme.error,
-              ),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: theme.brightness == Brightness.dark
-                    ? Colors.white
-                    : (selected
-                          ? theme.colorScheme.error
-                          : theme.textTheme.bodyMedium?.color?.withValues(
-                              alpha: 0.7,
-                            )),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AddCategoryChip extends StatelessWidget {
-  const _AddCategoryChip({required this.onTap, required this.isLoading});
-
-  final VoidCallback onTap;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.5),
-            width: 1.5,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            isLoading
-                ? SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.primary,
-                    ),
-                  )
-                : Icon(
-                    Icons.add_rounded,
-                    size: 14,
-                    color: theme.colorScheme.primary,
-                  ),
-            const SizedBox(width: 4),
-            Text(
-              'Tambah',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

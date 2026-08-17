@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'package:flutter/services.dart';
 import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
 import 'package:intl/intl.dart';
@@ -172,7 +171,9 @@ class _InputScreenState extends State<InputScreen> {
                                 child: _TypeToggle(
                                   label: 'Pemasukan',
                                   selected: _type == 'INCOME',
-                                  selectedColor: Theme.of(context).colorScheme.tertiaryContainer,
+                                  selectedColor: Theme.of(
+                                    context,
+                                  ).colorScheme.tertiaryContainer,
                                   onTap: () => setState(() => _type = 'INCOME'),
                                 ),
                               ),
@@ -181,8 +182,12 @@ class _InputScreenState extends State<InputScreen> {
                                 child: _TypeToggle(
                                   label: 'Pengeluaran',
                                   selected: _type == 'EXPENSE',
-                                  selectedColor: Theme.of(context).colorScheme.errorContainer,
-                                  selectedTextColor: Theme.of(context).colorScheme.error,
+                                  selectedColor: Theme.of(
+                                    context,
+                                  ).colorScheme.errorContainer,
+                                  selectedTextColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
                                   onTap: () =>
                                       setState(() => _type = 'EXPENSE'),
                                 ),
@@ -262,9 +267,7 @@ class _InputScreenState extends State<InputScreen> {
                           TextFormField(
                             controller: _amountController,
                             keyboardType: TextInputType.text,
-                            inputFormatters: [
-                              RupiahInputFormatter(),
-                            ],
+                            inputFormatters: [RupiahInputFormatter()],
                             decoration: _fieldDecoration(
                               'Nominal',
                               Icons.payments_rounded,
@@ -371,7 +374,8 @@ class _TypeToggle extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
-              ? (selectedColor ?? Theme.of(context).colorScheme.tertiaryContainer)
+              ? (selectedColor ??
+                    Theme.of(context).colorScheme.tertiaryContainer)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
@@ -380,7 +384,11 @@ class _TypeToggle extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: selected ? selectedTextColor : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: selected
+                ? selectedTextColor
+                : Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
       ),

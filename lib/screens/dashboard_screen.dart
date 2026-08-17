@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
+import '../models/pocket.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/shopping_provider.dart';
 import '../services/auth_service.dart';
@@ -16,18 +17,15 @@ import '../theme/app_theme.dart';
 import '../utils/app_transitions.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/animated_bell_icon.dart';
-import '../widgets/animated_bouncing_card.dart';
 import '../widgets/entrance_animation.dart';
-import '../widgets/skeleton_loader.dart';
 import '../widgets/success_overlay.dart';
+import '../widgets/custom_bottom_sheet.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 import 'book_period_recap_screen.dart';
-import 'pocket_list_screen.dart';
-import 'pocket_detail_screen.dart';
 import 'pocket_form_screen.dart';
 import 'book_transfer_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,13 +33,11 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:lottie/lottie.dart';
 import '../services/ai_assistant_service.dart';
 import 'receipt_result_screen.dart';
-import '../utils/icon_picker_utils.dart';
 import '../widgets/app_card.dart';
 import '../widgets/dashboard/dashboard_buttons.dart';
 import '../widgets/dashboard/balance_card.dart';
 import '../widgets/dashboard/dashboard_pocket_section.dart';
 import '../widgets/dashboard/graph_card.dart';
-import '../widgets/dashboard/book_period_card.dart';
 import '../widgets/dashboard/financial_plan_card.dart';
 import '../widgets/dashboard/recent_section.dart';
 import '../widgets/dashboard/transactions_card.dart';
@@ -49,6 +45,8 @@ import '../widgets/dashboard/financial_plan_dialog.dart';
 import '../widgets/dashboard/quick_menu.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
+import '../utils/error_message.dart';
+import '../widgets/item_actions_menu.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -116,6 +114,130 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return amount;
   }
 
+  Future<void> _makePocketFromPlan(FinancialPlan plan) async {
+    final provider = context.read<TransactionProvider>();
+    final bookId =
+        provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
+
+    if (bookId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih buku terlebih dahulu.')),
+      );
+      return;
+    }
+
+    final existing = provider.pockets.any(
+      (pocket) =>
+          pocket.name.trim().toLowerCase() == plan.title.trim().toLowerCase(),
+    );
+    if (existing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kantong "${plan.title}" sudah ada di buku ini.'),
+        ),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PocketFormScreen(
+          pocket: Pocket(
+            bookPeriodId: bookId,
+            name: plan.title,
+            icon: 'savings',
+            allocationType: 'NOMINAL',
+            allocationValue: plan.targetAmount,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cloneFinancialPlan(FinancialPlan plan) async {
+    final provider = context.read<TransactionProvider>();
+    final bookPeriods = provider.bookPeriods.toList(growable: false);
+
+    if (bookPeriods.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Belum ada buku untuk tujuan kloning.')),
+      );
+      return;
+    }
+
+    showCustomBottomSheet(
+      context: context,
+      title: 'Pilih Buku Tujuan',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: bookPeriods.map((book) {
+          return ListTile(
+            leading: const Icon(Icons.book_rounded),
+            title: Text(book.label),
+            onTap: () async {
+              Navigator.pop(context);
+              setState(() => _isSavingFinancialPlan = true);
+
+              DateTime originalTargetDate =
+                  DateTime.tryParse(plan.targetDate) ?? DateTime.now();
+              DateTime bookStartDate =
+                  DateTime.tryParse(book.startDate) ?? DateTime.now();
+
+              int targetYear = bookStartDate.year;
+              int targetMonth = bookStartDate.month;
+              int targetDay = originalTargetDate.day;
+
+              int maxDaysInTargetMonth = DateTime(
+                targetYear,
+                targetMonth + 1,
+                0,
+              ).day;
+              if (targetDay > maxDaysInTargetMonth) {
+                targetDay = maxDaysInTargetMonth;
+              }
+
+              DateTime newTargetDate = DateTime(
+                targetYear,
+                targetMonth,
+                targetDay,
+              );
+              if (newTargetDate.isBefore(bookStartDate)) {
+                newTargetDate = bookStartDate;
+              }
+
+              try {
+                await provider.addFinancialPlan(
+                  title: plan.title,
+                  targetAmount: plan.targetAmount,
+                  targetDate: newTargetDate,
+                  category: plan.category,
+                  bookPeriodId: book.id,
+                );
+                if (mounted) {
+                  SuccessOverlay.show(
+                    context,
+                    message: 'Rencana berhasil dikloning ke ${book.label}',
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
+                }
+              } finally {
+                if (mounted) {
+                  setState(() => _isSavingFinancialPlan = false);
+                }
+              }
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Future<void> _openAddFinancialPlanDialog() async {
     if (_isSavingFinancialPlan) return;
 
@@ -167,9 +289,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() => _isSavingFinancialPlan = false);
@@ -246,9 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) setState(() => _isSavingFinancialPlan = false);
     }
@@ -271,8 +393,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF0C8C8),
-                foregroundColor: const Color(0xFFC24545),
+                backgroundColor: AppTheme.expenseLight,
+                foregroundColor: AppTheme.expenseRed,
               ),
               child: const Text('Ya, Hapus'),
             ),
@@ -281,15 +403,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
 
-    if (shouldDelete != true) return;
+    if (shouldDelete != true || !mounted) return;
 
     try {
       await context.read<TransactionProvider>().removeFinancialPlan(id);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -333,7 +455,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       try {
         await context.read<TransactionProvider>().updateBookPlanBudget(
           bookPeriodId,
@@ -341,9 +463,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
       }
     }
   }
@@ -442,9 +564,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return true;
     } catch (e) {
       if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
       return false;
     }
   }
@@ -473,9 +595,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -527,9 +649,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -548,9 +670,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     }
   }
 
@@ -631,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         validationMessage!,
                         style: const TextStyle(
-                          color: Color(0xFFC24545),
+                          color: AppTheme.expenseRed,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -650,8 +772,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 FilledButton(
                   onPressed: isSubmitting ? null : submit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFF0C8C8),
-                    foregroundColor: const Color(0xFFC24545),
+                    backgroundColor: AppTheme.expenseLight,
+                    foregroundColor: AppTheme.expenseRed,
                   ),
                   child: const Text('Hapus Buku'),
                 ),
@@ -768,6 +890,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             trailing: IconButton(
+                              tooltip: 'Tutup',
                               icon: const Icon(Icons.close_rounded, size: 20),
                               color: Colors.grey,
                               onPressed: () {
@@ -778,359 +901,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _showBookManagerBottomSheet(
-    BuildContext context,
-    TransactionProvider provider,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final periods = provider.bookPeriods;
-            final currentId = provider.selectedBookPeriodId;
-            final activeBook = provider.activeBookPeriod;
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        'Buku Pengeluaran',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (activeBook != null && activeBook.id != currentId) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            provider.selectBookPeriod(activeBook.id);
-                            setState(() {
-                              _selectedChartDetail = null;
-                            });
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(
-                            Icons.check_circle_outline,
-                            color: AppTheme.primaryBlue,
-                          ),
-                          label: const Text(
-                            'Pilih Buku Aktif',
-                            style: TextStyle(color: AppTheme.primaryBlue),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: AppTheme.primaryBlue),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    Flexible(
-                      child: periods.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Text(
-                                  'Belum ada buku. Buka buku pertama untuk mulai mencatat.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            )
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              itemCount: periods.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final period = periods[index];
-                                final isSelected = period.id == currentId;
-                                final isActive = period.isOpen;
-
-                                String subtitle =
-                                    'Dari ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.startDate))}';
-                                if (!isActive && period.endDate != null) {
-                                  subtitle +=
-                                      ' smp ${DateFormat('dd MMM yyyy').format(DateTime.parse(period.endDate!))}';
-                                } else {
-                                  subtitle += ' (Sedang Berjalan)';
-                                }
-
-                                return InkWell(
-                                  onTap: () {
-                                    provider.selectBookPeriod(period.id);
-                                    setState(() {
-                                      _selectedChartDetail = null;
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? (isDark
-                                                ? const Color(0xFF1A3B66)
-                                                : const Color(0xFFE5F0FF))
-                                          : (isDark
-                                                ? const Color(0xFF2D2D2D)
-                                                : Colors.white),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? const Color(0xFF0066FF)
-                                            : (isDark
-                                                  ? Colors.grey.shade800
-                                                  : Colors.grey.shade300),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? const Color(0xFF0066FF)
-                                                : (isDark
-                                                      ? const Color(0xFF3D3D3D)
-                                                      : const Color(
-                                                          0xFFF0F0F0,
-                                                        )),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            isActive
-                                                ? Icons.menu_book_rounded
-                                                : Icons.lock_outline_rounded,
-                                            color: isSelected
-                                                ? Colors.white
-                                                : (isDark
-                                                      ? Colors.grey.shade300
-                                                      : Colors.grey.shade600),
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                period.label,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isSelected
-                                                      ? (isDark
-                                                            ? const Color(
-                                                                0xFF66A3FF,
-                                                              )
-                                                            : const Color(
-                                                                0xFF0066FF,
-                                                              ))
-                                                      : (isDark
-                                                            ? Colors.white
-                                                            : const Color(
-                                                                0xFF111111,
-                                                              )),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                subtitle,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  color: isSelected
-                                                      ? (isDark
-                                                            ? const Color(
-                                                                0xFF66A3FF,
-                                                              ).withOpacity(0.8)
-                                                            : const Color(
-                                                                0xFF0066FF,
-                                                              ).withOpacity(
-                                                                0.8,
-                                                              ))
-                                                      : (isDark
-                                                            ? Colors
-                                                                  .grey
-                                                                  .shade400
-                                                            : Colors
-                                                                  .grey
-                                                                  .shade600),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (isSelected)
-                                          const Icon(
-                                            Icons.check_circle,
-                                            color: Color(0xFF0066FF),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _openBookFlow();
-                            },
-                            icon: const Icon(Icons.add_box_rounded),
-                            label: const Text('Buka Buku'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.incomeGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: activeBook == null
-                                ? null
-                                : () {
-                                    Navigator.pop(context);
-                                    _closeActiveBookFlow(activeBook);
-                                  },
-                            icon: const Icon(Icons.bookmark_remove_rounded),
-                            label: const Text('Tutup Buku'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.expenseRed,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (currentId != null) ...[
-                      Builder(
-                        builder: (context) {
-                          final currentPeriod = periods.firstWhere(
-                            (p) => p.id == currentId,
-                            orElse: () => periods.first,
-                          );
-                          if (!currentPeriod.isOpen) {
-                            return Column(
-                              children: [
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _reopenBookFlow(currentPeriod);
-                                    },
-                                    icon: const Icon(
-                                      Icons.lock_open_rounded,
-                                      color: Color(0xFF6B3076),
-                                    ),
-                                    label: const Text(
-                                      'Buka Ulang Buku',
-                                      style: TextStyle(
-                                        color: Color(0xFF6B3076),
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      side: const BorderSide(
-                                        color: Color(0xFF6B3076),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _deleteBookFlow(currentPeriod);
-                                    },
-                                    icon: const Icon(
-                                      Icons.delete_outline_rounded,
-                                      color: Color(0xFFC24545),
-                                    ),
-                                    label: const Text(
-                                      'Hapus Buku Terpilih',
-                                      style: TextStyle(
-                                        color: Color(0xFFC24545),
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      side: const BorderSide(
-                                        color: Color(0xFFC24545),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -1168,7 +938,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Consumer<TransactionProvider>(
                 builder: (context, provider, _) {
                   final allTransactions = provider.transactions;
-                  final bookPeriods = provider.bookPeriods;
                   final financialPlans = provider.financialPlans;
                   final selectedBookId = provider.selectedBookPeriodId;
                   final activeBook = provider.activeBookPeriod;
@@ -1246,6 +1015,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       clipBehavior: Clip.none,
                                       children: [
                                         CircleIconButton(
+                                          tooltip: 'Daftar belanja',
                                           icon: Icons.shopping_cart_outlined,
                                           onTap: () {
                                             setState(() {
@@ -1307,6 +1077,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       animate:
                                           provider.unreadNotificationCount > 0,
                                       child: CircleIconButton(
+                                        tooltip: 'Notifikasi',
                                         icon: Icons.notifications_none_rounded,
                                         onTap: () {
                                           _showNotificationsBottomSheet(
@@ -1489,7 +1260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           title: 'Transfer Antar Buku',
                           subtitle: 'Pindahkan saldo ke buku lain',
                           color: const Color(0xFFE3F2FD),
-                          iconColor: const Color(0xFF0066FF),
+                          iconColor: AppTheme.primaryBlue,
                           onTap: () {
                             Navigator.pop(sheetContext);
                             Navigator.push(
@@ -1837,8 +1608,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       FilterButton(
                         label: 'Pengeluaran',
                         selected: _recentFilter == 'EXPENSE',
-                        textColor: const Color(0xFFC24545),
-                        selectedColor: const Color(0xFFF0C8C8),
+                        textColor: AppTheme.expenseRed,
+                        selectedColor: AppTheme.expenseLight,
                         onTap: () => setState(() {
                           _recentFilter = _recentFilter == 'EXPENSE'
                               ? 'ALL'
@@ -1916,7 +1687,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TransactionsCard(
                   theme: theme,
                   title: '',
-                  titleColor: const Color(0xFFC24545),
+                  titleColor: AppTheme.expenseRed,
                   transactions: expenseTransactions,
                   isLoading: provider.isLoading,
                   emptyText: 'Belum ada data pengeluaran.',
@@ -1953,6 +1724,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onAddPlan: _openAddFinancialPlanDialog,
                   onEditPlan: _openEditFinancialPlanDialog,
                   onDeletePlan: _removeFinancialPlan,
+                  onClonePlan: _cloneFinancialPlan,
+                  onMakePocketFromPlan: _makePocketFromPlan,
                   onEditBudget: () {
                     final bookId =
                         provider.selectedBookPeriodId ??
@@ -1985,7 +1758,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final periods = provider.bookPeriods;
     final currentId = provider.selectedBookPeriodId;
-    final activeBook = provider.activeBookPeriod;
 
     return Padding(
       padding: const EdgeInsets.all(12.0),
@@ -2071,6 +1843,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 label: 'Buka Lagi',
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                          ],
+                        ),
+                        endActionPane: ActionPane(
+                          motion: const ScrollMotion(),
+                          children: [
+                            SlidableAction(
+                              onPressed: (_) {
+                                _deleteBookFlow(period);
+                              },
+                              backgroundColor: AppTheme.expenseRed,
+                              foregroundColor: Colors.white,
+                              icon: Icons.delete_rounded,
+                              label: 'Hapus',
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ],
                         ),
                         child: AppCard(
@@ -2161,10 +1948,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(width: 8),
                               ],
-                              Icon(
-                                Icons.swipe_right_rounded,
-                                color: Colors.grey.shade400,
-                                size: 20,
+                              ItemActionsMenu(
+                                semanticLabel:
+                                    'Aksi untuk buku ${period.label}',
+                                actions: [
+                                  if (isActive)
+                                    ItemAction(
+                                      label: 'Tutup Buku',
+                                      icon: Icons.bookmark_remove_rounded,
+                                      onSelected: () =>
+                                          _closeActiveBookFlow(period),
+                                    )
+                                  else
+                                    ItemAction(
+                                      label: 'Buka Lagi',
+                                      icon: Icons.restore_rounded,
+                                      onSelected: () => _reopenBookFlow(period),
+                                    ),
+                                  ItemAction(
+                                    label: 'Hapus Buku',
+                                    icon: Icons.delete_rounded,
+                                    onSelected: () => _deleteBookFlow(period),
+                                    isDestructive: true,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -2233,16 +2040,4 @@ class _AppEmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PlanDueAlert {
-  const _PlanDueAlert({
-    required this.plan,
-    required this.isOverdue,
-    required this.overdueDays,
-  });
-
-  final FinancialPlan plan;
-  final bool isOverdue;
-  final int overdueDays;
 }

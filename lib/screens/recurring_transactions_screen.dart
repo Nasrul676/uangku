@@ -3,7 +3,6 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../models/recurring_transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/animated_bouncing_card.dart';
 import '../theme/app_theme.dart';
@@ -17,7 +16,8 @@ class RecurringTransactionsScreen extends StatefulWidget {
       _RecurringTransactionsScreenState();
 }
 
-class _RecurringTransactionsScreenState extends State<RecurringTransactionsScreen> {
+class _RecurringTransactionsScreenState
+    extends State<RecurringTransactionsScreen> {
   final _currencyFormatter = NumberFormat.currency(
     locale: 'id_ID',
     symbol: 'Rp ',
@@ -43,21 +43,22 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RecurringTransactionInputScreen(),
+                      builder: (context) =>
+                          const RecurringTransactionInputScreen(),
                     ),
                   );
                 },
                 icon: const Icon(
                   Icons.add_box_rounded,
-                  color: Color(0xFF2A9D50),
+                  color: AppTheme.incomeGreen,
                 ),
                 label: const Text(
                   'Tambah Rutin',
-                  style: TextStyle(color: Color(0xFF2A9D50)),
+                  style: TextStyle(color: AppTheme.incomeGreen),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF2A9D50)),
+                  side: const BorderSide(color: AppTheme.incomeGreen),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -96,17 +97,23 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(5, 16, 5, 140),
                 itemCount: transactions.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final tx = transactions[index];
                   final isIncome = tx.type == 'INCOME';
                   final isDark = theme.brightness == Brightness.dark;
 
-                  final amountColor = isIncome ? AppTheme.incomeGreen : AppTheme.expenseRed;
+                  final amountColor = isIncome
+                      ? AppTheme.incomeGreen
+                      : AppTheme.expenseRed;
                   final iconBg = isIncome
-                      ? (isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade100)
-                      : (isDark ? Colors.red.withOpacity(0.2) : Colors.red.shade100);
-                  
+                      ? (isDark
+                            ? Colors.green.withValues(alpha: 0.2)
+                            : Colors.green.shade100)
+                      : (isDark
+                            ? Colors.red.withValues(alpha: 0.2)
+                            : Colors.red.shade100);
+
                   final nextDate = DateTime.tryParse(tx.nextDate);
                   final dateStr = nextDate != null
                       ? DateFormat('dd MMM yyyy', 'id').format(nextDate)
@@ -114,11 +121,20 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
 
                   String freqLabel = '';
                   switch (tx.frequency) {
-                    case 'DAILY': freqLabel = 'Harian'; break;
-                    case 'WEEKLY': freqLabel = 'Mingguan'; break;
-                    case 'MONTHLY': freqLabel = 'Bulanan'; break;
-                    case 'YEARLY': freqLabel = 'Tahunan'; break;
-                    default: freqLabel = tx.frequency;
+                    case 'DAILY':
+                      freqLabel = 'Harian';
+                      break;
+                    case 'WEEKLY':
+                      freqLabel = 'Mingguan';
+                      break;
+                    case 'MONTHLY':
+                      freqLabel = 'Bulanan';
+                      break;
+                    case 'YEARLY':
+                      freqLabel = 'Tahunan';
+                      break;
+                    default:
+                      freqLabel = tx.frequency;
                   }
 
                   return AnimatedBouncingCard(
@@ -144,31 +160,42 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                                 children: [
                                   Text(
                                     tx.title,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.only(top: 2.0),
+                                        padding: const EdgeInsets.only(
+                                          top: 2.0,
+                                        ),
                                         child: Icon(
                                           Icons.category_outlined,
                                           size: 14,
-                                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                                          color: theme
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color
+                                              ?.withValues(alpha: 0.7),
                                         ),
                                       ),
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
                                           tx.category,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.color
+                                                    ?.withValues(alpha: 0.7),
+                                              ),
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -179,27 +206,38 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                                   Row(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: theme
+                                              .colorScheme
+                                              .primaryContainer
+                                              .withValues(alpha: 0.5),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
                                         child: Text(
                                           freqLabel,
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           _currencyFormatter.format(tx.amount),
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            color: amountColor,
-                                          ),
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                                color: amountColor,
+                                              ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -228,11 +266,16 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                         ),
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: tx.isActive 
-                                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-                                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                            color: tx.isActive
+                                ? theme.colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.5)
+                                : theme.colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -244,28 +287,45 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                                     Icon(
                                       Icons.calendar_today_rounded,
                                       size: 18,
-                                      color: tx.isActive ? theme.colorScheme.primary : theme.disabledColor,
+                                      color: tx.isActive
+                                          ? theme.colorScheme.primary
+                                          : theme.disabledColor,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'Jadwal Berikutnya',
-                                            style: theme.textTheme.labelSmall?.copyWith(
-                                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                                            ),
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.color
+                                                      ?.withValues(alpha: 0.7),
+                                                ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
                                             dateStr,
-                                            style: theme.textTheme.labelMedium?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              color: tx.isActive ? theme.textTheme.bodyLarge?.color : theme.disabledColor,
-                                              decoration: tx.isActive ? null : TextDecoration.lineThrough,
-                                            ),
+                                            style: theme.textTheme.labelMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: tx.isActive
+                                                      ? theme
+                                                            .textTheme
+                                                            .bodyLarge
+                                                            ?.color
+                                                      : theme.disabledColor,
+                                                  decoration: tx.isActive
+                                                      ? null
+                                                      : TextDecoration
+                                                            .lineThrough,
+                                                ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -280,7 +340,9 @@ class _RecurringTransactionsScreenState extends State<RecurringTransactionsScree
                                   Text(
                                     tx.isActive ? 'Aktif' : 'Nonaktif',
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: tx.isActive ? theme.colorScheme.primary : theme.disabledColor,
+                                      color: tx.isActive
+                                          ? theme.colorScheme.primary
+                                          : theme.disabledColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

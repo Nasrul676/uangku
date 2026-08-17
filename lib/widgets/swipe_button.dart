@@ -157,7 +157,7 @@ class _SwipeButtonState extends State<SwipeButton>
           gradient: LinearGradient(colors: trackColors),
           boxShadow: [
             BoxShadow(
-              color: trackColors[0].withOpacity(0.4),
+              color: trackColors[0].withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -174,9 +174,9 @@ class _SwipeButtonState extends State<SwipeButton>
                     shaderCallback: (bounds) {
                       return LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.4),
-                          Colors.white.withOpacity(1.0),
-                          Colors.white.withOpacity(0.4),
+                          Colors.white.withValues(alpha: 0.4),
+                          Colors.white.withValues(alpha: 1.0),
+                          Colors.white.withValues(alpha: 0.4),
                         ],
                         stops: [
                           (_shimmerController.value - 0.3).clamp(0.0, 1.0),
@@ -222,17 +222,14 @@ class _SwipeButtonState extends State<SwipeButton>
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         blurRadius: 8,
                         offset: const Offset(2, 2),
                       ),
                     ],
                   ),
                   child: widget.isLoading
-                      ? CustomLoadingIndicator(
-                          size: 24,
-                          color: trackColors[0],
-                        )
+                      ? CustomLoadingIndicator(size: 24, color: trackColors[0])
                       : AnimatedBuilder(
                           animation: _chevronController,
                           builder: (context, _) {
@@ -275,7 +272,7 @@ class _ChevronPainter extends CustomPainter {
       final opacity = sin(phase * pi);
 
       final paint = Paint()
-        ..color = color.withOpacity(opacity.clamp(0.2, 1.0))
+        ..color = color.withValues(alpha: opacity.clamp(0.2, 1.0))
         ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;

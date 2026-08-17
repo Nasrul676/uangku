@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class AppNotification {
   final int? id;
   final String title;
   final String subtitle;
-  final String type; // 'PLAN_DUE', 'POCKET_OVER_BUDGET', 'BACKUP_SUCCESS', 'BACKUP_FAILED', 'RESTORE_SUCCESS', 'RESTORE_FAILED', etc.
+  final String
+  type; // 'PLAN_DUE', 'POCKET_OVER_BUDGET', 'BACKUP_SUCCESS', 'BACKUP_FAILED', 'RESTORE_SUCCESS', 'RESTORE_FAILED', etc.
   final bool isRead;
   final DateTime createdAt;
 
@@ -76,7 +78,7 @@ class AppNotification {
       case 'RESTORE_SUCCESS':
         return const Color(0xFF43A047); // Green
       default:
-        return const Color(0xFF0066FF); // Blue
+        return AppTheme.primaryBlue; // Blue
     }
   }
 

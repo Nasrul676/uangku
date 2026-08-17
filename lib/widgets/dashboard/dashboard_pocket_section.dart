@@ -70,52 +70,53 @@ class DashboardPocketSection extends StatelessWidget {
                 type: EntranceType.fadeScale,
                 delay: Duration(milliseconds: animationDelay),
                 child: AppCard(
-                color: const Color(0xFFFDF0FC), // Light purple
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.purple.shade50),
-                margin: EdgeInsets.zero,
-                isInteractive: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PocketFormScreen(),
+                  color: const Color(0xFFFDF0FC), // Light purple
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.purple.shade50),
+                  margin: EdgeInsets.zero,
+                  isInteractive: true,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PocketFormScreen(),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF6B3076), // Dark purple circle
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Buat Kantong',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111111),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF6B3076), // Dark purple circle
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Buat Kantong',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111111),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
                   ),
                 ),
-              ));
+              );
             }
 
             final pocket = pockets[index];
@@ -129,73 +130,74 @@ class DashboardPocketSection extends StatelessWidget {
               type: EntranceType.fadeScale,
               delay: Duration(milliseconds: animationDelay),
               child: AppCard(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-              margin: EdgeInsets.zero,
-              isInteractive: true,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        PocketDetailScreen(pocketId: pocket.id!),
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                margin: EdgeInsets.zero,
+                isInteractive: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PocketDetailScreen(pocketId: pocket.id!),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 32,
+                        backgroundColor: const Color(0xFFE5F0FF),
+                        child: Text(
+                          IconPickerUtils.getIcon(pocket.icon),
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        pocket.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111111),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        currencyFormatter.format(effectiveBalance),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: isNegative
+                              ? const Color(0xFFE53935)
+                              : const Color(0xFF111111),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pocket.allocationType == 'PERCENTAGE'
+                            ? '${pocket.allocationValue.toInt()}% Pemasukan'
+                            : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF666666),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: const Color(0xFFE5F0FF),
-                      child: Text(
-                        IconPickerUtils.getIcon(pocket.icon),
-                        style: const TextStyle(fontSize: 32),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      pocket.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111111),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currencyFormatter.format(effectiveBalance),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: isNegative
-                            ? const Color(0xFFE53935)
-                            : const Color(0xFF111111),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pocket.allocationType == 'PERCENTAGE'
-                          ? '${pocket.allocationValue.toInt()}% Pemasukan'
-                          : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF666666),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
                 ),
               ),
-            ));
+            );
           },
         ),
       ],

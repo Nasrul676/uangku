@@ -110,10 +110,7 @@ class _EntranceAnimationState extends State<EntranceAnimation> {
   Widget _buildFadeScale(double value, Widget child) {
     return Opacity(
       opacity: value.clamp(0.0, 1.0),
-      child: Transform.scale(
-        scale: 0.9 + (0.1 * value),
-        child: child,
-      ),
+      child: Transform.scale(scale: 0.9 + (0.1 * value), child: child),
     );
   }
 }

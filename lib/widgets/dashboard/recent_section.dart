@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../models/finance_transaction.dart';
-import '../app_card.dart';
 import 'transactions_card.dart';
 
 class RecentSection extends StatelessWidget {

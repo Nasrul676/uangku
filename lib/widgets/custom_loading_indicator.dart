@@ -8,11 +8,7 @@ import 'package:lottie/lottie.dart';
 /// a coloured background). When [color] is null the Lottie file's original
 /// palette is rendered as-is, which looks best on most surfaces.
 class CustomLoadingIndicator extends StatelessWidget {
-  const CustomLoadingIndicator({
-    super.key,
-    this.size = 24.0,
-    this.color,
-  });
+  const CustomLoadingIndicator({super.key, this.size = 24.0, this.color});
 
   final double size;
   final Color? color;
@@ -29,10 +25,7 @@ class CustomLoadingIndicator extends StatelessWidget {
         delegates: color != null
             ? LottieDelegates(
                 values: [
-                  ValueDelegate.color(
-                    const ['**'],
-                    value: color!,
-                  ),
+                  ValueDelegate.color(const ['**'], value: color!),
                 ],
               )
             : null,

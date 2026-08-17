@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -9,7 +8,6 @@ import '../models/financial_plan.dart';
 import '../models/pocket.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/shopping_provider.dart';
-import '../theme/app_theme.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/global_action_overlay.dart';
 import '../widgets/swipe_button.dart';
@@ -30,10 +28,8 @@ class ReceiptReviewScreen extends StatefulWidget {
 }
 
 class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
-  final _formKey = GlobalKey<FormState>();
-  
   late List<ParsedReceiptItem> _items;
-  
+
   String _category = 'Belanja';
   int? _selectedFinancialPlanId;
   int? _selectedPocketId;
@@ -84,7 +80,10 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                   children: [
                     const Text(
                       'Pilih Rencana Keuangan',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -98,13 +97,20 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                     const SizedBox(height: 8),
                     ListTile(
                       title: const Text('Tanpa Rencana Keuangan'),
-                      subtitle: const Text('Pengeluaran ini tidak ditautkan ke rencana'),
+                      subtitle: const Text(
+                        'Pengeluaran ini tidak ditautkan ke rencana',
+                      ),
                       selected: _selectedFinancialPlanId == null,
                       onTap: () => Navigator.pop(sheetContext, null),
                     ),
                     Flexible(
                       child: filteredPlans.isEmpty
-                          ? const Center(child: Padding(padding: EdgeInsets.all(18), child: Text('Rencana tidak ditemukan.')))
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(18),
+                                child: Text('Rencana tidak ditemukan.'),
+                              ),
+                            )
                           : ListView.builder(
                               shrinkWrap: true,
                               itemCount: filteredPlans.length,
@@ -112,9 +118,14 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                                 final plan = filteredPlans[index];
                                 return ListTile(
                                   title: Text(plan.title),
-                                  subtitle: Text(_currencyFormatter.format(plan.targetAmount)),
+                                  subtitle: Text(
+                                    _currencyFormatter.format(
+                                      plan.targetAmount,
+                                    ),
+                                  ),
                                   selected: _selectedFinancialPlanId == plan.id,
-                                  onTap: () => Navigator.pop(sheetContext, plan.id),
+                                  onTap: () =>
+                                      Navigator.pop(sheetContext, plan.id),
                                 );
                               },
                             ),
@@ -157,13 +168,20 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                 const SizedBox(height: 16),
                 ListTile(
                   title: const Text('Tanpa Kantong'),
-                  subtitle: const Text('Pengeluaran ini tidak memotong kantong'),
+                  subtitle: const Text(
+                    'Pengeluaran ini tidak memotong kantong',
+                  ),
                   selected: _selectedPocketId == null,
                   onTap: () => Navigator.pop(sheetContext, null),
                 ),
                 Flexible(
                   child: pockets.isEmpty
-                      ? const Center(child: Padding(padding: EdgeInsets.all(18), child: Text('Kantong belum ada.')))
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(18),
+                            child: Text('Kantong belum ada.'),
+                          ),
+                        )
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: pockets.length,
@@ -172,7 +190,8 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                             return ListTile(
                               title: Text(pocket.name),
                               selected: _selectedPocketId == pocket.id,
-                              onTap: () => Navigator.pop(sheetContext, pocket.id),
+                              onTap: () =>
+                                  Navigator.pop(sheetContext, pocket.id),
                             );
                           },
                         ),
@@ -194,7 +213,9 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
   Future<bool> _saveReceipt() async {
     if (_isSaving) return false;
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak ada item untuk disimpan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada item untuk disimpan.')),
+      );
       return false;
     }
 
@@ -204,7 +225,7 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
       await GlobalActionOverlay.run(() async {
         final provider = context.read<TransactionProvider>();
         final shoppingProvider = context.read<ShoppingProvider>();
-        
+
         // Save the main transaction
         final transactionId = await provider.addTransaction(
           title: 'Belanja dari Scan Struk',
@@ -216,25 +237,28 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
           financialPlanId: _selectedFinancialPlanId,
           pocketId: _selectedPocketId,
         );
-        
+
         // Ensure book period is fetched
-        final bookPeriodId = provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
+        final bookPeriodId =
+            provider.selectedBookPeriodId ?? provider.activeBookPeriod?.id;
 
         // Save each item as a shopping item linked to this transaction
         if (bookPeriodId != null && transactionId > 0) {
           for (var item in _items) {
-             final shoppingItem = ShoppingItem(
-                bookPeriodId: bookPeriodId,
-                title: item.name,
-                amount: item.quantity > 0 ? item.price / item.quantity : item.price,
-                category: _category,
-                date: DateTime.now().toIso8601String(),
-                quantity: item.quantity,
-                unit: item.unit,
-                isBought: 1, // Marked as bought since it's from a receipt
-                expenseTransactionId: transactionId,
-              );
-              await shoppingProvider.addItem(shoppingItem);
+            final shoppingItem = ShoppingItem(
+              bookPeriodId: bookPeriodId,
+              title: item.name,
+              amount: item.quantity > 0
+                  ? item.price / item.quantity
+                  : item.price,
+              category: _category,
+              date: DateTime.now().toIso8601String(),
+              quantity: item.quantity,
+              unit: item.unit,
+              isBought: 1, // Marked as bought since it's from a receipt
+              expenseTransactionId: transactionId,
+            );
+            await shoppingProvider.addItem(shoppingItem);
           }
         }
 
@@ -246,7 +270,9 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
       return true;
     } catch (e) {
       if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
       return false;
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -263,13 +289,30 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
 
     String selectedPlanText = 'Tanpa Rencana Keuangan';
     if (_selectedFinancialPlanId != null) {
-      final plan = financialPlans.firstWhere((p) => p.id == _selectedFinancialPlanId, orElse: () => FinancialPlan(bookPeriodId: 0, title: '', targetAmount: 0, targetDate: ''));
+      final plan = financialPlans.firstWhere(
+        (p) => p.id == _selectedFinancialPlanId,
+        orElse: () => FinancialPlan(
+          bookPeriodId: 0,
+          title: '',
+          targetAmount: 0,
+          targetDate: '',
+        ),
+      );
       if (plan.title.isNotEmpty) selectedPlanText = plan.title;
     }
 
     String selectedPocketText = 'Tanpa Kantong';
     if (_selectedPocketId != null) {
-      final pocket = pockets.firstWhere((p) => p.id == _selectedPocketId, orElse: () => Pocket(bookPeriodId: 0, name: '', icon: '', allocationType: '', allocationValue: 0));
+      final pocket = pockets.firstWhere(
+        (p) => p.id == _selectedPocketId,
+        orElse: () => Pocket(
+          bookPeriodId: 0,
+          name: '',
+          icon: '',
+          allocationType: '',
+          allocationValue: 0,
+        ),
+      );
       if (pocket.name.isNotEmpty) selectedPocketText = pocket.name;
     }
 
@@ -296,13 +339,20 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
               image: DecorationImage(
                 image: FileImage(File(widget.imagePath)),
                 fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken),
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withValues(alpha: 0.5),
+                  BlendMode.darken,
+                ),
               ),
             ),
             alignment: Alignment.center,
             child: Text(
               'Total: ${_currencyFormatter.format(_totalAmount)}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
 
@@ -315,8 +365,15 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                   child: InkWell(
                     onTap: () => _openPocketPicker(pockets),
                     child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Kantong', border: OutlineInputBorder()),
-                      child: Text(selectedPocketText, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      decoration: const InputDecoration(
+                        labelText: 'Kantong',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        selectedPocketText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
@@ -325,8 +382,15 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                   child: InkWell(
                     onTap: () => _openFinancialPlanPicker(financialPlans),
                     child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Rencana Keuangan', border: OutlineInputBorder()),
-                      child: Text(selectedPlanText, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      decoration: const InputDecoration(
+                        labelText: 'Rencana Keuangan',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        selectedPlanText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
@@ -334,14 +398,17 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Items List Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Daftar Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Daftar Item',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 TextButton.icon(
                   onPressed: () {
                     setState(() {
@@ -363,15 +430,17 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
               separatorBuilder: (context, index) => const Divider(),
               itemBuilder: (context, index) {
                 final item = _items[index];
-                
+
                 final nameController = TextEditingController(text: item.name);
                 final priceController = TextEditingController(
-                  text: item.price > 0 ? NumberFormat.decimalPattern('id_ID').format(item.price) : ''
+                  text: item.price > 0
+                      ? NumberFormat.decimalPattern('id_ID').format(item.price)
+                      : '',
                 );
                 final qtyController = TextEditingController(
                   text: item.quantity == item.quantity.toInt()
-                    ? item.quantity.toInt().toString()
-                    : item.quantity.toString()
+                      ? item.quantity.toInt().toString()
+                      : item.quantity.toString(),
                 );
 
                 return Row(
@@ -405,7 +474,9 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                         ),
                         onChanged: (val) {
                           setState(() {
-                            item.quantity = double.tryParse(val.replaceAll(',', '.')) ?? 1.0;
+                            item.quantity =
+                                double.tryParse(val.replaceAll(',', '.')) ??
+                                1.0;
                           });
                         },
                       ),
@@ -431,7 +502,11 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                      tooltip: 'Hapus item',
+                      icon: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Colors.red,
+                      ),
                       onPressed: () {
                         setState(() {
                           _items.removeAt(index);
@@ -443,7 +518,7 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
               },
             ),
           ),
-          
+
           // Save Button
           Padding(
             padding: const EdgeInsets.all(16),

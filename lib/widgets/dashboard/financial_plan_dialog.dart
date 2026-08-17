@@ -6,6 +6,7 @@ import '../../models/book_period.dart';
 import '../../models/financial_plan.dart';
 import '../../providers/transaction_provider.dart';
 import '../../utils/rupiah_input_formatter.dart';
+import '../../theme/app_theme.dart';
 
 class FinancialPlanDraft {
   const FinancialPlanDraft({
@@ -251,7 +252,7 @@ class _FinancialPlanInputDialogState extends State<FinancialPlanInputDialog> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               decoration: const InputDecoration(
                 hintText: 'Kategori Pengeluaran (Opsional)',
               ),
@@ -275,7 +276,7 @@ class _FinancialPlanInputDialogState extends State<FinancialPlanInputDialog> {
                 child: Text(
                   _validationMessage!,
                   style: const TextStyle(
-                    color: Color(0xFFC24545),
+                    color: AppTheme.expenseRed,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

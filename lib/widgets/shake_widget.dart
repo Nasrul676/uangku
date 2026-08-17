@@ -1,15 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 class ShakeWidget extends StatefulWidget {
   final Widget child;
   final bool isShaking;
 
-  const ShakeWidget({
-    Key? key,
-    required this.child,
-    required this.isShaking,
-  }) : super(key: key);
+  const ShakeWidget({super.key, required this.child, required this.isShaking});
 
   @override
   State<ShakeWidget> createState() => _ShakeWidgetState();
@@ -64,10 +59,7 @@ class _ShakeWidgetState extends State<ShakeWidget>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Transform.rotate(
-          angle: _animation.value,
-          child: child,
-        );
+        return Transform.rotate(angle: _animation.value, child: child);
       },
       child: widget.child,
     );

@@ -32,7 +32,6 @@ class HomeBalanceWidgetService {
   }) async {
     if (kIsWeb) return;
 
-
     final totalIncomeText = _currencyFormatter.format(totalIncome);
     final totalExpenseText = _currencyFormatter.format(totalExpense);
     final balanceText = _currencyFormatter.format(balance);
@@ -41,8 +40,11 @@ class HomeBalanceWidgetService {
         : _currencyFormatter.format(balance);
     final now = DateTime.now();
     final lastUpdated = DateFormat('dd MMM, HH:mm', 'id').format(now);
-    
-    await HomeWidget.saveWidgetData<String>('widget_last_updated', '$lastUpdated WIB');
+
+    await HomeWidget.saveWidgetData<String>(
+      'widget_last_updated',
+      '$lastUpdated WIB',
+    );
     await HomeWidget.saveWidgetData<String>(
       'widget_total_income_text',
       totalIncomeText,
@@ -71,12 +73,8 @@ class HomeBalanceWidgetService {
       androidName: widgetProviderName,
       iOSName: 'UangkuWidget',
     );
-    await HomeWidget.updateWidget(
-      androidName: 'UangkuBalanceWidgetV2Provider',
-    );
-    await HomeWidget.updateWidget(
-      androidName: 'UangkuBalanceWidgetV3Provider',
-    );
+    await HomeWidget.updateWidget(androidName: 'UangkuBalanceWidgetV2Provider');
+    await HomeWidget.updateWidget(androidName: 'UangkuBalanceWidgetV3Provider');
   }
 
   Future<Uri?> getInitialLaunchUri() {

@@ -48,7 +48,8 @@ class AppCard extends StatelessWidget {
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: color ?? theme.cardTheme.color,
-        borderRadius: borderRadius ??
+        borderRadius:
+            borderRadius ??
             (theme.cardTheme.shape is RoundedRectangleBorder
                 ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
                 : BorderRadius.circular(12)),

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class IconPickerUtils {
   static const Map<String, String> _iconMap = {
     'wallet': '👛',

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/parsed_receipt_item.dart';
 
 class AiAssistantService {
-  static const String _baseUrl = 'https://cds-apparently-directions-festivals.trycloudflare.com/api/chat';
+  static const String _baseUrl =
+      'https://cds-apparently-directions-festivals.trycloudflare.com/api/chat';
 
   /// Kata kunci yang menandakan baris bukan merupakan item belanjaan.
   /// Baris yang mengandung salah satu keyword ini akan dibuang sebelum dikirim ke AI.
@@ -69,7 +71,7 @@ class AiAssistantService {
     return cleaned.join('\n');
   }
 
-  /// [VERSI LAMA] Menerima teks hasil OCR dan daftar kategori yang tersedia, 
+  /// [VERSI LAMA] Menerima teks hasil OCR dan daftar kategori yang tersedia,
   /// lalu mengirimkannya ke AI (Cloudflare) untuk diekstrak.
   /// Fungsi ini dipertahankan sebagai cadangan (backup).
   static Future<List<ParsedReceiptItem>> parseReceiptTextOld({
@@ -80,10 +82,11 @@ class AiAssistantService {
 
     // Bersihkan teks OCR dari noise sebelum dikirim ke AI
     final cleanedOcrText = _cleanOcrText(ocrText);
-    
+
     // Menggunakan prompt bahasa Inggris yang sangat spesifik dan terstruktur agar model Llama 3.2 / Qwen
     // lebih akurat membaca qty, unit, dan total price dari format struk Indonesia.
-    final prompt = '''You are an expert receipt data extractor. Extract purchased items from this Indonesian receipt OCR into a JSON array. 
+    final prompt =
+        '''You are an expert receipt data extractor. Extract purchased items from this Indonesian receipt OCR into a JSON array. 
 RULES: 
 1. Return ONLY a valid JSON array, no other text or markdown formatting. 
 2. Extract ONLY the purchased items (IGNORE store name, address, tax/PPN, subtotal, total, cash, change, dates, promo). 
@@ -100,28 +103,26 @@ $cleanedOcrText''';
     try {
       final response = await http.post(
         Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'message': prompt,
-        }),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': prompt}),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final String replyText = data['reply'] ?? '';
-        
+
         return _processAiResponse(replyText);
       } else {
-        throw Exception('Gagal menghubungi AI Assistance: ${response.statusCode}');
+        throw Exception(
+          'Gagal menghubungi AI Assistance: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Gagal mengekstrak data struk: $e');
     }
   }
 
-  /// [VERSI BARU] Menerima teks hasil OCR dan daftar kategori yang tersedia, 
+  /// [VERSI BARU] Menerima teks hasil OCR dan daftar kategori yang tersedia,
   /// lalu mengirimkannya ke Google Gemini API secara langsung.
   static Future<List<ParsedReceiptItem>> parseReceiptText({
     required String ocrText,
@@ -139,8 +140,9 @@ $cleanedOcrText''';
 
     // Bersihkan teks OCR dari noise sebelum dikirim ke AI
     final cleanedOcrText = _cleanOcrText(ocrText);
-    
-    final prompt = '''You are an expert receipt data extractor. Extract purchased items from this Indonesian receipt OCR into a JSON array. 
+
+    final prompt =
+        '''You are an expert receipt data extractor. Extract purchased items from this Indonesian receipt OCR into a JSON array. 
 RULES: 
 1. Return ONLY a valid JSON array, no other text or markdown formatting. 
 2. Extract ONLY the purchased items (IGNORE store name, address, tax/PPN, subtotal, total, cash, change, dates, promo). 
@@ -153,39 +155,38 @@ RULES:
 9. Keep it strictly JSON.
 OCR TEXT:
 $cleanedOcrText''';
-    
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent');
+
+    final url = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
+    );
 
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
+        headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
         body: jsonEncode({
           'contents': [
             {
               'parts': [
-                {'text': prompt}
-              ]
-            }
+                {'text': prompt},
+              ],
+            },
           ],
           'generationConfig': {
             'temperature': 0.2, //suhu rendah agar tidak terlalu ngaco
-          }
+          },
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Ekstrak text dari respons Gemini
         final candidates = data['candidates'] as List?;
         if (candidates == null || candidates.isEmpty) {
           throw Exception('Respons Gemini kosong');
         }
-        
+
         final content = candidates[0]['content'];
         final parts = content['parts'] as List?;
         if (parts == null || parts.isEmpty) {
@@ -193,10 +194,12 @@ $cleanedOcrText''';
         }
 
         final replyText = parts[0]['text']?.toString() ?? '';
-        
+
         return _processAiResponse(replyText);
       } else {
-        throw Exception('Gagal menghubungi Gemini API: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Gagal menghubungi Gemini API: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       throw Exception('Gagal mengekstrak data struk dengan Gemini: $e');
@@ -208,9 +211,9 @@ $cleanedOcrText''';
     // Mengekstrak murni bagian JSON array dengan menghitung kurung siku
     // Ini mencegah error jika AI secara tidak sengaja mereturn dua array berurutan: [..] [..]
     String cleanJson = replyText.trim();
-    
+
     final startIndex = cleanJson.indexOf('[');
-    
+
     if (startIndex != -1) {
       int openBrackets = 0;
       int endIndex = -1;
@@ -230,11 +233,15 @@ $cleanedOcrText''';
         if (lastIndex > startIndex) {
           cleanJson = cleanJson.substring(startIndex, lastIndex + 1);
         } else {
-          throw Exception('AI tidak mengembalikan format list array JSON. Balasan: $replyText');
+          throw Exception(
+            'AI tidak mengembalikan format list array JSON. Balasan: $replyText',
+          );
         }
       }
     } else {
-      throw Exception('AI tidak mengembalikan format list array JSON. Balasan: $replyText');
+      throw Exception(
+        'AI tidak mengembalikan format list array JSON. Balasan: $replyText',
+      );
     }
 
     // Hapus komentar inline (// ...) jika AI masih bandel menambahkannya (LAKUKAN SEBELUM newline diganti)
@@ -260,17 +267,23 @@ $cleanedOcrText''';
       return jsonList.map((item) {
         return ParsedReceiptItem(
           name: item['name']?.toString() ?? 'Barang',
-          price: (item['price'] is num) ? (item['price'] as num).toDouble() : double.tryParse(item['price']?.toString() ?? '0') ?? 0,
-          quantity: (item['qty'] is num) ? (item['qty'] as num).toDouble() : double.tryParse(item['qty']?.toString() ?? '1') ?? 1.0,
+          price: (item['price'] is num)
+              ? (item['price'] as num).toDouble()
+              : double.tryParse(item['price']?.toString() ?? '0') ?? 0,
+          quantity: (item['qty'] is num)
+              ? (item['qty'] as num).toDouble()
+              : double.tryParse(item['qty']?.toString() ?? '1') ?? 1.0,
           unit: item['unit']?.toString() ?? 'pcs',
           category: item['category']?.toString() ?? 'Lain-lain',
         );
       }).toList();
     } catch (e) {
-      print("=== GAGAL DECODE JSON ===");
-      print(cleanJson);
-      print("=========================");
-      throw Exception('Format JSON dari AI tidak valid. Error: $e\n\nTeks JSON (setelah dibersihkan):\n$cleanJson');
+      debugPrint("=== GAGAL DECODE JSON ===");
+      debugPrint(cleanJson);
+      debugPrint("=========================");
+      throw Exception(
+        'Format JSON dari AI tidak valid. Error: $e\n\nTeks JSON (setelah dibersihkan):\n$cleanJson',
+      );
     }
   }
 }

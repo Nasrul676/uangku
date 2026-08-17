@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -142,6 +141,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
         backgroundColor: Colors.transparent,
         actions: [
           IconButton(
+            tooltip: 'Edit target',
             icon: const Icon(Icons.edit_rounded),
             onPressed: () {
               Navigator.push(
@@ -154,6 +154,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
             },
           ),
           IconButton(
+            tooltip: 'Hapus target',
             icon: const Icon(Icons.delete_rounded),
             onPressed: () => _confirmDelete(context, currentGoal, provider),
           ),
@@ -312,7 +313,8 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 16,
-                            backgroundColor: theme.colorScheme.surfaceVariant,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
                             color: progress >= 1.0
                                 ? Colors.green
                                 : theme.colorScheme.primary,
@@ -347,9 +349,11 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                         style: FilledButton.styleFrom(
                           backgroundColor: greenBg,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: greenBg.withOpacity(0.3),
-                          disabledForegroundColor: Colors.white.withOpacity(
-                            0.5,
+                          disabledBackgroundColor: greenBg.withValues(
+                            alpha: 0.3,
+                          ),
+                          disabledForegroundColor: Colors.white.withValues(
+                            alpha: 0.5,
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -373,9 +377,9 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                         style: FilledButton.styleFrom(
                           backgroundColor: redBg,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: redBg.withOpacity(0.3),
-                          disabledForegroundColor: Colors.white.withOpacity(
-                            0.5,
+                          disabledBackgroundColor: redBg.withValues(alpha: 0.3),
+                          disabledForegroundColor: Colors.white.withValues(
+                            alpha: 0.5,
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -961,7 +965,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

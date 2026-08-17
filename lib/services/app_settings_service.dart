@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppSettingsService {
@@ -160,14 +161,32 @@ class AppSettingsService {
     await prefs.setString(appFontFamilyKey, fontName);
   }
 
+  /// API key disimpan di Keychain (iOS) / EncryptedSharedPreferences (Android),
+  /// bukan di SharedPreferences yang berupa file polos.
+  static const _secureStorage = FlutterSecureStorage();
+
   Future<String> getGeminiApiKey() async {
+    final secure = await _secureStorage.read(key: geminiApiKeyKey);
+    if (secure != null && secure.isNotEmpty) return secure;
+
+    // Migrasi sekali jalan dari penyimpanan lama yang tidak terenkripsi.
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(geminiApiKeyKey) ?? '';
+    final legacy = prefs.getString(geminiApiKeyKey) ?? '';
+    if (legacy.isNotEmpty) {
+      await _secureStorage.write(key: geminiApiKeyKey, value: legacy);
+      await prefs.remove(geminiApiKeyKey);
+    }
+    return legacy;
   }
 
   Future<void> saveGeminiApiKey(String apiKey) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(geminiApiKeyKey, apiKey);
+    await prefs.remove(geminiApiKeyKey);
+    if (apiKey.isEmpty) {
+      await _secureStorage.delete(key: geminiApiKeyKey);
+      return;
+    }
+    await _secureStorage.write(key: geminiApiKeyKey, value: apiKey);
   }
 
   Future<String> getGeminiModel() async {

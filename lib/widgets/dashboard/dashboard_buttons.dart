@@ -26,7 +26,7 @@ class FilterButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? (selectedColor ?? const Color(0xFFA4DBB2))
+              ? (selectedColor ?? AppTheme.incomeLight)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
@@ -37,7 +37,7 @@ class FilterButton extends StatelessWidget {
             fontWeight: FontWeight.w700,
             fontSize: 12,
             color: selected
-                ? (textColor ?? const Color(0xFF1F5A62))
+                ? (textColor ?? AppTheme.fabIconColor)
                 : Theme.of(context).textTheme.bodyMedium?.color,
           ),
         ),
@@ -72,7 +72,7 @@ class IconFilterButton extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           color: selected
-              ? (selectedColor ?? const Color(0xFFA4DBB2))
+              ? (selectedColor ?? AppTheme.incomeLight)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(10),
           border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
@@ -81,7 +81,7 @@ class IconFilterButton extends StatelessWidget {
           icon,
           size: 16,
           color: selected
-              ? (iconColor ?? const Color(0xFF1F5A62))
+              ? (iconColor ?? AppTheme.fabIconColor)
               : Theme.of(context).iconTheme.color,
         ),
       ),
@@ -171,14 +171,23 @@ class _ActionButtonState extends State<ActionButton> {
 }
 
 class CircleIconButton extends StatelessWidget {
-  const CircleIconButton({super.key, required this.icon, required this.onTap});
+  const CircleIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
 
+  /// Dipakai sebagai tooltip sekaligus label untuk pembaca layar. Tanpa ini
+  /// tombol hanya berupa ikon dan tidak terbaca oleh TalkBack/VoiceOver.
+  final String? tooltip;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final button = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
@@ -191,6 +200,14 @@ class CircleIconButton extends StatelessWidget {
         ),
         child: Icon(icon, size: 16, color: Theme.of(context).iconTheme.color),
       ),
+    );
+
+    final label = tooltip;
+    if (label == null) return button;
+
+    return Tooltip(
+      message: label,
+      child: Semantics(button: true, label: label, child: button),
     );
   }
 }

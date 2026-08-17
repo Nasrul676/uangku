@@ -63,16 +63,25 @@ class ReceiptParser {
           final val2 = _parseIndonesianNumber(numericTokens[1]);
 
           // If val1 is small integer-like, treat as quantity
-          if (val1 > 0 && val1 < 100 && val1 == val1.roundToDouble() && val2 > val1) {
+          if (val1 > 0 &&
+              val1 < 100 &&
+              val1 == val1.roundToDouble() &&
+              val2 > val1) {
             quantity = val1;
             totalPrice = val2;
           } else {
             totalPrice = val2;
           }
         } else if (numericTokens.length >= 3) {
-          final qtyVal = _parseIndonesianNumber(numericTokens[numericTokens.length - 3]);
-          final unitVal = _parseIndonesianNumber(numericTokens[numericTokens.length - 2]);
-          totalPrice = _parseIndonesianNumber(numericTokens[numericTokens.length - 1]);
+          final qtyVal = _parseIndonesianNumber(
+            numericTokens[numericTokens.length - 3],
+          );
+          final unitVal = _parseIndonesianNumber(
+            numericTokens[numericTokens.length - 2],
+          );
+          totalPrice = _parseIndonesianNumber(
+            numericTokens[numericTokens.length - 1],
+          );
 
           if (qtyVal > 0 && qtyVal < 1000 && unitVal > 0 && totalPrice > 0) {
             final expectedTotal = qtyVal * unitVal;
@@ -85,11 +94,13 @@ class ReceiptParser {
 
         if (totalPrice <= 0) continue;
 
-        items.add(ParsedReceiptItem(
-          name: itemName,
-          price: totalPrice,
-          quantity: quantity,
-        ));
+        items.add(
+          ParsedReceiptItem(
+            name: itemName,
+            price: totalPrice,
+            quantity: quantity,
+          ),
+        );
       }
     }
 
@@ -171,7 +182,9 @@ class ReceiptParser {
     // Pure numbers / phone numbers
     if (RegExp(r'^[\d\s\-\.\/\(\)\+]+$').hasMatch(trimmed)) return true;
     // Date/code line
-    if (RegExp(r'^\d{1,2}[\.\-/]\d{1,2}[\.\-/]\d{2,4}').hasMatch(trimmed)) return true;
+    if (RegExp(r'^\d{1,2}[\.\-/]\d{1,2}[\.\-/]\d{2,4}').hasMatch(trimmed)) {
+      return true;
+    }
     // No digits at all (store name, promo text)
     if (!RegExp(r'\d').hasMatch(trimmed)) return true;
     // Matches exclude patterns

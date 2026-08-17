@@ -61,7 +61,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -84,11 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              gradientColors[0],
-              gradientColors[1],
-              cardColor,
-            ],
+            colors: [gradientColors[0], gradientColors[1], cardColor],
             stops: const [0.0, 0.30, 0.30],
           ),
         ),
@@ -105,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -118,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'UangKu',
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
                       ),
@@ -138,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       'Daftar pakai nama, email, dan kata sandi.\nCepat kok, gak ribet! 😊',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         height: 1.5,
                       ),
                     ),
@@ -158,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 24,
                         offset: const Offset(0, -4),
                       ),
@@ -169,7 +164,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
                     padding: EdgeInsets.fromLTRB(
-                      24, 24, 24,
+                      24,
+                      24,
+                      24,
                       24 + MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: Column(
@@ -281,6 +278,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   fillColor: fieldFill,
                                   isDark: isDark,
                                   suffixIcon: IconButton(
+                                    tooltip:
+                                        'Tampilkan atau sembunyikan kata sandi',
                                     icon: Icon(
                                       _obscurePassword
                                           ? Icons.visibility_off_outlined
@@ -290,8 +289,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           : const Color(0xFF9E9E9E),
                                     ),
                                     onPressed: () => setState(
-                                      () => _obscurePassword =
-                                          !_obscurePassword,
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
                                     ),
                                   ),
                                 ),
@@ -328,6 +327,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   fillColor: fieldFill,
                                   isDark: isDark,
                                   suffixIcon: IconButton(
+                                    tooltip:
+                                        'Tampilkan atau sembunyikan konfirmasi kata sandi',
                                     icon: Icon(
                                       _obscureConfirm
                                           ? Icons.visibility_off_outlined
@@ -337,8 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           : const Color(0xFF9E9E9E),
                                     ),
                                     onPressed: () => setState(
-                                      () =>
-                                          _obscureConfirm = !_obscureConfirm,
+                                      () => _obscureConfirm = !_obscureConfirm,
                                     ),
                                   ),
                                 ),
@@ -384,7 +384,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     PageRouteBuilder(
-                                      pageBuilder: (_, __, ___) =>
+                                      pageBuilder: (_, _, _) =>
                                           const LoginScreen(),
                                       transitionDuration: Duration.zero,
                                     ),
@@ -476,7 +476,9 @@ class _AuthTabSwitcher extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
@@ -519,7 +521,7 @@ class _AuthTabSwitcher extends StatelessWidget {
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

@@ -18,5 +18,6 @@ class ParsedReceiptItem {
   });
 
   @override
-  String toString() => 'ParsedReceiptItem(name: $name, price: $price, quantity: $quantity, unit: $unit, category: $category, pocketId: $pocketId, financialPlanId: $financialPlanId)';
+  String toString() =>
+      'ParsedReceiptItem(name: $name, price: $price, quantity: $quantity, unit: $unit, category: $category, pocketId: $pocketId, financialPlanId: $financialPlanId)';
 }

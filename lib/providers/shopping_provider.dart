@@ -19,7 +19,10 @@ class ShoppingProvider with ChangeNotifier {
   int? _lastLoadedBookId;
 
   Future<void> loadItems(int bookPeriodId, {bool force = false}) async {
-    if (!force && _lastLoadedBookId == bookPeriodId && !_isLoading && _items.isNotEmpty) {
+    if (!force &&
+        _lastLoadedBookId == bookPeriodId &&
+        !_isLoading &&
+        _items.isNotEmpty) {
       return;
     }
     _lastLoadedBookId = bookPeriodId;
@@ -82,28 +85,34 @@ class ShoppingProvider with ChangeNotifier {
     await loadItems(item.bookPeriodId, force: true);
   }
 
-  Future<void> markAsBought(ShoppingItem item, double totalAmount, {int? pocketId, int? financialPlanId}) async {
+  Future<void> markAsBought(
+    ShoppingItem item,
+    double totalAmount, {
+    int? pocketId,
+    int? financialPlanId,
+  }) async {
     try {
       final normalizedTotal = totalAmount < 0 ? 0.0 : totalAmount;
       final unitAmount = item.quantity == 0
           ? normalizedTotal
           : normalizedTotal / item.quantity;
-      
+
       // Use current date for transaction to avoid 'before book start' errors
       // and accurately reflect when the purchase was made.
       final now = DateTime.now();
-      final transactionId = await _transactionProvider.addTransactionForShopping(
-        title: item.title,
-        amount: normalizedTotal,
-        type: 'EXPENSE',
-        category: item.category,
-        date: now,
-        time: ':',
-        bookId: item.bookPeriodId,
-        pocketId: pocketId,
-        financialPlanId: financialPlanId,
-      );
-      
+      final transactionId = await _transactionProvider
+          .addTransactionForShopping(
+            title: item.title,
+            amount: normalizedTotal,
+            type: 'EXPENSE',
+            category: item.category,
+            date: now,
+            time: ':',
+            bookId: item.bookPeriodId,
+            pocketId: pocketId,
+            financialPlanId: financialPlanId,
+          );
+
       final updatedItem = item.copyWith(
         isBought: 1,
         amount: unitAmount,

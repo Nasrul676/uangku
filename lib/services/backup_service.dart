@@ -57,12 +57,16 @@ class BackupService {
     final archive = Archive();
     archive.addFile(ArchiveFile(_dbName, dbBytes.length, dbBytes));
     archive.addFile(ArchiveFile(_sqlName, sqlBytes.length, sqlBytes));
-    archive.addFile(ArchiveFile('settings.json', prefsBytes.length, prefsBytes));
+    archive.addFile(
+      ArchiveFile('settings.json', prefsBytes.length, prefsBytes),
+    );
 
     // 4. Encode ke ZIP bytes (dengan password jika ada)
     final zipBytes = ZipEncoder(password: password).encode(archive);
     if (zipBytes.isEmpty) {
-      throw Exception('Gagal membuat file ZIP backup — encoder mengembalikan data kosong.');
+      throw Exception(
+        'Gagal membuat file ZIP backup — encoder mengembalikan data kosong.',
+      );
     }
 
     // 5. Tulis ke temp directory
@@ -90,7 +94,7 @@ class BackupService {
       return false; // Berhasil membaca tanpa error -> tidak pakai password
     } catch (e) {
       final err = e.toString().toLowerCase();
-      // ZipDecoder melempar "Null check operator used on a null value" 
+      // ZipDecoder melempar "Null check operator used on a null value"
       // atau "password error" jika file terenkripsi tapi password null.
       if (err.contains('null check operator') || err.contains('password')) {
         return true;
@@ -191,53 +195,55 @@ class BackupService {
   /// Membuat SQL dump dari database SQLite menggunakan koneksi yang sudah ada.
   static Future<String> _generateSqlDump(Database db) async {
     final buffer = StringBuffer();
-      buffer.writeln('-- ================================================');
-      buffer.writeln('-- UangKu Database SQL Dump');
-      buffer.writeln('-- Generated : ${DateTime.now().toIso8601String()}');
-      buffer.writeln('-- ================================================');
+    buffer.writeln('-- ================================================');
+    buffer.writeln('-- UangKu Database SQL Dump');
+    buffer.writeln('-- Generated : ${DateTime.now().toIso8601String()}');
+    buffer.writeln('-- ================================================');
+    buffer.writeln();
+    buffer.writeln('PRAGMA foreign_keys = OFF;');
+    buffer.writeln('BEGIN TRANSACTION;');
+    buffer.writeln();
+
+    final tables = await db.rawQuery(
+      "SELECT name, sql FROM sqlite_master "
+      "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
+      "ORDER BY name",
+    );
+
+    for (final table in tables) {
+      final name = table['name'] as String;
+      final createSql = table['sql'] as String?;
+      if (createSql == null) continue;
+
+      buffer.writeln('-- ---------------------------------------------');
+      buffer.writeln('-- Table: $name');
+      buffer.writeln('-- ---------------------------------------------');
+      buffer.writeln('DROP TABLE IF EXISTS "$name";');
+      buffer.writeln('$createSql;');
       buffer.writeln();
-      buffer.writeln('PRAGMA foreign_keys = OFF;');
-      buffer.writeln('BEGIN TRANSACTION;');
-      buffer.writeln();
 
-      final tables = await db.rawQuery(
-        "SELECT name, sql FROM sqlite_master "
-        "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
-        "ORDER BY name",
-      );
-
-      for (final table in tables) {
-        final name = table['name'] as String;
-        final createSql = table['sql'] as String?;
-        if (createSql == null) continue;
-
-        buffer.writeln('-- ---------------------------------------------');
-        buffer.writeln('-- Table: $name');
-        buffer.writeln('-- ---------------------------------------------');
-        buffer.writeln('DROP TABLE IF EXISTS "$name";');
-        buffer.writeln('$createSql;');
-        buffer.writeln();
-
-        final rows = await db.query(name);
-        if (rows.isNotEmpty) {
-          buffer.writeln('-- Data ($name): ${rows.length} baris');
-          for (final row in rows) {
-            final cols = row.keys.map((k) => '"$k"').join(', ');
-            final vals = row.values.map((v) {
-              if (v == null) return 'NULL';
-              if (v is int || v is double) return v.toString();
-              // Escape single-quotes dalam string
-              return "'${v.toString().replaceAll("'", "''")}'";
-            }).join(', ');
-            buffer.writeln('INSERT INTO "$name" ($cols) VALUES ($vals);');
-          }
-          buffer.writeln();
+      final rows = await db.query(name);
+      if (rows.isNotEmpty) {
+        buffer.writeln('-- Data ($name): ${rows.length} baris');
+        for (final row in rows) {
+          final cols = row.keys.map((k) => '"$k"').join(', ');
+          final vals = row.values
+              .map((v) {
+                if (v == null) return 'NULL';
+                if (v is int || v is double) return v.toString();
+                // Escape single-quotes dalam string
+                return "'${v.toString().replaceAll("'", "''")}'";
+              })
+              .join(', ');
+          buffer.writeln('INSERT INTO "$name" ($cols) VALUES ($vals);');
         }
+        buffer.writeln();
       }
+    }
 
-      buffer.writeln('COMMIT;');
-      buffer.writeln('PRAGMA foreign_keys = ON;');
+    buffer.writeln('COMMIT;');
+    buffer.writeln('PRAGMA foreign_keys = ON;');
 
-      return buffer.toString();
+    return buffer.toString();
   }
 }

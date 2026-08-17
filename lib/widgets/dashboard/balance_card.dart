@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../app_card.dart';
 import 'dashboard_buttons.dart';
+import '../../theme/app_theme.dart';
 
 class BalanceCard extends StatelessWidget {
   const BalanceCard({
@@ -48,6 +49,7 @@ class BalanceCard extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: 'Tampilkan atau sembunyikan saldo',
                 visualDensity: VisualDensity.compact,
                 splashRadius: 18,
                 onPressed: onToggleBalanceVisibility,
@@ -89,8 +91,8 @@ class BalanceCard extends StatelessWidget {
           SummaryRow(
             label: 'Total Pengeluaran',
             value: totalExpense,
-            labelColor: const Color(0xFFC24545),
-            valueColor: const Color(0xFFC24545),
+            labelColor: AppTheme.expenseRed,
+            valueColor: AppTheme.expenseRed,
             isHidden: isBalanceHidden,
           ),
           SummaryRow(
@@ -107,7 +109,7 @@ class BalanceCard extends StatelessWidget {
                   label: 'Pemasukan',
                   icon: Icons.south_west_rounded,
                   background: Theme.of(context).cardTheme.color ?? Colors.white,
-                  iconBackground: const Color(0xFFA4DBB2),
+                  iconBackground: AppTheme.incomeLight,
                   onTap: onAddIncome,
                 ),
               ),
@@ -116,9 +118,9 @@ class BalanceCard extends StatelessWidget {
                 child: ActionButton(
                   label: 'Pengeluaran',
                   icon: Icons.north_east_rounded,
-                  background: const Color(0xFFF0C8C8),
-                  iconBackground: const Color(0xFFC24545),
-                  labelColor: const Color(0xFFC24545),
+                  background: AppTheme.expenseLight,
+                  iconBackground: AppTheme.expenseRed,
+                  labelColor: AppTheme.expenseRed,
                   iconColor: Colors.white,
                   onTap: onAddExpense,
                 ),
@@ -175,14 +177,17 @@ class SummaryRow extends StatelessWidget {
 }
 
 class AnimatedNetBalanceText extends StatefulWidget {
-  const AnimatedNetBalanceText({super.key, required this.value, required this.style});
+  const AnimatedNetBalanceText({
+    super.key,
+    required this.value,
+    required this.style,
+  });
 
   final double value;
   final TextStyle? style;
 
   @override
-  State<AnimatedNetBalanceText> createState() =>
-      _AnimatedNetBalanceTextState();
+  State<AnimatedNetBalanceText> createState() => _AnimatedNetBalanceTextState();
 }
 
 class _AnimatedNetBalanceTextState extends State<AnimatedNetBalanceText>
@@ -242,7 +247,7 @@ class _AnimatedNetBalanceTextState extends State<AnimatedNetBalanceText>
             widget.style?.color ??
             Theme.of(context).textTheme.titleLarge?.color ??
             const Color(0xFF111111);
-        const warningColor = Color(0xFFC24545);
+        const warningColor = AppTheme.expenseRed;
 
         final t = widget.value < 0 ? _pulseController.value : 0.0;
         final animatedStyle = widget.style?.copyWith(

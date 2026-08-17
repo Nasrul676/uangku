@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import '../theme/app_theme.dart';
 
 /// Menampilkan overlay success animation singkat (scale + fade).
 /// Dipanggil sebelum Navigator.pop() saat transaksi berhasil disimpan.
@@ -14,7 +15,7 @@ class SuccessOverlay {
   static Future<void> show(
     BuildContext context, {
     String message = 'Berhasil disimpan!',
-    Color color = const Color(0xFF2A9D50),
+    Color color = AppTheme.incomeGreen,
     Duration duration = const Duration(milliseconds: 900),
     String lottieAsset = 'assets/lottie/success.json',
   }) async {
@@ -71,30 +72,35 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
 
     _scale = TweenSequence([
       TweenSequenceItem(
-        tween: Tween(begin: 0.5, end: 1.1)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween(
+          begin: 0.5,
+          end: 1.1,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 70,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.1, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.1,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
     ]).animate(_ctrl);
 
     _opacity = TweenSequence([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 20,
       ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 50),
       TweenSequenceItem(
-        tween: ConstantTween(1.0),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
     ]).animate(_ctrl);
@@ -121,7 +127,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
             child: Opacity(
               opacity: _opacity.value,
               child: ColoredBox(
-                color: Colors.black.withOpacity(0.25),
+                color: Colors.black.withValues(alpha: 0.25),
                 child: Center(
                   child: Transform.scale(
                     scale: _scale.value,
@@ -135,7 +141,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: widget.color.withOpacity(0.25),
+                            color: widget.color.withValues(alpha: 0.25),
                             blurRadius: 32,
                             offset: const Offset(0, 8),
                           ),
@@ -148,7 +154,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                             width: 72,
                             height: 72,
                             decoration: BoxDecoration(
-                              color: widget.color.withOpacity(0.1),
+                              color: widget.color.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Lottie.asset(
@@ -164,7 +170,11 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                             widget.message,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontFamily: Theme.of(context).textTheme.titleMedium?.fontFamily ?? 'PlusJakartaSans',
+                              fontFamily:
+                                  Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium?.fontFamily ??
+                                  'PlusJakartaSans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF111111),

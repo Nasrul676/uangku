@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../widgets/app_card.dart';
+import '../theme/app_theme.dart';
 
 class BookCashflowDetailScreen extends StatelessWidget {
   const BookCashflowDetailScreen({
@@ -52,10 +53,12 @@ class BookCashflowDetailScreen extends StatelessWidget {
     // --- Expense By Category Logic ---
     final sortedExpenses = expenseByCategory.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     final topExpenses = sortedExpenses.take(5).toList();
-    final otherExpensesSum = sortedExpenses.skip(5).fold<double>(0.0, (sum, entry) => sum + entry.value);
-    
+    final otherExpensesSum = sortedExpenses
+        .skip(5)
+        .fold<double>(0.0, (sum, entry) => sum + entry.value);
+
     if (otherExpensesSum > 0) {
       topExpenses.add(MapEntry('Lainnya', otherExpensesSum));
     }
@@ -75,146 +78,169 @@ class BookCashflowDetailScreen extends StatelessWidget {
             AppCard(
               padding: const EdgeInsets.all(16),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Statistik Arus Kas', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 200,
-                      child: BarChart(
-                        BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: (totalIncome > totalExpense ? totalIncome : totalExpense) * 1.2,
-                          barTouchData: BarTouchData(enabled: false),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (value, meta) {
-                                  if (value == 0) return const Text('Masuk');
-                                  if (value == 1) return const Text('Keluar');
-                                  return const Text('');
-                                },
-                              ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Statistik Arus Kas',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 200,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY:
+                            (totalIncome > totalExpense
+                                ? totalIncome
+                                : totalExpense) *
+                            1.2,
+                        barTouchData: BarTouchData(enabled: false),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                if (value == 0) return const Text('Masuk');
+                                if (value == 1) return const Text('Keluar');
+                                return const Text('');
+                              },
                             ),
-                            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           ),
-                          gridData: const FlGridData(show: false),
-                          borderData: FlBorderData(show: false),
-                          barGroups: [
-                            BarChartGroupData(
-                              x: 0,
-                              barRods: [
-                                BarChartRodData(
-                                  toY: totalIncome,
-                                  color: Colors.green,
-                                  width: 40,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ],
-                            ),
-                            BarChartGroupData(
-                              x: 1,
-                              barRods: [
-                                BarChartRodData(
-                                  toY: totalExpense,
-                                  color: theme.colorScheme.error,
-                                  width: 40,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ],
-                            ),
-                          ],
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
+                        gridData: const FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: [
+                          BarChartGroupData(
+                            x: 0,
+                            barRods: [
+                              BarChartRodData(
+                                toY: totalIncome,
+                                color: Colors.green,
+                                width: 40,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ],
+                          ),
+                          BarChartGroupData(
+                            x: 1,
+                            barRods: [
+                              BarChartRodData(
+                                toY: totalExpense,
+                                color: theme.colorScheme.error,
+                                width: 40,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // --- Expense By Category PieChart ---
             if (topExpenses.isNotEmpty) ...[
               AppCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Pengeluaran Berdasarkan Kategori', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        height: 200,
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 40,
-                            sections: List.generate(topExpenses.length, (i) {
-                              final entry = topExpenses[i];
-                              final percentage = (entry.value / totalExpense) * 100;
-                              final colors = [
-                                Colors.blue,
-                                Colors.orange,
-                                Colors.purple,
-                                Colors.teal,
-                                Colors.pink,
-                                Colors.grey
-                              ];
-                              
-                              return PieChartSectionData(
-                                color: colors[i % colors.length],
-                                value: entry.value,
-                                title: '${percentage.toStringAsFixed(0)}%',
-                                radius: 50,
-                                titleStyle: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              );
-                            }),
-                          ),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pengeluaran Berdasarkan Kategori',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 200,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 40,
+                          sections: List.generate(topExpenses.length, (i) {
+                            final entry = topExpenses[i];
+                            final percentage =
+                                (entry.value / totalExpense) * 100;
+                            final colors = [
+                              Colors.blue,
+                              Colors.orange,
+                              Colors.purple,
+                              Colors.teal,
+                              Colors.pink,
+                              Colors.grey,
+                            ];
+
+                            return PieChartSectionData(
+                              color: colors[i % colors.length],
+                              value: entry.value,
+                              title: '${percentage.toStringAsFixed(0)}%',
+                              radius: 50,
+                              titleStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            );
+                          }),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Legend
-                      ...List.generate(topExpenses.length, (i) {
-                        final entry = topExpenses[i];
-                        final colors = [
-                          Colors.blue,
-                          Colors.orange,
-                          Colors.purple,
-                          Colors.teal,
-                          Colors.pink,
-                          Colors.grey
-                        ];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: colors[i % colors.length],
-                                  shape: BoxShape.circle,
-                                ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Legend
+                    ...List.generate(topExpenses.length, (i) {
+                      final entry = topExpenses[i];
+                      final colors = [
+                        Colors.blue,
+                        Colors.orange,
+                        Colors.purple,
+                        Colors.teal,
+                        Colors.pink,
+                        Colors.grey,
+                      ];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: colors[i % colors.length],
+                                shape: BoxShape.circle,
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(entry.key)),
-                              Text(
-                                formatter.format(entry.value),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(entry.key)),
+                            Text(
+                              formatter.format(entry.value),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -223,128 +249,128 @@ class BookCashflowDetailScreen extends StatelessWidget {
             AppCard(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      'LAPORAN ARUS KAS',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ARUS KAS MASUK
+                  Text(
+                    'Arus Kas dari Pemasukan (Inflows)',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Divider(),
+                  if (incomeByCategory.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        'LAPORAN ARUS KAS',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
+                        'Tidak ada pemasukan tercatat.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                  ...incomeByCategory.entries.map(
+                    (e) => _buildDetailRow(e.key, e.value, formatter),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTotalRow(
+                    'Total Pemasukan',
+                    totalIncome,
+                    formatter,
+                    isPositive: true,
+                  ),
 
-                    // ARUS KAS MASUK
-                    Text(
-                      'Arus Kas dari Pemasukan (Inflows)',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  const SizedBox(height: 24),
+
+                  // ARUS KAS KELUAR
+                  Text(
+                    'Arus Kas untuk Pengeluaran (Outflows)',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    const Divider(),
-                    if (incomeByCategory.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          'Tidak ada pemasukan tercatat.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
+                  ),
+                  const Divider(),
+                  if (expenseByCategory.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Tidak ada pengeluaran tercatat.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
-                    ...incomeByCategory.entries.map(
-                      (e) => _buildDetailRow(e.key, e.value, formatter),
                     ),
-                    const SizedBox(height: 8),
-                    _buildTotalRow(
-                      'Total Pemasukan',
-                      totalIncome,
-                      formatter,
-                      isPositive: true,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ARUS KAS KELUAR
-                    Text(
-                      'Arus Kas untuk Pengeluaran (Outflows)',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(),
-                    if (expenseByCategory.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          'Tidak ada pengeluaran tercatat.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ...expenseByCategory.entries.map(
-                      (e) => _buildDetailRow(
-                        e.key,
-                        e.value,
-                        formatter,
-                        isNegative: true,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTotalRow(
-                      'Total Pengeluaran',
-                      totalExpense,
+                  ...expenseByCategory.entries.map(
+                    (e) => _buildDetailRow(
+                      e.key,
+                      e.value,
                       formatter,
                       isNegative: true,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTotalRow(
+                    'Total Pengeluaran',
+                    totalExpense,
+                    formatter,
+                    isNegative: true,
+                  ),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                    // ARUS KAS BERSIH
-                    const Divider(thickness: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'KENAIKAN/(PENURUNAN) KAS BERSIH',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          formatter.format(netCashflow),
-                          style: theme.textTheme.titleMedium?.copyWith(
+                  // ARUS KAS BERSIH
+                  const Divider(thickness: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'KENAIKAN/(PENURUNAN) KAS BERSIH',
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: netCashflow < 0
-                                ? colorScheme.error
-                                : (netCashflow > 0
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurface),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '  (Net Cash Flow)',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatter.format(netCashflow),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: netCashflow < 0
+                              ? colorScheme.error
+                              : (netCashflow > 0
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurface),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '  (Net Cash Flow)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -383,9 +409,7 @@ class BookCashflowDetailScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Periode: $dateRange',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.hintColor,
-          ),
+          style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
@@ -401,9 +425,7 @@ class BookCashflowDetailScreen extends StatelessWidget {
             book.isOpen ? 'Status: Aktif' : 'Status: Selesai',
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: book.isOpen
-                  ? theme.colorScheme.primary
-                  : theme.hintColor,
+              color: book.isOpen ? theme.colorScheme.primary : theme.hintColor,
             ),
           ),
         ),
@@ -455,7 +477,7 @@ class BookCashflowDetailScreen extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: isNegative
-                    ? const Color(0xFFC24545)
+                    ? AppTheme.expenseRed
                     : (isPositive ? const Color(0xFF1E7C43) : null),
               ),
             ),

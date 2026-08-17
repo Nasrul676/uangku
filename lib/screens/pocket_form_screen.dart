@@ -8,8 +8,12 @@ import '../models/pocket.dart';
 import 'package:intl/intl.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
+import '../theme/app_theme.dart';
 
 class PocketFormScreen extends StatefulWidget {
+  /// Kantong yang sedang dibuka. Kalau `id`-nya null, form dipakai untuk
+  /// membuat kantong baru dengan nilai awal yang sudah terisi (misal hasil
+  /// konversi dari rencana keuangan).
   final Pocket? pocket;
 
   const PocketFormScreen({super.key, this.pocket});
@@ -73,7 +77,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
           : (double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0);
 
       await GlobalActionOverlay.run(() async {
-        if (widget.pocket == null) {
+        if (widget.pocket?.id == null) {
           await provider.addPocket(
             bookPeriodId: bookId,
             name: _nameController.text,
@@ -137,13 +141,18 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
+                          // Ikut skema warna tema — nilai tetap seperti
+                          // grey.shade100 tidak berubah di mode gelap dan
+                          // membuat teks jadi tidak terbaca.
                           color: _selectedIcon == iconName
-                              ? const Color(0xFFE5F0FF)
-                              : Colors.grey.shade100,
+                              ? Theme.of(context).colorScheme.primaryContainer
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
                           border: _selectedIcon == iconName
                               ? Border.all(
-                                  color: const Color(0xFF0066FF),
+                                  color: AppTheme.primaryBlue,
                                   width: 2,
                                 )
                               : Border.all(color: Colors.transparent, width: 2),
@@ -172,8 +181,10 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                                       ? FontWeight.bold
                                       : FontWeight.normal,
                                   color: _selectedIcon == iconName
-                                      ? const Color(0xFF0066FF)
-                                      : Colors.grey.shade700,
+                                      ? AppTheme.primaryBlue
+                                      : Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -198,7 +209,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          widget.pocket == null ? 'Buat Kantong Baru' : 'Edit Kantong',
+          widget.pocket?.id == null ? 'Buat Kantong Baru' : 'Edit Kantong',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -225,7 +236,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                           color: const Color(0xFFE5F0FF),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFF0066FF),
+                            color: AppTheme.primaryBlue,
                             width: 2,
                           ),
                         ),
@@ -296,13 +307,13 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _allocationType == 'PERCENTAGE'
-                                  ? const Color(0xFF0066FF)
+                                  ? AppTheme.primaryBlue
                                   : (Theme.of(context).cardTheme.color ??
                                         Colors.white),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _allocationType == 'PERCENTAGE'
-                                    ? const Color(0xFF0066FF)
+                                    ? AppTheme.primaryBlue
                                     : Theme.of(context).dividerColor,
                               ),
                             ),
@@ -338,13 +349,13 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _allocationType == 'NOMINAL'
-                                  ? const Color(0xFF0066FF)
+                                  ? AppTheme.primaryBlue
                                   : (Theme.of(context).cardTheme.color ??
                                         Colors.white),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _allocationType == 'NOMINAL'
-                                    ? const Color(0xFF0066FF)
+                                    ? AppTheme.primaryBlue
                                     : Theme.of(context).dividerColor,
                               ),
                             ),
@@ -431,7 +442,7 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                     child: ElevatedButton(
                       onPressed: _savePocket,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0066FF),
+                        backgroundColor: AppTheme.primaryBlue,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

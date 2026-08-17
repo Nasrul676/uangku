@@ -142,8 +142,23 @@ class _UangKeluarAppState extends State<UangKeluarApp> {
         builder: (context, themeProvider, _) {
           return MaterialApp(
             navigatorKey: _navigatorKey,
-            builder: (context, child) =>
-                GlobalActionOverlay(key: globalOverlayKey, child: child!),
+            builder: (context, child) {
+              // Hormati ukuran font sistem, tapi batasi supaya kartu dan
+              // baris angka tidak overflow pada setelan font ekstrem.
+              final media = MediaQuery.of(context);
+              return MediaQuery(
+                data: media.copyWith(
+                  textScaler: media.textScaler.clamp(
+                    minScaleFactor: 0.9,
+                    maxScaleFactor: 1.3,
+                  ),
+                ),
+                child: GlobalActionOverlay(
+                  key: globalOverlayKey,
+                  child: child!,
+                ),
+              );
+            },
             title: 'uangku',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,

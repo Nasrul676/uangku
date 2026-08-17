@@ -32,17 +32,21 @@ class _AnimatedBouncingCardState extends State<AnimatedBouncingCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
-    
+
     final inner = AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       padding: widget.padding,
-      margin: widget.margin ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      margin:
+          widget.margin ??
+          const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: widget.color ?? theme.cardTheme.color,
-        borderRadius: widget.borderRadius ?? (theme.cardTheme.shape is RoundedRectangleBorder 
-          ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius 
-          : BorderRadius.circular(12)),
+        borderRadius:
+            widget.borderRadius ??
+            (theme.cardTheme.shape is RoundedRectangleBorder
+                ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
+                : BorderRadius.circular(12)),
         border: themeExtension?.cardBorder,
         boxShadow: themeExtension?.cardShadow,
       ),

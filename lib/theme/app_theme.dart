@@ -229,8 +229,8 @@ class AppTheme {
           cardShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.04),
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -360,8 +360,9 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected))
+          if (states.contains(WidgetState.selected)) {
             return isDark ? neoBlue : neoInk;
+          }
           return paperCol;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -513,7 +514,7 @@ class AppTheme {
       bodySmall: TextStyle(
         fontFamily: resolvedFontFamily,
         fontSize: 12,
-        color: textColor.withOpacity(0.7),
+        color: textColor.withValues(alpha: 0.7),
         fontWeight: FontWeight.w400,
         letterSpacing: 0.4,
       ),
@@ -534,7 +535,7 @@ class AppTheme {
       labelSmall: TextStyle(
         fontFamily: resolvedFontFamily,
         fontSize: 11,
-        color: textColor.withOpacity(0.7),
+        color: textColor.withValues(alpha: 0.7),
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
       ),

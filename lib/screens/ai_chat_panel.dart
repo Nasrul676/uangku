@@ -11,10 +11,7 @@ import 'pocket_list_screen.dart';
 class AiChatPanel extends StatefulWidget {
   final String currentContext;
 
-  const AiChatPanel({
-    super.key,
-    required this.currentContext,
-  });
+  const AiChatPanel({super.key, required this.currentContext});
 
   @override
   State<AiChatPanel> createState() => _AiChatPanelState();
@@ -56,15 +53,27 @@ class _AiChatPanelState extends State<AiChatPanel> {
   void _handleNavigation(String pageName) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.pop(context); // Close the chat panel
-      
+
       if (pageName == 'settings') {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        );
       } else if (pageName == 'savings') {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SavingGoalsScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SavingGoalsScreen()),
+        );
       } else if (pageName == 'shopping_list') {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ShoppingListScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ShoppingListScreen()),
+        );
       } else if (pageName == 'pockets') {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const PocketListScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PocketListScreen()),
+        );
       }
     });
   }
@@ -88,7 +97,6 @@ class _AiChatPanelState extends State<AiChatPanel> {
   }
 
   void _showSessionsDialog() {
-    final provider = context.read<TransactionProvider>();
     showDialog(
       context: context,
       builder: (context) {
@@ -100,7 +108,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
             child: Consumer<TransactionProvider>(
               builder: (context, prov, child) {
                 if (prov.chatSessions.isEmpty) {
-                  return const Center(child: Text('Belum ada riwayat obrolan.'));
+                  return const Center(
+                    child: Text('Belum ada riwayat obrolan.'),
+                  );
                 }
                 return ListView.builder(
                   itemCount: prov.chatSessions.length,
@@ -110,6 +120,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                       title: Text(session.title),
                       subtitle: Text(session.updatedAt.split('T')[0]),
                       trailing: IconButton(
+                        tooltip: 'Hapus percakapan',
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           prov.deleteChatSession(session.id!);
@@ -118,7 +129,10 @@ class _AiChatPanelState extends State<AiChatPanel> {
                       onTap: () {
                         prov.loadChatMessages(session.id!);
                         Navigator.pop(context);
-                        Future.delayed(const Duration(milliseconds: 300), _scrollToBottom);
+                        Future.delayed(
+                          const Duration(milliseconds: 300),
+                          _scrollToBottom,
+                        );
                       },
                     );
                   },
@@ -148,11 +162,12 @@ class _AiChatPanelState extends State<AiChatPanel> {
       final newCount = messages.length - _previousMessageCount;
       _previousMessageCount = messages.length;
       _scrollToBottom();
-      
+
       // Handle navigation action if present in new messages
       if (newCount > 0 && messages.isNotEmpty) {
         final lastMsg = messages.last;
-        if (lastMsg.action == 'navigate_to_page' && lastMsg.actionData != null) {
+        if (lastMsg.action == 'navigate_to_page' &&
+            lastMsg.actionData != null) {
           try {
             final data = jsonDecode(lastMsg.actionData!);
             final pageName = data['page_name'];
@@ -167,179 +182,209 @@ class _AiChatPanelState extends State<AiChatPanel> {
       body: SafeArea(
         child: Column(
           children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: theme.dividerColor)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.smart_toy_rounded, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Asisten AI',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: theme.dividerColor)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.smart_toy_rounded,
+                        color: theme.colorScheme.primary,
                       ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline_rounded),
-                      tooltip: 'Sesi Baru',
-                      onPressed: () {
-                        provider.startNewChatSession();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.history_rounded),
-                      tooltip: 'Riwayat',
-                      onPressed: _showSessionsDialog,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Asisten AI',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline_rounded),
+                        tooltip: 'Sesi Baru',
+                        onPressed: () {
+                          provider.startNewChatSession();
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.history_rounded),
+                        tooltip: 'Riwayat',
+                        onPressed: _showSessionsDialog,
+                      ),
+                      IconButton(
+                        tooltip: 'Tutup panel',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          
-          // Chat Messages
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: messages.length + (_isSending ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == messages.length && _isSending) {
+
+            // Chat Messages
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: messages.length + (_isSending ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == messages.length && _isSending) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(
+                            16,
+                          ).copyWith(bottomLeft: const Radius.circular(0)),
+                        ),
+                        child: const CustomLoadingIndicator(size: 30),
+                      ),
+                    );
+                  }
+
+                  final msg = messages[index];
+                  final isUser = msg.role == 'user';
                   return Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: isUser
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.cardColor,
+                        color: isUser
+                            ? theme.colorScheme.primary
+                            : theme.cardColor,
                         borderRadius: BorderRadius.circular(16).copyWith(
-                          bottomLeft: const Radius.circular(0),
+                          bottomRight: isUser
+                              ? const Radius.circular(0)
+                              : const Radius.circular(16),
+                          bottomLeft: isUser
+                              ? const Radius.circular(16)
+                              : const Radius.circular(0),
                         ),
                       ),
-                      child: const CustomLoadingIndicator(size: 30),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.75,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            msg.text,
+                            style: TextStyle(
+                              color: isUser
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          if (msg.action != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 14,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Aksi dijalankan: ${msg.action}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   );
-                }
+                },
+              ),
+            ),
 
-                final msg = messages[index];
-                final isUser = msg.role == 'user';
-                return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isUser ? theme.colorScheme.primary : theme.cardColor,
-                      borderRadius: BorderRadius.circular(16).copyWith(
-                        bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
-                        bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
-                      ),
-                    ),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          msg.text,
-                          style: TextStyle(
-                            color: isUser ? theme.colorScheme.onPrimary : theme.textTheme.bodyMedium?.color,
-                          ),
+            // Input Area
+            Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                top: 16,
+                left: 16,
+                right: 16,
+              ),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                border: Border(top: BorderSide(color: theme.dividerColor)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      enabled: !_isSending,
+                      decoration: InputDecoration(
+                        hintText: 'Ketik pesan atau instruksi...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
                         ),
-                        if (msg.action != null) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.check_circle_rounded, size: 14, color: Colors.green),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Aksi dijalankan: ${msg.action}',
-                                  style: const TextStyle(fontSize: 10, color: Colors.green),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ]
-                      ],
+                        filled: true,
+                        fillColor: theme.cardColor,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      onSubmitted: _isSending ? null : (_) => _sendMessage(),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-
-          // Input Area
-          Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              top: 16,
-              left: 16,
-              right: 16,
-            ),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              border: Border(top: BorderSide(color: theme.dividerColor)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    enabled: !_isSending,
-                    decoration: InputDecoration(
-                      hintText: 'Ketik pesan atau instruksi...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    backgroundColor: _isSending
+                        ? Colors.grey
+                        : theme.colorScheme.primary,
+                    child: IconButton(
+                      tooltip: 'Kirim pesan',
+                      icon: Icon(
+                        Icons.send_rounded,
+                        color: theme.colorScheme.onPrimary,
                       ),
-                      filled: true,
-                      fillColor: theme.cardColor,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
+                      onPressed: _isSending ? null : _sendMessage,
                     ),
-                    onSubmitted: _isSending ? null : (_) => _sendMessage(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: _isSending ? Colors.grey : theme.colorScheme.primary,
-                  child: IconButton(
-                    icon: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary),
-                    onPressed: _isSending ? null : _sendMessage,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }

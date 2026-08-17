@@ -15,6 +15,7 @@ import '../services/auth_service.dart';
 import '../widgets/custom_loading_indicator.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import 'onboarding_screen.dart';
+import '../utils/error_message.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.isEmbedded = false});
@@ -40,7 +41,8 @@ class SettingsContent extends StatefulWidget {
   State<SettingsContent> createState() => _SettingsContentState();
 }
 
-class _SettingsContentState extends State<SettingsContent> with WidgetsBindingObserver {
+class _SettingsContentState extends State<SettingsContent>
+    with WidgetsBindingObserver {
   late final TextEditingController _urlController;
   late final TextEditingController _payloadRootController;
   late final TextEditingController _incomeCategoriesController;
@@ -78,9 +80,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     _geminiApiKeyController = TextEditingController(
       text: provider.geminiApiKey,
     );
-    _geminiModelController = TextEditingController(
-      text: provider.geminiModel,
-    );
+    _geminiModelController = TextEditingController(text: provider.geminiModel);
     _notificationTime = TimeOfDay(
       hour: provider.planNotificationHour,
       minute: provider.planNotificationMinute,
@@ -220,9 +220,9 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan API Key: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan API Key: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSavingGeminiKey = false);
@@ -255,6 +255,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           await Permission.scheduleExactAlarm.request();
         }
       }
+      if (!mounted) return;
       await context.read<TransactionProvider>().savePlanNotificationTime(
         hour: _notificationTime.hour,
         minute: _notificationTime.minute,
@@ -267,9 +268,9 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() => _isSavingNotificationTime = false);
@@ -289,6 +290,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
         }
       }
 
+      if (!mounted) return;
       await context
           .read<TransactionProvider>()
           .showFinancialPlanNotificationDemo();
@@ -298,9 +300,9 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e))));
     } finally {
       if (mounted) {
         setState(() => _isSendingNotificationDemo = false);
@@ -365,15 +367,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       children: [
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Tampilan Tema',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Tampilan Tema', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(
                 'Pilih gaya desain yang paling nyaman buatmu.',
@@ -385,15 +385,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Mode Gelap',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Mode Gelap', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(
                 'Sesuaikan tampilan aplikasi dengan kenyamanan matamu.',
@@ -405,15 +403,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Gaya Huruf',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Gaya Huruf', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(
                 'Pilih jenis huruf yang sesuai dengan seleramu.',
@@ -425,7 +421,8 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,7 +464,8 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,9 +484,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
                 onTap: _pickNotificationTime,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    hintText: 'Jam notifikasi',
-                  ),
+                  decoration: const InputDecoration(hintText: 'Jam notifikasi'),
                   child: Row(
                     children: [
                       Expanded(child: Text(_notificationTimeLabel())),
@@ -531,7 +527,8 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           _buildPermissionCard(theme),
         ],
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,6 +560,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
                   hintText: 'Masukkan Gemini API Key',
                   prefixIcon: const Icon(Icons.key_rounded),
                   suffixIcon: IconButton(
+                    tooltip: 'Tampilkan atau sembunyikan',
                     icon: Icon(
                       _isGeminiKeyObscured
                           ? Icons.visibility_off_rounded
@@ -607,15 +605,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Atur Kategori',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Atur Kategori', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(
                 'Pisahkan antar kategori pakai koma (,).',
@@ -641,7 +637,7 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
                 'Kategori Pengeluaran',
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFFC24545),
+                  color: AppTheme.expenseRed,
                 ),
               ),
               const SizedBox(height: 6),
@@ -655,15 +651,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ),
         ),
         const SizedBox(height: 10),
-        AppCard(isInteractive: true,
+        AppCard(
+          isInteractive: true,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Backup & Restore Data',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Backup & Restore Data', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Text(
                 'Ekspor data ke file ZIP atau pulihkan dari backup sebelumnya.',
@@ -696,15 +690,13 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
   }
 
   Widget _buildPermissionCard(ThemeData theme) {
-    return AppCard(isInteractive: true,
+    return AppCard(
+      isInteractive: true,
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Izin Sistem & Notifikasi',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('Izin Sistem & Notifikasi', style: theme.textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(
             'Pastikan semua izin di bawah ini aktif agar notifikasi jadwal berjalan lancar.',
@@ -716,7 +708,10 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
             title: const Text('Izin Notifikasi'),
             subtitle: const Text('Memunculkan pesan peringatan di layar.'),
             trailing: _isNotificationGranted
-                ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                ? Icon(
+                    Icons.check_circle_rounded,
+                    color: theme.colorScheme.primary,
+                  )
                 : FilledButton.tonal(
                     onPressed: () async {
                       await Permission.notification.request();
@@ -728,9 +723,14 @@ class _SettingsContentState extends State<SettingsContent> with WidgetsBindingOb
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Izin Alarm Tepat Waktu'),
-            subtitle: const Text('Agar pengingat muncul di waktu yang akurat (tidak ditunda oleh sistem penghemat baterai).'),
+            subtitle: const Text(
+              'Agar pengingat muncul di waktu yang akurat (tidak ditunda oleh sistem penghemat baterai).',
+            ),
             trailing: _isExactAlarmGranted
-                ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                ? Icon(
+                    Icons.check_circle_rounded,
+                    color: theme.colorScheme.primary,
+                  )
                 : FilledButton.tonal(
                     onPressed: () async {
                       await Permission.scheduleExactAlarm.request();
@@ -800,12 +800,12 @@ class _ThemeModeSelector extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? theme.colorScheme.primary.withOpacity(0.1)
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary
-                  : theme.dividerColor.withOpacity(0.2),
+                  : theme.dividerColor.withValues(alpha: 0.2),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -913,12 +913,12 @@ class _FontSelectorRow extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primary.withOpacity(0.1)
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.dividerColor.withOpacity(0.2),
+                : theme.dividerColor.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -947,43 +947,6 @@ class _FontSelectorRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    this.subtitle,
-    required this.child,
-    this.padding = const EdgeInsets.all(12),
-  });
-
-  final String title;
-  final String? subtitle;
-  final Widget child;
-  final EdgeInsets padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AppCard(isInteractive: true,
-      padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium,
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            Text(subtitle!, style: theme.textTheme.bodySmall),
-          ],
-          const SizedBox(height: 12),
-          child,
-        ],
       ),
     );
   }
@@ -1051,7 +1014,7 @@ class _ThemeSelectorRow extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1124,7 +1087,8 @@ class _ThemePreviewOption extends StatelessWidget {
     final theme = Theme.of(context);
     final ext = theme.extension<AppThemeExtension>();
 
-    return AppCard(isInteractive: true,
+    return AppCard(
+      isInteractive: true,
       onTap: onTap,
       padding: const EdgeInsets.all(8),
       color: isSelected ? ext?.primaryActionColor : theme.cardTheme.color,
@@ -1148,7 +1112,7 @@ class _ThemePreviewOption extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: isSelected
-                  ? theme.colorScheme.primary.withOpacity(0.1)
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
               border: Border.all(
                 color: isSelected
@@ -1161,9 +1125,7 @@ class _ThemePreviewOption extends StatelessWidget {
               isSelected ? 'Aktif' : 'Pilih',
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.hintColor,
+                color: isSelected ? theme.colorScheme.primary : theme.hintColor,
               ),
             ),
           ),

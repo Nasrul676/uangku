@@ -57,7 +57,7 @@ class TransactionProvider extends ChangeNotifier {
   List<ChatSession> _chatSessions = [];
   List<ChatMessage> _currentChatMessages = [];
   int? _activeChatSessionId;
-  
+
   int? _selectedBookPeriodId;
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -189,6 +189,7 @@ class TransactionProvider extends ChangeNotifier {
 
     try {
       _allTransactions = await _databaseHelper.getAllTransactions();
+      _invalidateDerivedCaches();
       unawaited(_syncHomeBalanceWidget());
       _errorMessage = null;
     } catch (e) {
@@ -255,17 +256,18 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  /// [newIndex] sudah menyesuaikan posisi setelah item lama diangkat
+  /// (kontrak `ReorderableListView.onReorderItem`).
   Future<void> reorderSavingGoals(int oldIndex, int newIndex) async {
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
     final item = _savingGoals.removeAt(oldIndex);
     _savingGoals.insert(newIndex, item);
 
     notifyListeners();
 
     for (int i = 0; i < _savingGoals.length; i++) {
-      await _databaseHelper.updateSavingGoal(_savingGoals[i].copyWith(orderIndex: i));
+      await _databaseHelper.updateSavingGoal(
+        _savingGoals[i].copyWith(orderIndex: i),
+      );
     }
   }
 
@@ -313,7 +315,7 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> sendChatMessage(String text, String currentContext) async {
     if (text.trim().isEmpty) return;
-    
+
     // Create new session if none active
     if (_activeChatSessionId == null) {
       final newSessionId = await _databaseHelper.insertChatSession(
@@ -328,7 +330,7 @@ class TransactionProvider extends ChangeNotifier {
     }
 
     final sessionId = _activeChatSessionId!;
-    
+
     // Insert user message
     final userMsg = ChatMessage(
       sessionId: sessionId,
@@ -337,7 +339,7 @@ class TransactionProvider extends ChangeNotifier {
       timestamp: DateTime.now().toIso8601String(),
     );
     await _databaseHelper.insertChatMessage(userMsg);
-    
+
     // Add to local state immediately for UI response
     _currentChatMessages.add(userMsg);
     notifyListeners();
@@ -347,7 +349,9 @@ class TransactionProvider extends ChangeNotifier {
         apiKey: _geminiApiKey,
         model: _geminiModel,
         message: text,
-        history: _currentChatMessages.where((m) => m.id != null).toList(), // existing history
+        history: _currentChatMessages
+            .where((m) => m.id != null)
+            .toList(), // existing history
         currentContext: currentContext,
         categories: [..._incomeCategories, ..._expenseCategories, 'Lain-lain'],
         onFunctionCall: (String name, Map<String, dynamic> args) async {
@@ -369,11 +373,17 @@ class TransactionProvider extends ChangeNotifier {
         timestamp: DateTime.now().toIso8601String(),
       );
       await _databaseHelper.insertChatMessage(botMsg);
-      
+
       // Update session timestamp
-      final session = _chatSessions.firstWhere((s) => s.id == sessionId);
-      await _databaseHelper.updateChatSession(session.copyWith(updatedAt: DateTime.now().toIso8601String()));
-      
+      final sessionMatch = _chatSessions.where((s) => s.id == sessionId);
+      if (sessionMatch.isNotEmpty) {
+        await _databaseHelper.updateChatSession(
+          sessionMatch.first.copyWith(
+            updatedAt: DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+
       // Reload messages
       await loadChatMessages(sessionId);
       await loadChatSessions(); // to refresh order
@@ -390,7 +400,10 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> _handleAiFunctionCall(String name, Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> _handleAiFunctionCall(
+    String name,
+    Map<String, dynamic> args,
+  ) async {
     final now = DateTime.now();
     try {
       if (name == 'get_current_balance') {
@@ -400,15 +413,15 @@ class TransactionProvider extends ChangeNotifier {
             'total_income': currentTotalIncome,
             'total_expense': currentTotalExpense,
             'current_balance': currentNetBalance,
-          }
+          },
         };
       } else if (name == 'get_recent_transactions') {
         final limit = args['limit'] as int? ?? 5;
-        final transactions = _allTransactions.take(limit).map((t) => t.toMap()).toList();
-        return {
-          'status': 'success',
-          'data': transactions,
-        };
+        final transactions = _allTransactions
+            .take(limit)
+            .map((t) => t.toMap())
+            .toList();
+        return {'status': 'success', 'data': transactions};
       } else if (name == 'add_transaction') {
         final title = args['title'] ?? 'Transaksi AI';
         final amount = (args['amount'] as num).toDouble();
@@ -416,7 +429,7 @@ class TransactionProvider extends ChangeNotifier {
         final category = args['category'] ?? 'Lain-lain';
         final dateStr = args['date'];
         final date = dateStr != null ? DateTime.tryParse(dateStr) ?? now : now;
-        
+
         await addTransaction(
           title: title,
           amount: amount,
@@ -425,7 +438,10 @@ class TransactionProvider extends ChangeNotifier {
           date: date,
           time: DateFormat('HH:mm').format(now),
         );
-        return {'status': 'success', 'message': 'Transaksi berhasil ditambahkan'};
+        return {
+          'status': 'success',
+          'message': 'Transaksi berhasil ditambahkan',
+        };
       } else if (name == 'get_financial_plans') {
         final plans = _allFinancialPlans.map((p) {
           final progress = getFinancialPlanProgress(p.id!);
@@ -433,25 +449,51 @@ class TransactionProvider extends ChangeNotifier {
           map['progress_percentage'] = progress * 100;
           return map;
         }).toList();
-        return {
-          'status': 'success',
-          'data': plans,
-        };
+        return {'status': 'success', 'data': plans};
       } else if (name == 'add_financial_plan') {
         final title = args['title'] ?? 'Rencana AI';
         final targetAmount = (args['target_amount'] as num).toDouble();
         final dateStr = args['target_date'];
-        final date = dateStr != null ? DateTime.tryParse(dateStr) ?? now.add(const Duration(days: 30)) : now.add(const Duration(days: 30));
-        
+        final date = dateStr != null
+            ? DateTime.tryParse(dateStr) ?? now.add(const Duration(days: 30))
+            : now.add(const Duration(days: 30));
+
         await addFinancialPlan(
           title: title,
           targetAmount: targetAmount,
           targetDate: date,
         );
-        return {'status': 'success', 'message': 'Rencana keuangan berhasil ditambahkan'};
+        return {
+          'status': 'success',
+          'message': 'Rencana keuangan berhasil ditambahkan',
+        };
+      } else if (name == 'add_pocket') {
+        final title = args['name'] ?? 'Kantong AI';
+        final allocationType = args['allocation_type'] == 'PERCENTAGE'
+            ? 'PERCENTAGE'
+            : 'NOMINAL';
+        final allocationValue = (args['allocation_value'] as num).toDouble();
+        final icon = args['icon'] ?? 'wallet';
+
+        final bookId = selectedBookPeriodId ?? activeBookPeriod?.id;
+        if (bookId == null) {
+          return {'status': 'error', 'message': 'Buku kas tidak ditemukan'};
+        }
+
+        await addPocket(
+          bookPeriodId: bookId,
+          name: title,
+          icon: icon,
+          allocationType: allocationType,
+          allocationValue: allocationValue,
+        );
+        return {'status': 'success', 'message': 'Kantong berhasil dibuat'};
       } else if (name == 'navigate_to_page') {
         final pageName = args['page_name'];
-        return {'status': 'success', 'message': 'Akan mengarahkan pengguna ke halaman $pageName'};
+        return {
+          'status': 'success',
+          'message': 'Akan mengarahkan pengguna ke halaman $pageName',
+        };
       }
       return {'status': 'error', 'message': 'Fungsi tidak dikenali'};
     } catch (e) {
@@ -816,6 +858,10 @@ class TransactionProvider extends ChangeNotifier {
           .where((item) => item.bookPeriodId != bookPeriodId)
           .toList(growable: false);
       _allTransactions = _allTransactions
+          .where((item) => item.bookPeriodId != bookPeriodId)
+          .toList(growable: false);
+      _invalidateDerivedCaches();
+      _allPockets = _allPockets
           .where((item) => item.bookPeriodId != bookPeriodId)
           .toList(growable: false);
 
@@ -1415,8 +1461,13 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final sourcePeriod = _bookPeriods.firstWhere((p) => p.id == sourceBookId);
-      final targetPeriod = _bookPeriods.firstWhere((p) => p.id == targetBookId);
+      final sourceMatch = _bookPeriods.where((p) => p.id == sourceBookId);
+      final targetMatch = _bookPeriods.where((p) => p.id == targetBookId);
+      if (sourceMatch.isEmpty || targetMatch.isEmpty) {
+        throw Exception('Buku asal atau buku tujuan sudah tidak ada.');
+      }
+      final sourcePeriod = sourceMatch.first;
+      final targetPeriod = targetMatch.first;
 
       final timeStr = DateFormat('HH:mm').format(DateTime.now());
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
@@ -1488,20 +1539,53 @@ class TransactionProvider extends ChangeNotifier {
     await loadPockets();
   }
 
+  /// Realisasi per kantong, dihitung sekali per perubahan data.
+  ///
+  /// Sebelumnya tiap pemanggilan menyapu seluruh daftar transaksi. Karena
+  /// dipanggil sekali per kantong di setiap rebuild, biayanya O(kantong x
+  /// transaksi) per frame. Sekarang satu kali sapuan mengisi peta ini.
+  Map<int, double>? _pocketRealizationCache;
+
+  void _invalidateDerivedCaches() {
+    _pocketRealizationCache = null;
+  }
+
+  Map<int, double> get _pocketRealizations {
+    final cached = _pocketRealizationCache;
+    if (cached != null) return cached;
+
+    final totals = <int, double>{};
+    for (final tx in _allTransactions) {
+      final pocketId = tx.pocketId;
+      if (pocketId == null || tx.type != 'EXPENSE') continue;
+      totals[pocketId] = (totals[pocketId] ?? 0) + tx.amount;
+    }
+    return _pocketRealizationCache = totals;
+  }
+
   double getPocketRealization(int pocketId) {
-    // Sum of all EXPENSE transactions linked to this pocket
-    return _allTransactions
-        .where((tx) => tx.pocketId == pocketId && tx.type == 'EXPENSE')
-        .fold(0.0, (sum, tx) => sum + tx.amount);
+    return _pocketRealizations[pocketId] ?? 0;
+  }
+
+  /// Mengembalikan kantong dengan id tersebut, atau null kalau sudah terhapus
+  /// / berada di buku lain. Dipakai supaya lookup tidak melempar StateError
+  /// saat widget masih memegang id lama.
+  Pocket? pocketById(int pocketId) {
+    for (final pocket in _allPockets) {
+      if (pocket.id == pocketId) return pocket;
+    }
+    return null;
   }
 
   double getPocketEffectiveBalance(int pocketId) {
-    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    final pocket = pocketById(pocketId);
+    if (pocket == null) return 0;
     return pocket.currentBalance - getPocketRealization(pocketId);
   }
 
   Future<void> calculatePocketAllocation(int pocketId) async {
-    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    final pocket = pocketById(pocketId);
+    if (pocket == null) return;
 
     double newBalance = 0;
     if (pocket.allocationType == 'PERCENTAGE') {
@@ -1524,7 +1608,8 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> addCustomAmountToPocket(int pocketId, double amount) async {
-    final pocket = _allPockets.firstWhere((p) => p.id == pocketId);
+    final pocket = pocketById(pocketId);
+    if (pocket == null) return;
     final updatedPocket = pocket.copyWith(
       currentBalance: pocket.currentBalance + amount,
     );

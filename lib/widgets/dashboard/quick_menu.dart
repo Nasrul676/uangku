@@ -216,8 +216,8 @@ class _QuickNavItemState extends State<QuickNavItem> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSelected = widget.selected;
-    final activeColor = theme.brightness == Brightness.dark 
-        ? Colors.white 
+    final activeColor = theme.brightness == Brightness.dark
+        ? Colors.white
         : Colors.black;
     final iconColor = isSelected
         ? activeColor

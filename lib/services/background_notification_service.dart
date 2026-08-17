@@ -17,28 +17,30 @@ Future<void> dailySummaryCallbackDispatcher() async {
   try {
     final now = DateTime.now();
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
-    
+
     final dbHelper = DatabaseHelper.instance;
     final transactions = await dbHelper.getAllTransactions();
-    
+
     double totalExpense = 0;
     for (var tx in transactions) {
       if (tx.type == 'EXPENSE' && tx.date.startsWith(todayStr)) {
         totalExpense += tx.amount;
       }
     }
-    
+
     final rupiahFormatter = NumberFormat.currency(
-      locale: 'id_ID', 
-      symbol: 'Rp ', 
+      locale: 'id_ID',
+      symbol: 'Rp ',
       decimalDigits: 0,
     );
     final formattedTotal = rupiahFormatter.format(totalExpense);
-    
+
     final plugin = FlutterLocalNotificationsPlugin();
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
-    await plugin.initialize(const InitializationSettings(android: androidInit, iOS: iosInit));
+    await plugin.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+    );
 
     const androidDetails = AndroidNotificationDetails(
       'daily_summary_channel',
@@ -48,15 +50,15 @@ Future<void> dailySummaryCallbackDispatcher() async {
       priority: Priority.max,
     );
     const details = NotificationDetails(
-      android: androidDetails, 
+      android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
-    
+
     await plugin.show(
       _dailySummaryAlarmId,
       'Pengeluaran Hari Ini',
-      totalExpense > 0 
-          ? 'Total pengeluaranmu hari ini adalah $formattedTotal' 
+      totalExpense > 0
+          ? 'Total pengeluaranmu hari ini adalah $formattedTotal'
           : 'Belum ada pengeluaran hari ini. Hebat!',
       details,
     );
@@ -74,14 +76,16 @@ Future<void> financialPlanCallbackDispatcher() async {
   try {
     final now = DateTime.now();
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
-    
+
     final dbHelper = DatabaseHelper.instance;
     final plans = await dbHelper.getAllFinancialPlans();
-    
+
     final plugin = FlutterLocalNotificationsPlugin();
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
-    await plugin.initialize(const InitializationSettings(android: androidInit, iOS: iosInit));
+    await plugin.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+    );
 
     const androidDetails = AndroidNotificationDetails(
       'financial_plan_channel',
@@ -91,22 +95,22 @@ Future<void> financialPlanCallbackDispatcher() async {
       priority: Priority.max,
     );
     const details = NotificationDetails(
-      android: androidDetails, 
+      android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
-    
+
     for (var plan in plans) {
       final targetDate = plan.targetDate;
       if (targetDate.startsWith(todayStr)) {
         final title = plan.title;
         final targetAmount = plan.targetAmount;
-        
+
         final rupiahFormatter = NumberFormat.currency(
-          locale: 'id_ID', 
-          symbol: 'Rp ', 
+          locale: 'id_ID',
+          symbol: 'Rp ',
           decimalDigits: 0,
         );
-        
+
         await plugin.show(
           (plan.id ?? 0) + 800000,
           'Rencana Keuangan Jatuh Tempo',
@@ -116,7 +120,7 @@ Future<void> financialPlanCallbackDispatcher() async {
         );
       }
     }
-  } catch(e) {
+  } catch (e) {
     debugPrint('Financial Plan Alarm Error: $e');
   } finally {
     // Jadwalkan ulang untuk besok
@@ -130,14 +134,14 @@ Future<void> financialPlanCallbackDispatcher() async {
 class BackgroundNotificationService {
   static Future<void> scheduleDailySummary() async {
     if (kIsWeb || !Platform.isAndroid) return;
-    
+
     final now = DateTime.now();
     var targetTime = DateTime(now.year, now.month, now.day, 21, 0, 0);
     // Jika waktu target sudah lewat atau SAMA dengan sekarang (karena dipanggil oleh alarm yg baru saja menyala)
     if (now.isAfter(targetTime) || now.isAtSameMomentAs(targetTime)) {
       targetTime = targetTime.add(const Duration(days: 1));
     }
-    
+
     await AndroidAlarmManager.oneShotAt(
       targetTime,
       _dailySummaryAlarmId,
@@ -150,14 +154,14 @@ class BackgroundNotificationService {
 
   static Future<void> scheduleFinancialPlanAlarm(int hour, int minute) async {
     if (kIsWeb || !Platform.isAndroid) return;
-    
+
     final now = DateTime.now();
     var targetTime = DateTime(now.year, now.month, now.day, hour, minute, 0);
     // Jika waktu target sudah lewat atau SAMA dengan sekarang
     if (now.isAfter(targetTime) || now.isAtSameMomentAs(targetTime)) {
       targetTime = targetTime.add(const Duration(days: 1));
     }
-    
+
     await AndroidAlarmManager.oneShotAt(
       targetTime,
       _financialPlanAlarmId,

@@ -16,6 +16,7 @@ import '../utils/calculator_parser.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
+import '../utils/error_message.dart';
 
 class IncomeInputScreen extends StatefulWidget {
   const IncomeInputScreen({super.key, this.existingTransaction});
@@ -203,7 +204,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
       return false;
     } catch (e) {
       if (!mounted) return false;
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = friendlyError(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -444,7 +445,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = friendlyError(e);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

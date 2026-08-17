@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,7 +65,8 @@ Future<void> callbackDispatcher() async {
     try {
       final errorNotification = {
         'title': 'Auto Backup Gagal',
-        'subtitle': 'Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) : e.toString()}',
+        'subtitle':
+            'Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) : e.toString()}',
         'type': 'BACKUP_FAILED',
         'is_read': 0,
         'created_at': DateTime.now().toIso8601String(),
@@ -146,11 +146,15 @@ class AutoBackupService {
     final prefs = await SharedPreferences.getInstance();
     final destFolder = prefs.getString('auto_backup_folder') ?? '';
     if (destFolder.isEmpty) {
-      throw Exception('Folder penyimpanan belum dipilih. Pilih folder terlebih dahulu.');
+      throw Exception(
+        'Folder penyimpanan belum dipilih. Pilih folder terlebih dahulu.',
+      );
     }
 
     final usePassword = prefs.getBool('auto_backup_use_password') ?? false;
-    final password = usePassword ? prefs.getString('auto_backup_password') : null;
+    final password = usePassword
+        ? prefs.getString('auto_backup_password')
+        : null;
 
     // Checkpoint WAL agar data konsisten sebelum backup
     await DatabaseHelper.instance.checkpointDatabase();

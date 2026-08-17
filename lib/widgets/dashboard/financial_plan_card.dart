@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../item_actions_menu.dart';
 
 class FinancialPlanCard extends StatelessWidget {
   const FinancialPlanCard({
@@ -21,6 +22,8 @@ class FinancialPlanCard extends StatelessWidget {
     required this.onAddPlan,
     required this.onEditPlan,
     required this.onDeletePlan,
+    required this.onClonePlan,
+    required this.onMakePocketFromPlan,
     required this.onEditBudget,
     required this.canEditBudget,
   });
@@ -34,6 +37,8 @@ class FinancialPlanCard extends StatelessWidget {
   final Future<void> Function() onAddPlan;
   final Future<void> Function(FinancialPlan plan) onEditPlan;
   final Future<void> Function(int id) onDeletePlan;
+  final Future<void> Function(FinancialPlan plan) onClonePlan;
+  final Future<void> Function(FinancialPlan plan) onMakePocketFromPlan;
   final VoidCallback onEditBudget;
   final bool canEditBudget;
 
@@ -105,17 +110,22 @@ class FinancialPlanCard extends StatelessWidget {
                         addButton,
                         const SizedBox(height: 12),
                         ...(() {
-                          final sortedPlans = List<FinancialPlan>.from(plans)..sort((a, b) {
-                            final realizedA = realizationByPlan[a.id] ?? 0;
-                            final progressA = a.targetAmount <= 0
-                                ? 0.0
-                                : (realizedA / a.targetAmount).clamp(0.0, 1.0).toDouble();
-                            final realizedB = realizationByPlan[b.id] ?? 0;
-                            final progressB = b.targetAmount <= 0
-                                ? 0.0
-                                : (realizedB / b.targetAmount).clamp(0.0, 1.0).toDouble();
-                            return progressA.compareTo(progressB);
-                          });
+                          final sortedPlans = List<FinancialPlan>.from(plans)
+                            ..sort((a, b) {
+                              final realizedA = realizationByPlan[a.id] ?? 0;
+                              final progressA = a.targetAmount <= 0
+                                  ? 0.0
+                                  : (realizedA / a.targetAmount)
+                                        .clamp(0.0, 1.0)
+                                        .toDouble();
+                              final realizedB = realizationByPlan[b.id] ?? 0;
+                              final progressB = b.targetAmount <= 0
+                                  ? 0.0
+                                  : (realizedB / b.targetAmount)
+                                        .clamp(0.0, 1.0)
+                                        .toDouble();
+                              return progressA.compareTo(progressB);
+                            });
                           return sortedPlans;
                         })().map((plan) {
                           final planId = plan.id;
@@ -136,6 +146,8 @@ class FinancialPlanCard extends StatelessWidget {
                               realizationAmount: realized,
                               onEdit: () => onEditPlan(plan),
                               onDelete: () => onDeletePlan(planId),
+                              onClone: () => onClonePlan(plan),
+                              onMakePocket: () => onMakePocketFromPlan(plan),
                             ),
                           );
                         }),
@@ -193,19 +205,21 @@ class FinancialPlanSummaryCard extends StatelessWidget {
 
     return Slidable(
       key: const ValueKey('summary-card'),
-      endActionPane: canEditBudget ? ActionPane(
-        motion: const ScrollMotion(),
-        children: [
-          SlidableAction(
-            onPressed: (_) => onEditBudget(),
-            backgroundColor: const Color(0xFF6CC185),
-            foregroundColor: Colors.white,
-            icon: Icons.edit_rounded,
-            label: 'Edit',
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ],
-      ) : null,
+      endActionPane: canEditBudget
+          ? ActionPane(
+              motion: const ScrollMotion(),
+              children: [
+                SlidableAction(
+                  onPressed: (_) => onEditBudget(),
+                  backgroundColor: const Color(0xFF6CC185),
+                  foregroundColor: Colors.white,
+                  icon: Icons.edit_rounded,
+                  label: 'Edit',
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ],
+            )
+          : null,
       child: AppCard(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -243,77 +257,78 @@ class FinancialPlanSummaryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Budget: ${formatter.format(planBudget)}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            Text(
+                              'Target: ${formatter.format(totalTarget)}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  'Selisih: ',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    formatter.format(planBudget - totalTarget),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: (planBudget - totalTarget) < 0
+                                          ? AppTheme.expenseRed
+                                          : null,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Realisasi: ${formatter.format(totalRealization)}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'Budget: ${formatter.format(planBudget)}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          Text(
-                            'Target: ${formatter.format(totalTarget)}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                'Selisih: ',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  formatter.format(planBudget - totalTarget),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: (planBudget - totalTarget) < 0
-                                        ? const Color(0xFFC24545)
-                                        : null,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            'Realisasi: ${formatter.format(totalRealization)}',
-                            style: theme.textTheme.bodySmall,
+                            percentageText,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  Theme.of(
+                                        context,
+                                      ).colorScheme.primary.computeLuminance() >
+                                      0.6
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.primary,
+                              fontSize: 18,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          percentageText,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color:
-                                Theme.of(
-                                      context,
-                                    ).colorScheme.primary.computeLuminance() >
-                                    0.6
-                                ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(context).colorScheme.primary,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -325,6 +340,8 @@ class FinancialPlanTile extends StatelessWidget {
     required this.realizationAmount,
     required this.onEdit,
     required this.onDelete,
+    required this.onClone,
+    required this.onMakePocket,
   });
 
   final FinancialPlan plan;
@@ -332,6 +349,8 @@ class FinancialPlanTile extends StatelessWidget {
   final double realizationAmount;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onClone;
+  final VoidCallback onMakePocket;
 
   @override
   Widget build(BuildContext context) {
@@ -358,6 +377,14 @@ class FinancialPlanTile extends StatelessWidget {
         motion: const ScrollMotion(),
         children: [
           SlidableAction(
+            onPressed: (_) => onClone(),
+            backgroundColor: const Color(0xFF42A5F5), // Blue
+            foregroundColor: Colors.white,
+            icon: Icons.copy_rounded,
+            label: 'Clone',
+            borderRadius: BorderRadius.circular(12),
+          ),
+          SlidableAction(
             onPressed: (_) => onEdit(),
             backgroundColor: const Color(0xFF6CC185),
             foregroundColor: Colors.white,
@@ -370,6 +397,14 @@ class FinancialPlanTile extends StatelessWidget {
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
         children: [
+          SlidableAction(
+            onPressed: (_) => onMakePocket(),
+            backgroundColor: const Color(0xFF7E57C2),
+            foregroundColor: Colors.white,
+            icon: Icons.account_balance_wallet_rounded,
+            label: 'Kantong',
+            borderRadius: BorderRadius.circular(12),
+          ),
           SlidableAction(
             onPressed: (_) => onDelete(),
             backgroundColor: const Color(0xFFE57373),
@@ -434,7 +469,7 @@ class FinancialPlanTile extends StatelessWidget {
                                   backgroundColor: Theme.of(
                                     context,
                                   ).colorScheme.surface,
-                                  color: const Color(0xFF1F5A62),
+                                  color: AppTheme.fabIconColor,
                                 ),
                           ),
                         ),
@@ -456,6 +491,33 @@ class FinancialPlanTile extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            // Aksi yang sama dengan gestur geser, tapi terlihat.
+            ItemActionsMenu(
+              semanticLabel: 'Aksi untuk rencana ${plan.title}',
+              actions: [
+                ItemAction(
+                  label: 'Edit',
+                  icon: Icons.edit_rounded,
+                  onSelected: onEdit,
+                ),
+                ItemAction(
+                  label: 'Jadikan Kantong',
+                  icon: Icons.account_balance_wallet_rounded,
+                  onSelected: onMakePocket,
+                ),
+                ItemAction(
+                  label: 'Kloning ke Buku Lain',
+                  icon: Icons.copy_rounded,
+                  onSelected: onClone,
+                ),
+                ItemAction(
+                  label: 'Hapus',
+                  icon: Icons.delete_rounded,
+                  onSelected: onDelete,
+                  isDestructive: true,
+                ),
+              ],
             ),
           ],
         ),

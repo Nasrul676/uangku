@@ -10,8 +10,10 @@ import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../app_card.dart';
+import '../item_actions_menu.dart';
 import '../../screens/income_input_screen.dart';
 import '../../screens/expense_input_screen.dart';
+import '../../utils/error_message.dart';
 
 class TransactionsCard extends StatefulWidget {
   const TransactionsCard({
@@ -48,17 +50,95 @@ class _TransactionsCardState extends State<TransactionsCard> {
 
   @override
   void dispose() {
+    // Penghapusan yang masih menunggu jendela "Batalkan" harus tetap
+    // dieksekusi walau kartu ini dilepas (pindah tab / tutup layar),
+    // supaya transaksi tidak muncul lagi setelah user merasa menghapusnya.
+    _flushPendingDeletions();
     _scrollController.dispose();
     super.dispose();
   }
 
+  /// id transaksi yang sudah disembunyikan tapi belum dikomit ke database.
+  final Map<int, _PendingDeletion> _pendingDeletions = {};
+
+  /// Sembunyikan transaksi lebih dulu, beri jendela 2 detik untuk membatalkan,
+  /// lalu komit penghapusan ke database.
+  void _requestDelete(FinanceTransaction item) {
+    final id = item.id;
+    if (id == null || _pendingDeletions.containsKey(id)) return;
+
+    final provider = context.read<TransactionProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() => _hiddenTransactions.add(id));
+
+    Future<void> commit() async {
+      try {
+        await provider.removeTransaction(id);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _hiddenTransactions.remove(id));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus: ${friendlyError(e)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+
+    void undo() {
+      final pending = _pendingDeletions.remove(id);
+      pending?.timer.cancel();
+      if (!mounted) return;
+      setState(() => _hiddenTransactions.remove(id));
+    }
+
+    final timer = Timer(const Duration(seconds: 2), () {
+      if (_pendingDeletions.remove(id) == null) return;
+      unawaited(commit());
+    });
+
+    _pendingDeletions[id] = _PendingDeletion(timer: timer, commit: commit);
+
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          '"${item.title}" dihapus.',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(label: 'Batalkan', onPressed: undo),
+      ),
+    );
+  }
+
+  void _flushPendingDeletions() {
+    if (_pendingDeletions.isEmpty) return;
+    final pending = List<_PendingDeletion>.from(_pendingDeletions.values);
+    _pendingDeletions.clear();
+    for (final entry in pending) {
+      entry.timer.cancel();
+      // Sengaja tidak di-await: dispose bersifat sinkron. Kegagalan tidak
+      // bisa lagi ditampilkan ke user karena widget-nya sudah hilang.
+      unawaited(entry.commit());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filteredTransactions = _searchQuery.isEmpty 
-        ? widget.transactions 
-        : widget.transactions.where((t) => 
-            t.title.toLowerCase().contains(_searchQuery) ||
-            t.category.toLowerCase().contains(_searchQuery)).toList();
+    final filteredTransactions = _searchQuery.isEmpty
+        ? widget.transactions
+        : widget.transactions
+              .where(
+                (t) =>
+                    t.title.toLowerCase().contains(_searchQuery) ||
+                    t.category.toLowerCase().contains(_searchQuery),
+              )
+              .toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -86,7 +166,9 @@ class _TransactionsCardState extends State<TransactionsCard> {
                 controller: TextEditingController.fromValue(
                   TextEditingValue(
                     text: _searchQuery,
-                    selection: TextSelection.collapsed(offset: _searchQuery.length),
+                    selection: TextSelection.collapsed(
+                      offset: _searchQuery.length,
+                    ),
                   ),
                 ),
                 decoration: InputDecoration(
@@ -94,6 +176,7 @@ class _TransactionsCardState extends State<TransactionsCard> {
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
+                          tooltip: 'Bersihkan pencarian',
                           icon: const Icon(Icons.clear_rounded),
                           onPressed: () {
                             setState(() {
@@ -125,8 +208,12 @@ class _TransactionsCardState extends State<TransactionsCard> {
           else if (filteredTransactions.isEmpty)
             Expanded(
               child: EmptyState(
-                title: _searchQuery.isNotEmpty ? 'Pencarian tidak ditemukan' : 'Belum ada data',
-                subtitle: _searchQuery.isNotEmpty ? 'Coba gunakan kata kunci lain.' : widget.emptyText,
+                title: _searchQuery.isNotEmpty
+                    ? 'Pencarian tidak ditemukan'
+                    : 'Belum ada data',
+                subtitle: _searchQuery.isNotEmpty
+                    ? 'Coba gunakan kata kunci lain.'
+                    : widget.emptyText,
               ),
             )
           else
@@ -152,16 +239,7 @@ class _TransactionsCardState extends State<TransactionsCard> {
                     return TransactionTile(
                       item: item,
                       theme: widget.theme,
-                      onDeleteOptimistic: (txId) {
-                        setState(() {
-                          _hiddenTransactions.add(txId);
-                        });
-                      },
-                      onUndoDelete: (txId) {
-                        setState(() {
-                          _hiddenTransactions.remove(txId);
-                        });
-                      },
+                      onRequestDelete: () => _requestDelete(item),
                     );
                   },
                 ),
@@ -178,14 +256,14 @@ class TransactionTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.theme,
-    this.onDeleteOptimistic,
-    this.onUndoDelete,
+    this.onRequestDelete,
   });
 
   final FinanceTransaction item;
   final ThemeData theme;
-  final Function(int)? onDeleteOptimistic;
-  final Function(int)? onUndoDelete;
+
+  /// Kalau null, tile dirender tanpa aksi geser (mode baca saja).
+  final VoidCallback? onRequestDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +319,7 @@ class TransactionTile extends StatelessWidget {
                   item.title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: isIncome ? null : const Color(0xFFC24545),
+                    color: isIncome ? null : AppTheme.expenseRed,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -261,7 +339,7 @@ class TransactionTile extends StatelessWidget {
                 amountText,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: isIncome ? null : const Color(0xFFC24545),
+                  color: isIncome ? null : AppTheme.expenseRed,
                 ),
               ),
               const SizedBox(height: 2),
@@ -271,16 +349,44 @@ class TransactionTile extends StatelessWidget {
                     : Icons.cloud_off_rounded,
                 size: 16,
                 color: item.isSynced == 1
-                    ? const Color(0xFF2A9D50)
-                    : const Color(0xFFC24545),
+                    ? AppTheme.incomeGreen
+                    : AppTheme.expenseRed,
+                semanticLabel: item.isSynced == 1
+                    ? 'Sudah tersinkron'
+                    : 'Belum tersinkron',
               ),
             ],
           ),
+          if (onRequestDelete != null)
+            ItemActionsMenu(
+              semanticLabel: 'Aksi untuk transaksi ${item.title}',
+              actions: [
+                ItemAction(
+                  label: 'Edit',
+                  icon: Icons.edit_rounded,
+                  onSelected: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => isIncome
+                          ? IncomeInputScreen(existingTransaction: item)
+                          : ExpenseInputScreen(existingTransaction: item),
+                    ),
+                  ),
+                ),
+                ItemAction(
+                  label: 'Hapus',
+                  icon: Icons.delete_rounded,
+                  onSelected: onRequestDelete!,
+                  isDestructive: true,
+                ),
+              ],
+            ),
         ],
       ),
     );
 
-    if (onDeleteOptimistic == null || onUndoDelete == null) {
+    final requestDelete = onRequestDelete;
+    if (requestDelete == null) {
       return child;
     }
 
@@ -312,63 +418,7 @@ class TransactionTile extends StatelessWidget {
         motion: const ScrollMotion(),
         children: [
           SlidableAction(
-            onPressed: (slidableCtx) {
-              if (!context.mounted) return;
-              final provider = context.read<TransactionProvider>();
-              final messenger = ScaffoldMessenger.of(context);
-
-              // Optimistic UI hiding
-              onDeleteOptimistic!(item.id!);
-
-              messenger.clearSnackBars();
-              final snackBarController = messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '"${item.title}" dihapus.',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                  action: SnackBarAction(
-                    label: 'Batalkan',
-                    onPressed: () {
-                      // Action handles its own dismissal and undo
-                    },
-                  ),
-                ),
-              );
-
-              // Paksa tutup snackbar setelah 2 detik agar tidak nyangkut
-              final closeTimer = Timer(const Duration(seconds: 2), () {
-                snackBarController.close();
-              });
-
-              snackBarController.closed.then((reason) async {
-                closeTimer.cancel();
-                if (reason == SnackBarClosedReason.action) {
-                  // Jika di-klik Batalkan
-                  onUndoDelete!(item.id!);
-                } else {
-                  // Jika waktu habis atau ditutup alasan lain (benar-benar dihapus)
-                  try {
-                    await provider.removeTransaction(item.id!);
-                  } catch (e) {
-                    onUndoDelete!(item.id!); // restore if failed
-                    if (messenger.mounted) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Gagal menghapus: ${e.toString().replaceFirst('Exception: ', '')}',
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                }
-              });
-            },
+            onPressed: (_) => requestDelete(),
             backgroundColor: AppTheme.expenseRed,
             foregroundColor: Colors.white,
             icon: Icons.delete_rounded,
@@ -380,4 +430,12 @@ class TransactionTile extends StatelessWidget {
       child: child,
     );
   }
+}
+
+/// Penghapusan transaksi yang menunggu jendela "Batalkan" selesai.
+class _PendingDeletion {
+  const _PendingDeletion({required this.timer, required this.commit});
+
+  final Timer timer;
+  final Future<void> Function() commit;
 }

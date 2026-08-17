@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -17,18 +16,18 @@ class BookTransferScreen extends StatefulWidget {
 
 class _BookTransferScreenState extends State<BookTransferScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   int? _sourceBookId;
   int? _targetBookId;
   String? _targetCategory;
   DateTime _selectedDate = DateTime.now();
-  
+
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   bool _isTransferAll = true; // Default transfer semua
   double _sourceBalance = 0;
-  
+
   @override
   void initState() {
     super.initState();
@@ -43,11 +42,14 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
         });
       }
     });
-    
+
     // Matikan transfer semua kalau user ketik manual
     _amountController.addListener(() {
       if (_amountController.text.isNotEmpty) {
-        final unformattedAmount = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+        final unformattedAmount = _amountController.text.replaceAll(
+          RegExp(r'[^0-9]'),
+          '',
+        );
         final amount = double.tryParse(unformattedAmount) ?? 0;
         if (amount != _sourceBalance && _isTransferAll) {
           setState(() {
@@ -61,8 +63,8 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
   void _updateAmountField() {
     if (_isTransferAll && _sourceBalance > 0) {
       final formatter = NumberFormat.currency(
-        locale: 'id_ID', 
-        symbol: '', 
+        locale: 'id_ID',
+        symbol: '',
         decimalDigits: 0,
       );
       _amountController.text = formatter.format(_sourceBalance).trim();
@@ -85,9 +87,9 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: const Color(0xFF0066FF),
-                ),
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: AppTheme.primaryBlue),
           ),
           child: child!,
         );
@@ -100,7 +102,7 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_sourceBookId == _targetBookId) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -110,10 +112,13 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
       );
       return;
     }
-    
-    final unformattedAmount = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    final unformattedAmount = _amountController.text.replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
     final amount = double.tryParse(unformattedAmount) ?? 0;
-    
+
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -123,10 +128,12 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
       );
       return;
     }
-    
+
     await GlobalActionOverlay.run(() async {
-      await Provider.of<TransactionProvider>(context, listen: false)
-          .transferBetweenBooks(
+      await Provider.of<TransactionProvider>(
+        context,
+        listen: false,
+      ).transferBetweenBooks(
         sourceBookId: _sourceBookId!,
         targetBookId: _targetBookId!,
         amount: amount,
@@ -135,7 +142,7 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
         targetCategory: _targetCategory ?? 'Transfer Masuk',
       );
     });
-    
+
     if (mounted) Navigator.pop(context);
   }
 
@@ -143,7 +150,7 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final provider = Provider.of<TransactionProvider>(context);
     final allBooks = provider.bookPeriods.toList();
 
@@ -175,12 +182,9 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<int>(
-                value: _sourceBookId,
+                initialValue: _sourceBookId,
                 items: allBooks.map((b) {
-                  return DropdownMenuItem(
-                    value: b.id,
-                    child: Text(b.label),
-                  );
+                  return DropdownMenuItem(value: b.id, child: Text(b.label));
                 }).toList(),
                 onChanged: (val) {
                   setState(() {
@@ -200,7 +204,11 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                   child: Text(
                     'Sisa Saldo: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(_sourceBalance)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: _sourceBalance < 0 ? AppTheme.expenseRed : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                      color: _sourceBalance < 0
+                          ? AppTheme.expenseRed
+                          : (isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -217,12 +225,9 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<int>(
-                value: _targetBookId,
+                initialValue: _targetBookId,
                 items: allBooks.map((b) {
-                  return DropdownMenuItem(
-                    value: b.id,
-                    child: Text(b.label),
-                  );
+                  return DropdownMenuItem(value: b.id, child: Text(b.label));
                 }).toList(),
                 onChanged: (val) {
                   setState(() {
@@ -248,7 +253,7 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _targetCategory,
+                  initialValue: _targetCategory,
                   items: [
                     const DropdownMenuItem(
                       value: 'Transfer Masuk',
@@ -256,18 +261,15 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                     ),
                     ...provider.incomeCategories
                         .where((c) => c != 'Transfer Masuk')
-                        .map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c),
-                            )),
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c))),
                   ],
                   onChanged: (val) {
                     setState(() => _targetCategory = val);
                   },
                   validator: (val) => val == null ? 'Pilih kategori' : null,
-                  decoration: _buildInputDecoration(theme).copyWith(
-                    hintText: 'Pilih kategori pemasukan',
-                  ),
+                  decoration: _buildInputDecoration(
+                    theme,
+                  ).copyWith(hintText: 'Pilih kategori pemasukan'),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -287,14 +289,14 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0066FF),
+                  color: AppTheme.primaryBlue,
                 ),
                 decoration: _buildInputDecoration(theme).copyWith(
                   prefixText: 'Rp ',
                   prefixStyle: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0066FF),
+                    color: AppTheme.primaryBlue,
                   ),
                 ),
                 inputFormatters: [RupiahInputFormatter()],
@@ -319,10 +321,10 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 visualDensity: VisualDensity.compact,
-                activeColor: const Color(0xFF0066FF),
+                activeColor: AppTheme.primaryBlue,
               ),
               const SizedBox(height: 20),
-              
+
               // Tanggal
               Text(
                 'Tanggal Transfer',
@@ -336,17 +338,24 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                 onTap: () => _selectDate(context),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+                    border: Theme.of(
+                      context,
+                    ).extension<AppThemeExtension>()?.cardBorder,
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.calendar_month_rounded,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -362,7 +371,7 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Catatan
               Text(
                 'Catatan (Opsional)',
@@ -375,20 +384,20 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
               TextFormField(
                 controller: _notesController,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: _buildInputDecoration(theme).copyWith(
-                  hintText: 'Mis: Transfer sisa dana',
-                ),
+                decoration: _buildInputDecoration(
+                  theme,
+                ).copyWith(hintText: 'Mis: Transfer sisa dana'),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Tombol Simpan
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066FF),
+                    backgroundColor: AppTheme.primaryBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -431,15 +440,9 @@ class _BookTransferScreenState extends State<BookTransferScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFF0066FF),
-          width: 2,
-        ),
+        borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

@@ -27,13 +27,14 @@ class PocketDetailScreen extends StatelessWidget {
         actions: [
           Consumer<TransactionProvider>(
             builder: (context, provider, child) {
-              final pocket = provider.pockets.cast<dynamic?>().firstWhere(
+              final pocket = provider.pockets.cast<dynamic>().firstWhere(
                 (p) => p?.id == pocketId,
                 orElse: () => null,
               );
               if (pocket == null) return const SizedBox();
 
               return IconButton(
+                tooltip: 'Edit kantong',
                 icon: Icon(
                   Icons.edit,
                   color: Theme.of(context).colorScheme.primary,
@@ -50,6 +51,7 @@ class PocketDetailScreen extends StatelessWidget {
             },
           ),
           IconButton(
+            tooltip: 'Hapus kantong',
             icon: Icon(
               Icons.delete_outline,
               color: Theme.of(context).colorScheme.error,
@@ -105,7 +107,7 @@ class PocketDetailScreen extends StatelessWidget {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
-          final pocket = provider.pockets.cast<dynamic?>().firstWhere(
+          final pocket = provider.pockets.cast<dynamic>().firstWhere(
             (p) => p?.id == pocketId,
             orElse: () => null,
           );
@@ -185,7 +187,7 @@ class PocketDetailScreen extends StatelessWidget {
                           BoxShadow(
                             color: Theme.of(
                               context,
-                            ).shadowColor.withOpacity(0.05),
+                            ).shadowColor.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -422,10 +424,10 @@ class PocketDetailScreen extends StatelessWidget {
                 child: FilledButton(
                   onPressed: () async {
                     final amount = RupiahInputFormatter.parse(controller.text);
-                    if (amount > 0) {
-                      await provider.addCustomAmountToPocket(pocketId, amount);
-                      Navigator.pop(context);
-                    }
+                    if (amount <= 0) return;
+                    final navigator = Navigator.of(context);
+                    await provider.addCustomAmountToPocket(pocketId, amount);
+                    navigator.pop();
                   },
                   child: const Text('Simpan'),
                 ),

@@ -68,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,9 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ? [const Color(0xFF2A1B38), const Color(0xFF3B2A4A)]
         : [const Color(0xFF5A3092), const Color(0xFF8E5CC8)];
 
-    final cardColor = isDark
-        ? theme.colorScheme.surface
-        : Colors.white;
+    final cardColor = isDark ? theme.colorScheme.surface : Colors.white;
 
     final fieldFill = isDark
         ? theme.colorScheme.surfaceContainerHighest
@@ -93,11 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              gradientColors[0],
-              gradientColors[1],
-              cardColor,
-            ],
+            colors: [gradientColors[0], gradientColors[1], cardColor],
             stops: const [0.0, 0.35, 0.35],
           ),
         ),
@@ -114,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -127,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'UangKu',
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
                       ),
@@ -147,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Masuk dulu ya, biar bisa lanjut\ncatat keuangan harianmu.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         height: 1.5,
                       ),
                     ),
@@ -167,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 24,
                         offset: const Offset(0, -4),
                       ),
@@ -178,7 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
                     padding: EdgeInsets.fromLTRB(
-                      24, 24, 24,
+                      24,
+                      24,
+                      24,
                       24 + MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: Column(
@@ -212,7 +207,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 'Email',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : const Color(0xFF1E1E1E),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E1E1E),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -240,7 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 'Password',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : const Color(0xFF1E1E1E),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E1E1E),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -254,6 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fillColor: fieldFill,
                                   isDark: isDark,
                                   suffixIcon: IconButton(
+                                    tooltip:
+                                        'Tampilkan atau sembunyikan kata sandi',
                                     icon: Icon(
                                       _obscurePassword
                                           ? Icons.visibility_off_outlined
@@ -263,7 +264,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           : const Color(0xFF9E9E9E),
                                     ),
                                     onPressed: () => setState(
-                                      () => _obscurePassword = !_obscurePassword,
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
                                     ),
                                   ),
                                 ),
@@ -289,8 +291,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       onChanged: (value) {
-                                        setState(() =>
-                                            _rememberMe = value ?? false);
+                                        setState(
+                                          () => _rememberMe = value ?? false,
+                                        );
                                       },
                                     ),
                                   ),
@@ -337,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     PageRouteBuilder(
-                                      pageBuilder: (_, __, ___) =>
+                                      pageBuilder: (_, _, _) =>
                                           const RegisterScreen(),
                                       transitionDuration: Duration.zero,
                                     ),
@@ -428,7 +431,9 @@ class _AuthTabSwitcher extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
@@ -471,7 +476,7 @@ class _AuthTabSwitcher extends StatelessWidget {
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

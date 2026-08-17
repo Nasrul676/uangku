@@ -6,7 +6,6 @@ import '../models/saving_goal.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../widgets/global_action_overlay.dart';
-import '../theme/app_theme.dart';
 import '../widgets/custom_loading_indicator.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
@@ -27,7 +26,7 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
   final _iconController = TextEditingController();
   String _type = 'money';
   DateTime? _targetDate;
-  bool _isSaving = false;
+  final bool _isSaving = false;
 
   final _currencyFormatter = NumberFormat.currency(
     locale: 'id_ID',
@@ -233,8 +232,9 @@ class _SavingGoalInputScreenState extends State<SavingGoalInputScreen> {
                                 ),
                                 onChanged: (_) => setState(() {}),
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty)
+                                  if (v == null || v.trim().isEmpty) {
                                     return 'Wajib diisi';
+                                  }
                                   if (_amountValue <= 0) return 'Tidak valid';
                                   return null;
                                 },

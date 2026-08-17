@@ -8,6 +8,7 @@ import '../models/finance_transaction.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/app_card.dart';
 import 'book_cashflow_detail_screen.dart';
+import '../theme/app_theme.dart';
 
 class BookPeriodRecapScreen extends StatelessWidget {
   const BookPeriodRecapScreen({super.key, this.isEmbedded = false});
@@ -118,102 +119,97 @@ class _BookRecapCard extends StatelessWidget {
       },
       padding: const EdgeInsets.all(16),
       child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      book.label,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              Expanded(
+                child: Text(
+                  book.label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: book.isOpen
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book.isOpen ? 'Aktif' : 'Selesai',
-                      style: TextStyle(
-                        color: book.isOpen
-                            ? Colors.green[700]
-                            : Colors.grey[700],
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                dateRange,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                 ),
               ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Pemasukan:'),
-                  Text(
-                    formatter.format(totalIncome),
-                    style: const TextStyle(
-                      color: Color(0xFF227C44),
-                      fontWeight: FontWeight.w600,
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: book.isOpen
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  book.isOpen ? 'Aktif' : 'Selesai',
+                  style: TextStyle(
+                    color: book.isOpen ? Colors.green[700] : Colors.grey[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Pengeluaran:'),
-                  Text(
-                    '- ${formatter.format(totalExpense)}',
-                    style: const TextStyle(
-                      color: Color(0xFFC24545),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Saldo Bersih:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    formatter.format(netBalance),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: netBalance < 0
-                          ? const Color(0xFFC24545)
-                          : (netBalance > 0
-                                ? const Color(0xFF227C44)
-                                : colorScheme.onSurface),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            dateRange,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            ),
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Pemasukan:'),
+              Text(
+                formatter.format(totalIncome),
+                style: const TextStyle(
+                  color: Color(0xFF227C44),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Pengeluaran:'),
+              Text(
+                '- ${formatter.format(totalExpense)}',
+                style: const TextStyle(
+                  color: AppTheme.expenseRed,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Saldo Bersih:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                formatter.format(netBalance),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: netBalance < 0
+                      ? AppTheme.expenseRed
+                      : (netBalance > 0
+                            ? const Color(0xFF227C44)
+                            : colorScheme.onSurface),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -15,7 +15,11 @@ class RupiahInputFormatter extends TextInputFormatter {
 
   static String format(double value) {
     if (value <= 0) return '';
-    return NumberFormat.decimalPattern('id_ID').format(value.toInt());
+    if (value == value.truncateToDouble()) {
+      return NumberFormat.decimalPattern('id_ID').format(value.toInt());
+    } else {
+      return NumberFormat.decimalPattern('id_ID').format(value);
+    }
   }
 
   @override
@@ -31,7 +35,10 @@ class RupiahInputFormatter extends TextInputFormatter {
     }
 
     // Allow digits, dots, commas, k, m, +, -, *, /, (, ), spaces
-    final sanitized = newValue.text.replaceAll(RegExp(r'[^0-9kKmM+\-*/()., ]'), '');
+    final sanitized = newValue.text.replaceAll(
+      RegExp(r'[^0-9kKmM+\-*/()., ]'),
+      '',
+    );
 
     // Check if it contains math operators or k/m
     final hasMath = RegExp(r'[kKmM+\-*/()]').hasMatch(sanitized);
@@ -45,16 +52,24 @@ class RupiahInputFormatter extends TextInputFormatter {
     }
 
     // Standard number formatting if no math symbols
-    final digits = sanitized.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) {
+    final parts = sanitized.split(',');
+    final wholePart = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (wholePart.isEmpty && parts.length == 1) {
       return const TextEditingValue(
         text: '',
         selection: TextSelection.collapsed(offset: 0),
       );
     }
 
-    final number = int.parse(digits);
-    final formatted = _numberFormatter.format(number);
+    final number = wholePart.isEmpty ? 0 : int.parse(wholePart);
+    String formatted = _numberFormatter.format(number);
+
+    if (parts.length > 1) {
+      // It has a decimal part
+      final decimalPart = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+      formatted = '$formatted,$decimalPart';
+    }
 
     return TextEditingValue(
       text: formatted,

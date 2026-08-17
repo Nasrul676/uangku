@@ -2,15 +2,34 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/chat_message.dart';
 
-typedef FunctionCallHandler = Future<Map<String, dynamic>> Function(String name, Map<String, dynamic> args);
+typedef FunctionCallHandler =
+    Future<Map<String, dynamic>> Function(
+      String name,
+      Map<String, dynamic> args,
+    );
 
 class AiChatService {
+  /// Membaca pesan error dari body Gemini tanpa berasumsi soal bentuknya.
+  /// Body yang bukan JSON, atau JSON tanpa `error.message`, mengembalikan null
+  /// alih-alih melempar dan menutupi penyebab aslinya.
+  static String? _extractApiError(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['error'] is Map) {
+        final message = (decoded['error'] as Map)['message'];
+        if (message is String && message.isNotEmpty) return message;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static final List<Map<String, dynamic>> _tools = [
     {
       'functionDeclarations': [
         {
           'name': 'get_current_balance',
-          'description': 'Mendapatkan saldo saat ini beserta total pemasukan dan pengeluaran pada buku aktif.',
+          'description':
+              'Mendapatkan saldo saat ini beserta total pemasukan dan pengeluaran pada buku aktif.',
         },
         {
           'name': 'get_recent_transactions',
@@ -20,25 +39,40 @@ class AiChatService {
             'properties': {
               'limit': {
                 'type': 'INTEGER',
-                'description': 'Jumlah transaksi yang ingin diambil. Default 5.'
-              }
-            }
-          }
+                'description':
+                    'Jumlah transaksi yang ingin diambil. Default 5.',
+              },
+            },
+          },
         },
         {
           'name': 'add_transaction',
-          'description': 'Mencatat transaksi baru (pemasukan atau pengeluaran).',
+          'description':
+              'Mencatat transaksi baru (pemasukan atau pengeluaran).',
           'parameters': {
             'type': 'OBJECT',
             'properties': {
               'title': {'type': 'STRING', 'description': 'Nama transaksi'},
-              'amount': {'type': 'NUMBER', 'description': 'Jumlah nominal transaksi'},
-              'type': {'type': 'STRING', 'description': 'Jenis: "INCOME" atau "EXPENSE"'},
-              'category': {'type': 'STRING', 'description': 'Kategori transaksi'},
-              'date': {'type': 'STRING', 'description': 'Tanggal (YYYY-MM-DD). Jika tidak disebutkan gunakan hari ini.'}
+              'amount': {
+                'type': 'NUMBER',
+                'description': 'Jumlah nominal transaksi',
+              },
+              'type': {
+                'type': 'STRING',
+                'description': 'Jenis: "INCOME" atau "EXPENSE"',
+              },
+              'category': {
+                'type': 'STRING',
+                'description': 'Kategori transaksi',
+              },
+              'date': {
+                'type': 'STRING',
+                'description':
+                    'Tanggal (YYYY-MM-DD). Jika tidak disebutkan gunakan hari ini.',
+              },
             },
-            'required': ['title', 'amount', 'type', 'category', 'date']
-          }
+            'required': ['title', 'amount', 'type', 'category', 'date'],
+          },
         },
         {
           'name': 'get_financial_plans',
@@ -51,28 +85,65 @@ class AiChatService {
             'type': 'OBJECT',
             'properties': {
               'title': {'type': 'STRING', 'description': 'Nama rencana'},
-              'target_amount': {'type': 'NUMBER', 'description': 'Nominal target'},
-              'target_date': {'type': 'STRING', 'description': 'Tanggal target (YYYY-MM-DD).'}
+              'target_amount': {
+                'type': 'NUMBER',
+                'description': 'Nominal target',
+              },
+              'target_date': {
+                'type': 'STRING',
+                'description': 'Tanggal target (YYYY-MM-DD).',
+              },
             },
-            'required': ['title', 'target_amount', 'target_date']
-          }
+            'required': ['title', 'target_amount', 'target_date'],
+          },
+        },
+        {
+          'name': 'add_pocket',
+          'description': 'Membuat kantong baru.',
+          'parameters': {
+            'type': 'OBJECT',
+            'properties': {
+              'name': {
+                'type': 'STRING',
+                'description': 'Nama kantong (misal: "Uang Makan", "Liburan")',
+              },
+              'allocation_type': {
+                'type': 'STRING',
+                'description':
+                    'Tipe alokasi: "PERCENTAGE" (persentase) atau "NOMINAL" (jumlah pasti)',
+              },
+              'allocation_value': {
+                'type': 'NUMBER',
+                'description':
+                    'Nilai alokasi (misal: 10 untuk 10%, atau 500000 untuk Rp 500.000)',
+              },
+              'icon': {
+                'type': 'STRING',
+                'description':
+                    'Nama ikon dasar (contoh: "wallet", "savings", "home", "bolt", "favorite", "shopping_cart"). Default: "wallet"',
+              },
+            },
+            'required': ['name', 'allocation_type', 'allocation_value'],
+          },
         },
         {
           'name': 'navigate_to_page',
-          'description': 'Mengarahkan pengguna ke halaman/layar tertentu di aplikasi.',
+          'description':
+              'Mengarahkan pengguna ke halaman/layar tertentu di aplikasi.',
           'parameters': {
             'type': 'OBJECT',
             'properties': {
               'page_name': {
                 'type': 'STRING',
-                'description': 'Nama halaman, contoh: "home", "settings", "savings", "shopping_list", "plans", "pockets"'
-              }
+                'description':
+                    'Nama halaman, contoh: "home", "settings", "savings", "shopping_list", "plans", "pockets"',
+              },
             },
-            'required': ['page_name']
-          }
-        }
-      ]
-    }
+            'required': ['page_name'],
+          },
+        },
+      ],
+    },
   ];
 
   static Future<Map<String, dynamic>> sendMessage({
@@ -85,13 +156,18 @@ class AiChatService {
     required FunctionCallHandler onFunctionCall,
   }) async {
     if (apiKey.isEmpty) {
-      throw Exception('API Key Gemini belum diatur. Silakan masukkan API Key di halaman Setelan.');
+      throw Exception(
+        'API Key Gemini belum diatur. Silakan masukkan API Key di halaman Setelan.',
+      );
     }
 
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent');
+    final url = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
+    );
     final categoriesStr = categories.join(', ');
 
-    final systemInstruction = '''
+    final systemInstruction =
+        '''
 Anda adalah Asisten AI untuk aplikasi keuangan "uangku". Anda ramah, membantu, dan menggunakan bahasa Indonesia santai namun profesional.
 Konteks saat ini (layar pengguna): $currentContext
 Daftar Kategori: [$categoriesStr]
@@ -109,14 +185,18 @@ PENTING:
     final contents = history.map((msg) {
       return {
         'role': msg.role == 'model' ? 'model' : 'user',
-        'parts': [{'text': msg.text}]
+        'parts': [
+          {'text': msg.text},
+        ],
       };
     }).toList();
 
     // Add current user message
     contents.add({
       'role': 'user',
-      'parts': [{'text': message}]
+      'parts': [
+        {'text': message},
+      ],
     });
 
     String? finalAction;
@@ -133,19 +213,21 @@ PENTING:
           },
           body: jsonEncode({
             'systemInstruction': {
-              'parts': [{'text': systemInstruction}]
+              'parts': [
+                {'text': systemInstruction},
+              ],
             },
             'contents': contents,
             'tools': _tools,
-            'generationConfig': {
-              'temperature': 0.5,
-            }
+            'generationConfig': {'temperature': 0.5},
           }),
         );
 
         if (response.statusCode != 200) {
-          final error = jsonDecode(response.body);
-          throw Exception('Gagal menghubungi AI Assistance: ${error['error']['message'] ?? response.statusCode}');
+          throw Exception(
+            'Gagal menghubungi AI Assistance: '
+            '${_extractApiError(response.body) ?? 'kode ${response.statusCode}'}',
+          );
         }
 
         final data = jsonDecode(response.body);
@@ -177,23 +259,24 @@ PENTING:
             // Add the model's function call to history
             contents.add({
               'role': 'model',
-              'parts': [part]
+              'parts': [part],
             });
 
             // Execute the tool
             final result = await onFunctionCall(name, args);
 
-            // Add function response to history
+            // Add function response to history. Gemini generateContent hanya
+            // menerima role 'user' dan 'model' — hasil tool dikirim sebagai 'user'.
             contents.add({
-              'role': 'function',
+              'role': 'user',
               'parts': [
                 {
                   'functionResponse': {
                     'name': name,
-                    'response': {'name': name, 'content': result}
-                  }
-                }
-              ]
+                    'response': {'name': name, 'content': result},
+                  },
+                },
+              ],
             });
           } else if (part.containsKey('text')) {
             replyText = part['text'];
@@ -210,6 +293,10 @@ PENTING:
         }
 
         // If there was a function call, the loop continues and makes another request with the function response
+      } on Exception {
+        // Sudah berupa pesan yang kita bentuk sendiri — teruskan apa adanya
+        // supaya user tidak melihat bungkus "Exception:" berlapis.
+        rethrow;
       } catch (e) {
         throw Exception('Gagal memproses pesan: $e');
       }

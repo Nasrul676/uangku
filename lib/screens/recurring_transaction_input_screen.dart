@@ -29,13 +29,13 @@ class _RecurringTransactionInputScreenState
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _categoryController = TextEditingController();
-  
+
   String _type = 'EXPENSE';
   int? _selectedFinancialPlanId;
   int? _selectedPocketId;
   String _frequency = 'MONTHLY'; // MONTHLY or WEEKLY
   DateTime _nextDate = DateTime.now();
-  bool _isSaving = false;
+  final bool _isSaving = false;
 
   final _currencyFormatter = NumberFormat.currency(
     locale: 'id_ID',
@@ -53,7 +53,7 @@ class _RecurringTransactionInputScreenState
       _categoryController.text = existing.category;
       _type = existing.type;
       _frequency = existing.frequency;
-      
+
       final parsedDate = DateTime.tryParse(existing.nextDate);
       if (parsedDate != null) {
         _nextDate = parsedDate;
@@ -320,7 +320,7 @@ class _RecurringTransactionInputScreenState
         }
       }
     }
-    
+
     final isEdit = widget.existingTransaction != null;
 
     return Scaffold(
@@ -332,6 +332,7 @@ class _RecurringTransactionInputScreenState
         actions: [
           if (isEdit)
             IconButton(
+              tooltip: 'Hapus transaksi berulang',
               icon: const Icon(Icons.delete_rounded),
               onPressed: () => _confirmDelete(context),
             ),
@@ -345,7 +346,7 @@ class _RecurringTransactionInputScreenState
               // Segmented Control for Income/Expense
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -402,7 +403,7 @@ class _RecurringTransactionInputScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               Expanded(
                 child: Card(
                   child: Padding(
@@ -416,7 +417,8 @@ class _RecurringTransactionInputScreenState
                             _FinancialPlanSelectorField(
                               plans: financialPlans,
                               selectedPlanId: _selectedFinancialPlanId,
-                              onTap: () => _openFinancialPlanPicker(financialPlans),
+                              onTap: () =>
+                                  _openFinancialPlanPicker(financialPlans),
                               selectedText: selectedPlanText,
                             ),
                             const SizedBox(height: 10),
@@ -445,18 +447,21 @@ class _RecurringTransactionInputScreenState
                               suffix: _amountValue > 0
                                   ? Text(
                                       _currencyFormatter.format(_amountValue),
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: _type == 'EXPENSE' 
-                                            ? theme.colorScheme.error 
-                                            : Colors.green,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: _type == 'EXPENSE'
+                                                ? theme.colorScheme.error
+                                                : Colors.green,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     )
                                   : null,
                             ),
                             onChanged: (_) => setState(() {}),
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Wajib diisi';
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Wajib diisi';
+                              }
                               if (_amountValue <= 0) return 'Tidak valid';
                               return null;
                             },
@@ -472,22 +477,31 @@ class _RecurringTransactionInputScreenState
                             physics: const BouncingScrollPhysics(),
                             child: Row(
                               children: [
-                                ...(_type == 'EXPENSE' ? provider.expenseCategories : provider.incomeCategories).map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: _CategoryChip(
-                                      label: item,
-                                      selected: _categoryController.text == item,
-                                      onTap: () => setState(() => _categoryController.text = item),
+                                ...(_type == 'EXPENSE'
+                                        ? provider.expenseCategories
+                                        : provider.incomeCategories)
+                                    .map(
+                                      (item) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8.0,
+                                        ),
+                                        child: _CategoryChip(
+                                          label: item,
+                                          selected:
+                                              _categoryController.text == item,
+                                          onTap: () => setState(
+                                            () =>
+                                                _categoryController.text = item,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _frequency,
+                            initialValue: _frequency,
                             decoration: const InputDecoration(
                               hintText: 'Frekuensi',
                             ),
@@ -517,7 +531,10 @@ class _RecurringTransactionInputScreenState
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      DateFormat('dd MMM yyyy', 'id').format(_nextDate),
+                                      DateFormat(
+                                        'dd MMM yyyy',
+                                        'id',
+                                      ).format(_nextDate),
                                     ),
                                   ),
                                   const Icon(Icons.calendar_month_rounded),
@@ -537,8 +554,8 @@ class _RecurringTransactionInputScreenState
                 child: FilledButton(
                   onPressed: _isSaving ? null : _save,
                   style: FilledButton.styleFrom(
-                    backgroundColor: _type == 'EXPENSE' 
-                        ? theme.colorScheme.error 
+                    backgroundColor: _type == 'EXPENSE'
+                        ? theme.colorScheme.error
                         : Colors.green,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -589,12 +606,17 @@ class _RecurringTransactionInputScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () async {
                     if (widget.existingTransaction?.id != null) {
                       await context
                           .read<TransactionProvider>()
-                          .deleteRecurringTransaction(widget.existingTransaction!.id!);
+                          .deleteRecurringTransaction(
+                            widget.existingTransaction!.id!,
+                          );
                     }
                     if (context.mounted) {
                       Navigator.pop(context);
@@ -611,6 +633,7 @@ class _RecurringTransactionInputScreenState
     );
   }
 }
+
 class _FinancialPlanSelectorField extends StatelessWidget {
   const _FinancialPlanSelectorField({
     required this.plans,
@@ -743,7 +766,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(
                             context,
-                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -756,7 +779,7 @@ class _FinancialPlanSheetItem extends StatelessWidget {
                         ? Theme.of(context).colorScheme.onErrorContainer
                         : Theme.of(
                             context,
-                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -823,8 +846,10 @@ class _CategoryChip extends StatelessWidget {
                 color: theme.brightness == Brightness.dark
                     ? Colors.white
                     : (selected
-                        ? theme.colorScheme.error
-                        : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
+                          ? theme.colorScheme.error
+                          : theme.textTheme.bodyMedium?.color?.withValues(
+                              alpha: 0.7,
+                            )),
               ),
             ),
           ],

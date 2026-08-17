@@ -40,7 +40,8 @@ class ShoppingItem {
     double? quantity,
     String? unit,
     int? isBought,
-    int? expenseTransactionId, bool clearExpenseTransactionId = false,
+    int? expenseTransactionId,
+    bool clearExpenseTransactionId = false,
   }) {
     return ShoppingItem(
       id: id ?? this.id,
@@ -53,7 +54,9 @@ class ShoppingItem {
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
       isBought: isBought ?? this.isBought,
-      expenseTransactionId: clearExpenseTransactionId ? null : (expenseTransactionId ?? this.expenseTransactionId),
+      expenseTransactionId: clearExpenseTransactionId
+          ? null
+          : (expenseTransactionId ?? this.expenseTransactionId),
     );
   }
 

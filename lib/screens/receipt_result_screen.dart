@@ -8,10 +8,11 @@ import '../providers/transaction_provider.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/app_card.dart';
 import '../widgets/swipe_button.dart';
+import '../theme/app_theme.dart';
 
 class ReceiptResultScreen extends StatefulWidget {
   final List<ParsedReceiptItem> items;
-  final String? receiptImageFilePath; // opsional, jika ingin ditampilkan 
+  final String? receiptImageFilePath; // opsional, jika ingin ditampilkan
 
   const ReceiptResultScreen({
     super.key,
@@ -77,17 +78,17 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
 
   Future<bool> _saveAllAsExpenses() async {
     if (_items.isEmpty) return false;
-    
+
     setState(() => _isSaving = true);
     final provider = context.read<TransactionProvider>();
     final now = DateTime.now();
 
     try {
       for (final item in _items) {
-        final title = item.quantity > 1 
-            ? '${item.name} (${item.quantity.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ${item.unit})' 
+        final title = item.quantity > 1
+            ? '${item.name} (${item.quantity.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ${item.unit})'
             : item.name;
-        
+
         await provider.addTransaction(
           title: title,
           amount: item.price,
@@ -98,13 +99,15 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
           financialPlanId: item.financialPlanId,
         );
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Berhasil menyimpan semua pengeluaran!')),
+          const SnackBar(
+            content: Text('Berhasil menyimpan semua pengeluaran!'),
+          ),
         );
         // Kembali ke dashboard (bisa pop 2x jika ada screen perantara)
-        Navigator.pop(context, true); 
+        Navigator.pop(context, true);
       }
       return true;
     } catch (e) {
@@ -141,7 +144,7 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: theme.colorScheme.primary.withOpacity(0.05),
+              color: theme.colorScheme.primary.withValues(alpha: 0.05),
               child: Row(
                 children: [
                   const Icon(Icons.info_outline_rounded, size: 20),
@@ -201,7 +204,10 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
                             ),
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.only(right: 20),
-                            child: const Icon(Icons.delete_outline, color: Colors.white),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.white,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 8),
@@ -216,31 +222,37 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: theme.colorScheme.secondaryContainer,
+                                      color:
+                                          theme.colorScheme.secondaryContainer,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.shopping_bag_outlined,
-                                      color: theme.colorScheme.onSecondaryContainer,
+                                      color: theme
+                                          .colorScheme
+                                          .onSecondaryContainer,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.name,
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           'Kategori: ${item.category}',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: Colors.grey[600],
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: Colors.grey[600],
+                                              ),
                                         ),
                                         if (item.quantity != 1)
                                           Text(
@@ -250,26 +262,29 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
                                         if (pocketName != null)
                                           Text(
                                             'Kantong: $pocketName',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: Colors.grey[600],
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: Colors.grey[600],
+                                                ),
                                           ),
                                         if (planName != null)
                                           Text(
                                             'Rencana: $planName',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: Colors.grey[600],
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: Colors.grey[600],
+                                                ),
                                           ),
                                       ],
                                     ),
                                   ),
                                   Text(
                                     _currencyFormatter.format(item.price),
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFFC24545),
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.expenseRed,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -285,7 +300,7 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
                 color: theme.cardTheme.color ?? theme.colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),
@@ -297,15 +312,12 @@ class _ReceiptResultScreenState extends State<ReceiptResultScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Total Harga:',
-                        style: theme.textTheme.titleMedium,
-                      ),
+                      Text('Total Harga:', style: theme.textTheme.titleMedium),
                       Text(
                         _currencyFormatter.format(total),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFFC24545),
+                          color: AppTheme.expenseRed,
                         ),
                       ),
                     ],
@@ -367,7 +379,9 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
       text: NumberFormat.decimalPattern('id_ID').format(widget.item.price),
     );
     _qtyCtrl = TextEditingController(
-      text: widget.item.quantity.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), ''),
+      text: widget.item.quantity
+          .toStringAsFixed(1)
+          .replaceAll(RegExp(r'\.0$'), ''),
     );
     _unitCtrl = TextEditingController(text: widget.item.unit);
     _selectedCategory = widget.item.category;
@@ -385,7 +399,7 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
   void _save() {
     final amount = RupiahInputFormatter.parse(_priceCtrl.text);
     final qty = double.tryParse(_qtyCtrl.text) ?? 1.0;
-    
+
     final updated = ParsedReceiptItem(
       name: _nameCtrl.text.trim(),
       price: amount,
@@ -422,10 +436,15 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                 ListTile(
                   leading: const Icon(Icons.block_rounded),
                   title: const Text('Tanpa Kantong'),
-                  subtitle: const Text('Pengeluaran ini tidak memotong kantong'),
+                  subtitle: const Text(
+                    'Pengeluaran ini tidak memotong kantong',
+                  ),
                   selected: _selectedPocketId == null,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onTap: () => Navigator.pop(sheetContext, -1), // -1 means "clear"
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, -1), // -1 means "clear"
                 ),
                 const SizedBox(height: 4),
                 Flexible(
@@ -439,13 +458,17 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                       : ListView.separated(
                           shrinkWrap: true,
                           itemCount: pockets.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 4),
+                          separatorBuilder: (_, _) => const SizedBox(height: 4),
                           itemBuilder: (context, index) {
                             final pocket = pockets[index];
                             final pocketId = pocket.id;
-                            if (pocketId == null) return const SizedBox.shrink();
+                            if (pocketId == null) {
+                              return const SizedBox.shrink();
+                            }
                             return ListTile(
-                              leading: const Icon(Icons.account_balance_wallet_rounded),
+                              leading: const Icon(
+                                Icons.account_balance_wallet_rounded,
+                              ),
                               title: Text(pocket.name),
                               subtitle: Text(
                                 pocket.allocationType == 'PERCENTAGE'
@@ -453,8 +476,11 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                                     : 'Alokasi: Rp ${NumberFormat.decimalPattern('id_ID').format(pocket.allocationValue)}',
                               ),
                               selected: _selectedPocketId == pocketId,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              onTap: () => Navigator.pop(sheetContext, pocketId),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              onTap: () =>
+                                  Navigator.pop(sheetContext, pocketId),
                             );
                           },
                         ),
@@ -496,7 +522,9 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  12, 6, 12,
+                  12,
+                  6,
+                  12,
                   12 + MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: Column(
@@ -505,7 +533,10 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                   children: [
                     const Text(
                       'Pilih Rencana Keuangan',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -520,10 +551,15 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                     ListTile(
                       leading: const Icon(Icons.block_rounded),
                       title: const Text('Tanpa Rencana Keuangan'),
-                      subtitle: const Text('Pengeluaran ini tidak ditautkan ke rencana'),
+                      subtitle: const Text(
+                        'Pengeluaran ini tidak ditautkan ke rencana',
+                      ),
                       selected: _selectedFinancialPlanId == null,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      onTap: () => Navigator.pop(sheetContext, -1), // -1 means "clear"
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onTap: () =>
+                          Navigator.pop(sheetContext, -1), // -1 means "clear"
                     ),
                     const SizedBox(height: 4),
                     Flexible(
@@ -537,18 +573,28 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                           : ListView.separated(
                               shrinkWrap: true,
                               itemCount: filteredPlans.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 4),
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 4),
                               itemBuilder: (context, index) {
                                 final plan = filteredPlans[index];
                                 final planId = plan.id;
-                                if (planId == null) return const SizedBox.shrink();
+                                if (planId == null) {
+                                  return const SizedBox.shrink();
+                                }
                                 return ListTile(
                                   leading: const Icon(Icons.flag_rounded),
                                   title: Text(plan.title),
-                                  subtitle: Text(_currencyFormatter.format(plan.targetAmount)),
+                                  subtitle: Text(
+                                    _currencyFormatter.format(
+                                      plan.targetAmount,
+                                    ),
+                                  ),
                                   selected: _selectedFinancialPlanId == planId,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  onTap: () => Navigator.pop(sheetContext, planId),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  onTap: () =>
+                                      Navigator.pop(sheetContext, planId),
                                 );
                               },
                             ),
@@ -622,7 +668,9 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
                 flex: 2,
                 child: TextField(
                   controller: _qtyCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Jumlah (Qty)'),
                 ),
               ),
@@ -638,7 +686,9 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: cats.contains(_selectedCategory) ? _selectedCategory : cats.first,
+            initialValue: cats.contains(_selectedCategory)
+                ? _selectedCategory
+                : cats.first,
             decoration: const InputDecoration(labelText: 'Kategori'),
             items: cats.map((c) {
               return DropdownMenuItem(value: c, child: Text(c));
@@ -687,10 +737,7 @@ class _EditReceiptItemSheetState extends State<_EditReceiptItemSheet> {
           ),
 
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _save,
-            child: const Text('Simpan Perubahan'),
-          ),
+          FilledButton(onPressed: _save, child: const Text('Simpan Perubahan')),
         ],
       ),
     );

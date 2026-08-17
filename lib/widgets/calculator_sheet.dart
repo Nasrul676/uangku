@@ -78,8 +78,6 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Container(
       padding: const EdgeInsets.only(
         left: 16.0,
@@ -180,7 +178,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
                             : Border.all(
                                 color: Theme.of(
                                   context,
-                                ).dividerColor.withOpacity(0.3),
+                                ).dividerColor.withValues(alpha: 0.3),
                               ),
                       ),
                       child: Center(

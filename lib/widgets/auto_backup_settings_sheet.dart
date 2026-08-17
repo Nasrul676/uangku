@@ -4,21 +4,23 @@ import 'package:file_picker/file_picker.dart';
 
 import '../services/auto_backup_service.dart';
 import 'custom_loading_indicator.dart';
+import '../utils/error_message.dart';
 
 class AutoBackupSettingsSheet extends StatefulWidget {
   const AutoBackupSettingsSheet({super.key});
 
   @override
-  State<AutoBackupSettingsSheet> createState() => _AutoBackupSettingsSheetState();
+  State<AutoBackupSettingsSheet> createState() =>
+      _AutoBackupSettingsSheetState();
 }
 
 class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
   bool _isEnabled = false;
   String _folderPath = '';
-  
+
   bool _usePassword = false;
   final _pwdCtrl = TextEditingController();
-  
+
   // Interval: 1 = Harian, 3 = 3 Hari, 7 = Mingguan, 30 = Bulanan
   int _intervalDays = 1;
   TimeOfDay? _dailyTime;
@@ -46,13 +48,13 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
       _usePassword = prefs.getBool('auto_backup_use_password') ?? false;
       _pwdCtrl.text = prefs.getString('auto_backup_password') ?? '';
       _intervalDays = prefs.getInt('auto_backup_interval') ?? 1;
-      
+
       final savedHour = prefs.getInt('auto_backup_hour');
       final savedMinute = prefs.getInt('auto_backup_minute');
       if (savedHour != null && savedMinute != null) {
         _dailyTime = TimeOfDay(hour: savedHour, minute: savedMinute);
       }
-      
+
       _isLoading = false;
     });
   }
@@ -60,11 +62,13 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
   Future<void> _saveSettings() async {
     if (_isEnabled && _folderPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih folder penyimpanan terlebih dahulu!')),
+        const SnackBar(
+          content: Text('Pilih folder penyimpanan terlebih dahulu!'),
+        ),
       );
       return;
     }
-    
+
     if (_isEnabled && _usePassword && _pwdCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password tidak boleh kosong!')),
@@ -78,7 +82,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
     await prefs.setBool('auto_backup_use_password', _usePassword);
     await prefs.setString('auto_backup_password', _pwdCtrl.text);
     await prefs.setInt('auto_backup_interval', _intervalDays);
-    
+
     if (_dailyTime != null) {
       await prefs.setInt('auto_backup_hour', _dailyTime!.hour);
       await prefs.setInt('auto_backup_minute', _dailyTime!.minute);
@@ -94,7 +98,11 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
       if (_intervalDays == 1 && _dailyTime != null) {
         final now = DateTime.now();
         startAt = DateTime(
-          now.year, now.month, now.day, _dailyTime!.hour, _dailyTime!.minute,
+          now.year,
+          now.month,
+          now.day,
+          _dailyTime!.hour,
+          _dailyTime!.minute,
         );
         if (startAt.isBefore(now)) {
           startAt = startAt.add(const Duration(days: 1));
@@ -102,7 +110,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
       }
 
       await AutoBackupService.scheduleBackup(frequency, startAt: startAt);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Auto Backup berhasil diaktifkan')),
@@ -111,9 +119,9 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
     } else {
       await AutoBackupService.cancelBackup();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Auto Backup dimatikan')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Auto Backup dimatikan')));
       }
     }
 
@@ -142,16 +150,21 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    
+
     if (_isLoading) {
       return const SizedBox(
-        height: 200, 
-        child: Center(child: CustomLoadingIndicator(size: 40))
+        height: 200,
+        child: Center(child: CustomLoadingIndicator(size: 40)),
       );
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        24,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -164,7 +177,9 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                 Expanded(
                   child: Text(
                     'Auto Backup',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Switch(
@@ -176,17 +191,27 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
             const SizedBox(height: 8),
             Text(
               'Jalankan backup secara otomatis di latar belakang untuk mengamankan data Anda secara berkala.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
             const Divider(height: 32),
 
             if (_isEnabled) ...[
               // 1. Folder Tujuan
-              Text('Folder Penyimpanan', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Folder Penyimpanan',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(_folderPath.isEmpty ? 'Belum ada folder yang dipilih' : _folderPath, maxLines: 2),
+                title: Text(
+                  _folderPath.isEmpty
+                      ? 'Belum ada folder yang dipilih'
+                      : _folderPath,
+                  maxLines: 2,
+                ),
                 subtitle: const Text('Ketuk untuk mengubah folder'),
                 leading: Icon(Icons.folder_rounded, color: cs.secondary),
                 onTap: _pickFolder,
@@ -209,12 +234,16 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                   if (val != null) setState(() => _intervalDays = val);
                 },
               ),
-              
+
               if (_intervalDays == 1) ...[
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(_dailyTime == null ? 'Pilih Jam Backup' : 'Jam ${_dailyTime!.format(context)}'),
+                  title: Text(
+                    _dailyTime == null
+                        ? 'Pilih Jam Backup'
+                        : 'Jam ${_dailyTime!.format(context)}',
+                  ),
                   leading: Icon(Icons.access_time_rounded, color: cs.tertiary),
                   onTap: _pickTime,
                   shape: RoundedRectangleBorder(
@@ -223,7 +252,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 16),
 
               // 3. Password
@@ -243,7 +272,7 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-              
+
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -254,14 +283,17 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                           if (_folderPath.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Pilih folder penyimpanan terlebih dahulu!'),
+                                content: Text(
+                                  'Pilih folder penyimpanan terlebih dahulu!',
+                                ),
                               ),
                             );
                             return;
                           }
                           setState(() => _isTestingBackup = true);
                           try {
-                            final fileName = await AutoBackupService.runBackupNow();
+                            final fileName =
+                                await AutoBackupService.runBackupNow();
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -271,15 +303,19 @@ class _AutoBackupSettingsSheetState extends State<AutoBackupSettingsSheet> {
                             );
                           } catch (e) {
                             if (!context.mounted) return;
-                            final message = e.toString().replaceFirst('Exception: ', '');
+                            final message = friendlyError(e);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Backup gagal: $message'),
-                                backgroundColor: Theme.of(context).colorScheme.error,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
                               ),
                             );
                           } finally {
-                            if (mounted) setState(() => _isTestingBackup = false);
+                            if (mounted) {
+                              setState(() => _isTestingBackup = false);
+                            }
                           }
                         },
                   child: _isTestingBackup

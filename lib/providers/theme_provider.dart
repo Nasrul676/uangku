@@ -15,9 +15,13 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   String get appFontFamily => _appFontFamily;
 
-  ThemeData get themeData => AppTheme.getThemeData(_currentStyle, fontFamily: _appFontFamily);
-  ThemeData get darkThemeData =>
-      AppTheme.getThemeData(_currentStyle, brightness: Brightness.dark, fontFamily: _appFontFamily);
+  ThemeData get themeData =>
+      AppTheme.getThemeData(_currentStyle, fontFamily: _appFontFamily);
+  ThemeData get darkThemeData => AppTheme.getThemeData(
+    _currentStyle,
+    brightness: Brightness.dark,
+    fontFamily: _appFontFamily,
+  );
 
   Future<void> init() async {
     final styleString = await _appSettingsService.getAppTheme();

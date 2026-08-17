@@ -18,12 +18,11 @@ import 'saving_goals_screen.dart';
 import 'recurring_transactions_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
-  const ShoppingListScreen({Key? key, this.isEmbedded = false})
-    : super(key: key);
+  const ShoppingListScreen({super.key, this.isEmbedded = false});
   final bool isEmbedded;
 
   @override
-  _ShoppingListScreenState createState() => _ShoppingListScreenState();
+  State<ShoppingListScreen> createState() => _ShoppingListScreenState();
 }
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
@@ -37,9 +36,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         child: Column(
           children: [
             TabBar(
-              labelColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+              labelColor: theme.colorScheme.primary.computeLuminance() > 0.6
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.primary,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: theme.colorScheme.primary.computeLuminance() > 0.6 ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+              indicatorColor: theme.colorScheme.primary.computeLuminance() > 0.6
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.primary,
               tabs: const [
                 Tab(text: 'Belanja'),
                 Tab(text: 'Tabungan'),
@@ -87,10 +90,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 }
 
 class _ShoppingListContent extends StatefulWidget {
-  const _ShoppingListContent({Key? key}) : super(key: key);
+  const _ShoppingListContent();
 
   @override
-  _ShoppingListContentState createState() => _ShoppingListContentState();
+  State<_ShoppingListContent> createState() => _ShoppingListContentState();
 }
 
 class _ShoppingListContentState extends State<_ShoppingListContent> {
@@ -145,20 +148,25 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
                 if (pockets.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int?>(
-                    value: selectedPocketId,
+                    initialValue: selectedPocketId,
                     decoration: const InputDecoration(
                       labelText: 'Sumber Dana (Opsional)',
-                      prefixIcon: Icon(Icons.account_balance_wallet_rounded, size: 20),
+                      prefixIcon: Icon(
+                        Icons.account_balance_wallet_rounded,
+                        size: 20,
+                      ),
                     ),
                     items: [
                       const DropdownMenuItem<int?>(
                         value: null,
                         child: Text('Tanpa Sumber Dana'),
                       ),
-                      ...pockets.map((p) => DropdownMenuItem<int?>(
-                            value: p.id,
-                            child: Text(p.name),
-                          )),
+                      ...pockets.map(
+                        (p) => DropdownMenuItem<int?>(
+                          value: p.id,
+                          child: Text(p.name),
+                        ),
+                      ),
                     ],
                     onChanged: (val) {
                       setState(() {
@@ -170,7 +178,7 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
                 if (plans.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int?>(
-                    value: selectedPlanId,
+                    initialValue: selectedPlanId,
                     decoration: const InputDecoration(
                       labelText: 'Rencana Keuangan (Opsional)',
                       prefixIcon: Icon(Icons.flag_rounded, size: 20),
@@ -180,10 +188,12 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
                         value: null,
                         child: Text('Tanpa Rencana'),
                       ),
-                      ...plans.map((p) => DropdownMenuItem<int?>(
-                            value: p.id,
-                            child: Text(p.title),
-                          )),
+                      ...plans.map(
+                        (p) => DropdownMenuItem<int?>(
+                          value: p.id,
+                          child: Text(p.title),
+                        ),
+                      ),
                     ],
                     onChanged: (val) {
                       setState(() {
@@ -233,11 +243,11 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
     final planId = result['planId'] as int?;
 
     await context.read<ShoppingProvider>().markAsBought(
-          item,
-          totalAmount,
-          pocketId: pocketId,
-          financialPlanId: planId,
-        );
+      item,
+      totalAmount,
+      pocketId: pocketId,
+      financialPlanId: planId,
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -264,111 +274,111 @@ class _ShoppingListContentState extends State<_ShoppingListContent> {
   @override
   Widget build(BuildContext context) {
     return Consumer<ShoppingProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CustomLoadingIndicator(size: 40));
-          }
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CustomLoadingIndicator(size: 40));
+        }
 
-          final unboughtItems = provider.items
-              .where((i) => i.isBought == 0)
-              .toList();
-          final estimatedTotal = unboughtItems.fold(
-            0.0,
-            (sum, item) => sum + item.amount,
-          );
+        final unboughtItems = provider.items
+            .where((i) => i.isBought == 0)
+            .toList();
+        final estimatedTotal = unboughtItems.fold(
+          0.0,
+          (sum, item) => sum + item.amount,
+        );
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddShoppingItemScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.add_box_rounded,
-                      color: Color(0xFF2A9D50),
-                    ),
-                    label: const Text(
-                      'Tambah Belanja',
-                      style: TextStyle(color: Color(0xFF2A9D50)),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: Color(0xFF2A9D50)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddShoppingItemScreen(),
                       ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.add_box_rounded,
+                    color: AppTheme.incomeGreen,
+                  ),
+                  label: const Text(
+                    'Tambah Belanja',
+                    style: TextStyle(color: AppTheme.incomeGreen),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(color: AppTheme.incomeGreen),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
               ),
-              if (provider.items.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Lottie.asset(
-                          'assets/lottie/empty.json',
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Belum ada daftar belanja.',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: _EstimationSummary(
-                    total: estimatedTotal,
-                    itemsCount: unboughtItems.length,
+            ),
+            if (provider.items.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Lottie.asset(
+                        'assets/lottie/empty.json',
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada daftar belanja.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: provider.items.length,
-                    padding: const EdgeInsets.fromLTRB(5, 12, 5, 140),
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = provider.items[index];
-                      return _ShoppingItemTile(
-                        item: item,
-                        onEdit: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  AddShoppingItemScreen(item: item),
-                            ),
-                          );
-                        },
-                        onDelete: () => provider.deleteItem(item),
-                        onBuy: () => _showBuyDialog(item),
-                        onUndo: () =>
-                            context.read<ShoppingProvider>().cancelBought(item),
-                      );
-                    },
-                  ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: _EstimationSummary(
+                  total: estimatedTotal,
+                  itemsCount: unboughtItems.length,
                 ),
-              ],
+              ),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: provider.items.length,
+                  padding: const EdgeInsets.fromLTRB(5, 12, 5, 140),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = provider.items[index];
+                    return _ShoppingItemTile(
+                      item: item,
+                      onEdit: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AddShoppingItemScreen(item: item),
+                          ),
+                        );
+                      },
+                      onDelete: () => provider.deleteItem(item),
+                      onBuy: () => _showBuyDialog(item),
+                      onUndo: () =>
+                          context.read<ShoppingProvider>().cancelBought(item),
+                    );
+                  },
+                ),
+              ),
             ],
-          );
-        },
+          ],
+        );
+      },
     );
   }
 }
@@ -408,7 +418,7 @@ class _ShoppingItemTile extends StatelessWidget {
     final totalAmount = item.amount;
     final amountText = item.bought
         ? rupiahFormatter.format(totalAmount)
-        : (totalAmount > 0 ? '${rupiahFormatter.format(totalAmount)}' : 'Rp 0');
+        : (totalAmount > 0 ? rupiahFormatter.format(totalAmount) : 'Rp 0');
 
     return Slidable(
       key: ValueKey(item.id),
@@ -438,10 +448,13 @@ class _ShoppingItemTile extends StatelessWidget {
           ),
         ],
       ),
-      child: AppCard(isInteractive: true,
+      child: AppCard(
+        isInteractive: true,
         onTap: () {},
         padding: const EdgeInsets.all(10),
-        color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+        color:
+            Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
@@ -508,7 +521,7 @@ class _ShoppingItemTile extends StatelessWidget {
                     size: 20,
                   ),
                   color: item.bought
-                      ? const Color(0xFF2A9D50)
+                      ? AppTheme.incomeGreen
                       : Theme.of(context).colorScheme.error,
                   tooltip: item.bought ? 'Batalkan' : 'Sudah dibeli',
                   constraints: const BoxConstraints(
@@ -551,7 +564,9 @@ class _EstimationSummary extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black26 : Theme.of(context).colorScheme.surface,
+              color: isDark
+                  ? Colors.black26
+                  : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
               border: ext?.cardBorder,
             ),

@@ -5,12 +5,12 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../models/saving_goal.dart';
 import '../widgets/shake_widget.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/animated_bouncing_card.dart';
 import 'saving_goal_input_screen.dart';
 import 'saving_goal_detail_screen.dart';
+import '../theme/app_theme.dart';
 
 class SavingGoalsScreen extends StatefulWidget {
   const SavingGoalsScreen({super.key});
@@ -25,7 +25,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
-  
+
   final _goldFormatter = NumberFormat('#,##0.####', 'id_ID');
 
   bool _isReorderMode = false;
@@ -73,7 +73,9 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                         child: _buildSummaryCard(
                           context,
                           title: 'Total Dana',
-                          terkumpul: _currencyFormatter.format(totalDanaTerkumpul),
+                          terkumpul: _currencyFormatter.format(
+                            totalDanaTerkumpul,
+                          ),
                           target: _currencyFormatter.format(totalDanaTarget),
                           icon: Icons.account_balance_wallet_rounded,
                           color: Colors.blue,
@@ -84,7 +86,8 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                         child: _buildSummaryCard(
                           context,
                           title: 'Total Emas',
-                          terkumpul: '${_goldFormatter.format(totalEmasTerkumpul)} g',
+                          terkumpul:
+                              '${_goldFormatter.format(totalEmasTerkumpul)} g',
                           target: '${_goldFormatter.format(totalEmasTarget)} g',
                           icon: Icons.diamond_rounded,
                           color: Colors.orange,
@@ -93,7 +96,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                     ],
                   ),
                 );
-              }
+              },
             ),
           ],
           Padding(
@@ -109,15 +112,15 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                       },
                       icon: const Icon(
                         Icons.check_circle_rounded,
-                        color: Color(0xFF2A9D50),
+                        color: AppTheme.incomeGreen,
                       ),
                       label: const Text(
                         'Selesai Mengatur',
-                        style: TextStyle(color: Color(0xFF2A9D50)),
+                        style: TextStyle(color: AppTheme.incomeGreen),
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: Color(0xFF2A9D50)),
+                        side: const BorderSide(color: AppTheme.incomeGreen),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -134,15 +137,15 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
                       },
                       icon: const Icon(
                         Icons.add_box_rounded,
-                        color: Color(0xFF2A9D50),
+                        color: AppTheme.incomeGreen,
                       ),
                       label: const Text(
                         'Tambah Tabungan',
-                        style: TextStyle(color: Color(0xFF2A9D50)),
+                        style: TextStyle(color: AppTheme.incomeGreen),
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: Color(0xFF2A9D50)),
+                        side: const BorderSide(color: AppTheme.incomeGreen),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -181,7 +184,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
               child: ReorderableListView.builder(
                 padding: const EdgeInsets.fromLTRB(5, 16, 5, 140),
                 itemCount: goals.length,
-                onReorder: (oldIndex, newIndex) {
+                onReorderItem: (oldIndex, newIndex) {
                   provider.reorderSavingGoals(oldIndex, newIndex);
                 },
                 buildDefaultDragHandles: false,
@@ -331,9 +334,7 @@ class _SavingGoalsScreenState extends State<SavingGoalsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
