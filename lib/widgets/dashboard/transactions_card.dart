@@ -7,6 +7,8 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../models/finance_transaction.dart';
 import '../../providers/transaction_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/category_icon.dart';
+import '../../utils/relative_time.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../app_card.dart';
@@ -23,6 +25,7 @@ class TransactionsCard extends StatefulWidget {
     required this.transactions,
     required this.isLoading,
     required this.emptyText,
+    this.moneyLocationNames = const {},
     this.titleColor,
   });
 
@@ -31,6 +34,10 @@ class TransactionsCard extends StatefulWidget {
   final List<FinanceTransaction> transactions;
   final bool isLoading;
   final String emptyText;
+
+  /// Nama lokasi per id, dipakai untuk menambah keterangan "dari dompet mana"
+  /// di tiap baris. Kosong berarti keterangannya tidak dirender.
+  final Map<int, String> moneyLocationNames;
   final Color? titleColor;
 
   @override
@@ -239,6 +246,8 @@ class _TransactionsCardState extends State<TransactionsCard> {
                     return TransactionTile(
                       item: item,
                       theme: widget.theme,
+                      moneyLocationName:
+                          widget.moneyLocationNames[item.moneyLocationId],
                       onRequestDelete: () => _requestDelete(item),
                     );
                   },
@@ -256,11 +265,17 @@ class TransactionTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.theme,
+    this.moneyLocationName,
     this.onRequestDelete,
   });
 
   final FinanceTransaction item;
   final ThemeData theme;
+
+  /// Null kalau transaksinya belum ditandai lokasinya — barisnya lalu dirender
+  /// tanpa keterangan tambahan, bukan dengan tulisan "tanpa lokasi" yang cuma
+  /// jadi kebisingan di daftar panjang.
+  final String? moneyLocationName;
 
   /// Kalau null, tile dirender tanpa aksi geser (mode baca saja).
   final VoidCallback? onRequestDelete;
@@ -268,13 +283,12 @@ class TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = item.type == 'INCOME';
-    final parsedDate = DateTime.tryParse(item.date);
-    final dateText = parsedDate == null
-        ? item.date
-        : DateFormat('dd MMM yyyy', 'id').format(parsedDate);
-    final storedTime = item.time?.trim();
-    final hasTime = storedTime != null && storedTime.isNotEmpty;
-    final datetimeLabel = hasTime ? '$dateText • $storedTime' : dateText;
+    final datetimeLabel = relativeTimeLabel(
+      item.date,
+      item.time,
+      DateTime.now(),
+    );
+    final visual = visualForCategory(item.category, isIncome: isIncome);
     final rupiahFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -294,39 +308,42 @@ class TransactionTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
+          // Ikon kategori berwarna membuat daftar bisa dipindai tanpa membaca
+          // satu kata pun — mata mencari kotak kuning kalau ingin tahu
+          // pengeluaran makan.
           Container(
-            width: 32,
-            height: 32,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: isIncome ? AppTheme.incomeLight : AppTheme.expenseLight,
-              borderRadius: BorderRadius.circular(8),
-              border: Theme.of(
-                context,
-              ).extension<AppThemeExtension>()?.cardBorder,
+              color: visual.color,
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: AppTheme.borderColor, width: 2),
             ),
-            child: Icon(
-              isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
-              size: 16,
-              color: isIncome ? AppTheme.incomeGreen : AppTheme.expenseRed,
-            ),
+            child: Icon(visual.icon, size: 18, color: AppTheme.borderColor),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Warna dipakai hanya di nominal. Kalau judul dan keterangan
+                // ikut merah, seluruh daftar jadi merah — dan warna yang
+                // dipakai di mana-mana berhenti menandakan apa pun.
                 Text(
                   item.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isIncome ? null : AppTheme.expenseRed,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${item.category} • $datetimeLabel',
+                  moneyLocationName == null
+                      ? '${item.category} • $datetimeLabel'
+                      : '${item.category} • $datetimeLabel • $moneyLocationName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: isIncome ? null : const Color(0xFFA13A3A),
+                    color: theme.hintColor,
                   ),
                 ),
               ],
@@ -338,8 +355,8 @@ class TransactionTile extends StatelessWidget {
               Text(
                 amountText,
                 style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: isIncome ? null : AppTheme.expenseRed,
+                  fontWeight: FontWeight.w800,
+                  color: isIncome ? AppTheme.incomeGreen : AppTheme.expenseRed,
                 ),
               ),
               const SizedBox(height: 2),

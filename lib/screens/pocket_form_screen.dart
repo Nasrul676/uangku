@@ -160,9 +160,9 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              IconPickerUtils.getIcon(iconName),
-                              style: const TextStyle(fontSize: 24),
+                            Icon(
+                              IconPickerUtils.getLucideIcon(iconName),
+                              size: 22,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -241,9 +241,10 @@ class _PocketFormScreenState extends State<PocketFormScreen> {
                           ),
                         ),
                         child: Center(
-                          child: Text(
-                            IconPickerUtils.getIcon(_selectedIcon),
-                            style: const TextStyle(fontSize: 40),
+                          child: Icon(
+                            IconPickerUtils.getLucideIcon(_selectedIcon),
+                            size: 38,
+                            color: AppTheme.borderColor,
                           ),
                         ),
                       ),

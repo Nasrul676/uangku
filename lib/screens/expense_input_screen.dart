@@ -13,6 +13,7 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
+import '../widgets/money_location_picker.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/calculator_parser.dart';
 import '../utils/rupiah_input_formatter.dart';
@@ -48,14 +49,13 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   String _category = 'Pengeluaran';
   int? _selectedFinancialPlanId;
   int? _selectedPocketId;
+  int? _selectedMoneyLocationId;
   bool _isSaving = false;
   bool _isAddingCategory = false;
 
-  final _currencyFormatter = NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: 'Rp ',
-    decimalDigits: 0,
-  );
+  /// Jumlah & satuan bersifat opsional, jadi disembunyikan sampai diminta.
+  /// Saat mengedit transaksi yang sudah punya detail, langsung dibuka.
+  bool _showQuantityDetail = false;
 
   @override
   void initState() {
@@ -84,6 +84,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       _category = existing.category;
       _selectedFinancialPlanId = existing.financialPlanId;
       _selectedPocketId = existing.pocketId;
+      _selectedMoneyLocationId = existing.moneyLocationId;
     } else {
       _selectedPocketId = widget.initialPocketId;
     }
@@ -97,8 +98,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     _unitController.dispose();
     super.dispose();
   }
-
-  double get _amountValue => RupiahInputFormatter.parse(_amountController.text);
 
   DateTime _normalizeDate(DateTime value) {
     return DateTime(value.year, value.month, value.day);
@@ -124,7 +123,18 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     return _normalizeDate(startDate);
   }
 
+  /// Melepaskan fokus sebelum lembar pilihan dibuka.
+  ///
+  /// Tanpa ini, papan ketik yang tadi terbuka akan muncul lagi begitu lembar
+  /// ditutup — Flutter mengembalikan fokus ke tempat terakhirnya. Memilih
+  /// kategori seharusnya tidak berujung pada papan ketik yang menyembul
+  /// sendiri di kolom yang sama sekali tidak disentuh pengguna.
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   Future<void> _pickDate() async {
+    _dismissKeyboard();
     final provider = context.read<TransactionProvider>();
     final minDate = _minimumExpenseDate(provider);
     final maxDate = DateTime(2030);
@@ -148,6 +158,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   }
 
   Future<void> _pickTime() async {
+    _dismissKeyboard();
     final initial = _selectedTime ?? TimeOfDay.now();
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
@@ -170,6 +181,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   }
 
   Future<void> _openFinancialPlanPicker(List<FinancialPlan> plans) async {
+    _dismissKeyboard();
     final selected = await showModalBottomSheet<int?>(
       context: context,
       isScrollControlled: true,
@@ -265,14 +277,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     if (!mounted) return;
 
-    final provider = context.read<TransactionProvider>();
-    final minDate = _minimumExpenseDate(provider);
-    final maxDate = DateTime(2030);
-
     String? autofillAmount;
     String? autofillTitle;
     String? autofillCategory;
-    DateTime? autofillDate;
     if (selected != null) {
       for (final plan in plans) {
         if (plan.id == selected) {
@@ -284,18 +291,6 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
           ).format(normalizedAmount);
           autofillTitle = plan.title;
           autofillCategory = plan.category;
-
-          final parsedTargetDate = DateTime.tryParse(plan.targetDate);
-          if (parsedTargetDate != null) {
-            final normalizedTargetDate = _normalizeDate(parsedTargetDate);
-            if (normalizedTargetDate.isBefore(minDate)) {
-              autofillDate = minDate;
-            } else if (normalizedTargetDate.isAfter(maxDate)) {
-              autofillDate = maxDate;
-            } else {
-              autofillDate = normalizedTargetDate;
-            }
-          }
           break;
         }
       }
@@ -303,8 +298,13 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
 
     setState(() {
       _selectedFinancialPlanId = selected;
+
+      // Nominal rencana cuma dipakai sebagai isian awal, bukan koreksi.
+      // Angka yang sudah diketik adalah yang benar-benar dikeluarkan hari ini
+      // — target rencana belum tentu sama, dan menimpanya diam-diam membuat
+      // pengeluaran tercatat lebih besar dari yang sebenarnya terjadi.
       final amountText = autofillAmount;
-      if (amountText != null) {
+      if (amountText != null && _amountController.text.trim().isEmpty) {
         _amountController.value = TextEditingValue(
           text: amountText,
           selection: TextSelection.collapsed(offset: amountText.length),
@@ -324,10 +324,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
         _category = categoryText;
       }
 
-      final pickedDate = autofillDate;
-      if (pickedDate != null) {
-        _selectedDate = pickedDate;
-      }
+      // Tanggal & jam sengaja tidak ikut diubah. Target rencana adalah
+      // tenggat di masa depan, sedangkan yang dicatat di sini adalah kapan
+      // uangnya benar-benar keluar — yaitu sekarang.
     });
   }
 
@@ -341,6 +340,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   }
 
   Future<void> _openPocketPicker(List<Pocket> pockets) async {
+    _dismissKeyboard();
     final selected = await showModalBottomSheet<int?>(
       context: context,
       showDragHandle: true,
@@ -412,7 +412,23 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
     }
   }
 
+  Future<void> _openMoneyLocationPicker() async {
+    _dismissKeyboard();
+    final choice = await showMoneyLocationPicker(
+      context: context,
+      selectedId: _selectedMoneyLocationId,
+      title: 'Uang ini dari mana?',
+      noneSubtitle: 'Tidak dicatat asal uangnya',
+    );
+
+    if (!mounted || choice == null) return;
+    if (choice.locationId != _selectedMoneyLocationId) {
+      setState(() => _selectedMoneyLocationId = choice.locationId);
+    }
+  }
+
   Future<void> _openCategoryPicker(List<String> categories) async {
+    _dismissKeyboard();
     final selected = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -720,6 +736,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 : _formatTimeForStorage(_selectedTime!),
             financialPlanId: selectedPlanId,
             pocketId: _selectedPocketId,
+            moneyLocationId: _selectedMoneyLocationId,
           );
         } else {
           await context.read<TransactionProvider>().addTransaction(
@@ -733,6 +750,7 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                 : _formatTimeForStorage(_selectedTime!),
             financialPlanId: selectedPlanId,
             pocketId: _selectedPocketId,
+            moneyLocationId: _selectedMoneyLocationId,
           );
         }
 
@@ -770,8 +788,10 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
         : provider.expenseCategories;
     final financialPlans = provider.financialPlans;
     final pockets = provider.pockets;
-    String selectedPlanText = 'Tanpa Rencana Keuangan';
-    String selectedPocketText = 'Tanpa Kantong';
+    // Placeholder dibedakan dari nilai: teksnya netral dan dirender redup
+    // lewat `isPlaceholder`, supaya tidak terbaca sebagai nama rencana/kantong.
+    String selectedPlanText = 'Belum dipilih';
+    String selectedPocketText = 'Belum dipilih';
 
     if (_selectedFinancialPlanId != null &&
         !financialPlans.any((item) => item.id == _selectedFinancialPlanId)) {
@@ -796,6 +816,23 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       for (final pocket in pockets) {
         if (pocket.id == _selectedPocketId) {
           selectedPocketText = pocket.name;
+          break;
+        }
+      }
+    }
+
+    // Lokasi yang sudah dihapus tidak boleh menyisakan pilihan hantu di form.
+    final moneyLocations = provider.moneyLocations;
+    if (_selectedMoneyLocationId != null &&
+        !moneyLocations.any((item) => item.id == _selectedMoneyLocationId)) {
+      _selectedMoneyLocationId = null;
+    }
+
+    String selectedMoneyLocationText = 'Belum dipilih';
+    if (_selectedMoneyLocationId != null) {
+      for (final item in moneyLocations) {
+        if (item.id == _selectedMoneyLocationId) {
+          selectedMoneyLocationText = item.name;
           break;
         }
       }
@@ -833,198 +870,213 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   Expanded(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Form(
-                          key: _formKey,
-                          child: ListView(
-                            children: [
-                              // ── Section 1: Kategori & Label ─────────────────
-                              _SectionHeader(
-                                emoji: '🏷️',
-                                label: 'Kategori & Label',
-                                color: theme.colorScheme.primary,
+                    child: Form(
+                      key: _formKey,
+                      child: ListView(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        children: [
+                          // ── Nominal: elemen utama layar ini ────────────────
+                          _AmountHeroField(
+                            controller: _amountController,
+                            onChanged: () => setState(() {}),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // ── Judul ──────────────────────────────────────────
+                          TextFormField(
+                            controller: _titleController,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Judul',
+                              hintText: 'Catatan pengeluaran',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Judul wajib diisi';
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // ── Jumlah & satuan: opsional, dilipat ─────────────
+                          if (!_showQuantityDetail)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () =>
+                                    setState(() => _showQuantityDetail = true),
+                                icon: const Icon(Icons.add_rounded, size: 18),
+                                label: const Text('Jumlah & satuan'),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
-                              const SizedBox(height: 10),
-                              _CategorySelectorField(
-                                selectedText: _category,
+                            )
+                          else ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _qtyController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    textInputAction: TextInputAction.next,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[0-9.,]'),
+                                      ),
+                                    ],
+                                    decoration: const InputDecoration(
+                                      labelText: 'Jumlah',
+                                      hintText: 'mis. 2',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _unitController,
+                                    textInputAction: TextInputAction.done,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Satuan',
+                                      hintText: 'mis. kg',
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Sembunyikan jumlah & satuan',
+                                  icon: const Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    _qtyController.clear();
+                                    _unitController.clear();
+                                    setState(() => _showQuantityDetail = false);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          // ── Rincian: pilihan, bukan ketikan ────────────────
+                          const SizedBox(height: 18),
+                          const _SectionLabel('Rincian'),
+                          const SizedBox(height: 10),
+                          _DetailGroup(
+                            children: [
+                              _DetailRow(
+                                label: 'Kategori',
+                                value: _category,
+                                icon: Icons.category_rounded,
                                 onTap: () => _openCategoryPicker(categories),
                               ),
-                              const SizedBox(height: 10),
-                              _FinancialPlanSelectorField(
-                                plans: financialPlans,
-                                selectedPlanId: _selectedFinancialPlanId,
+                              _DetailRow(
+                                label: 'Rencana',
+                                value: selectedPlanText,
+                                icon: Icons.flag_rounded,
+                                isPlaceholder: _selectedFinancialPlanId == null,
                                 onTap: () =>
                                     _openFinancialPlanPicker(financialPlans),
-                                selectedText: selectedPlanText,
                               ),
-                              const SizedBox(height: 10),
-                              _PocketSelectorField(
-                                selectedPocketId: _selectedPocketId,
+                              _DetailRow(
+                                label: 'Kantong',
+                                value: selectedPocketText,
+                                icon: Icons.account_balance_wallet_rounded,
+                                isPlaceholder: _selectedPocketId == null,
                                 onTap: () => _openPocketPicker(pockets),
-                                selectedText: selectedPocketText,
                               ),
-
-                              // ── Section 2: Nominal & Judul ──────────────────
-                              const SizedBox(height: 16),
-                              const _SectionDivider(),
-                              const SizedBox(height: 12),
-                              _SectionHeader(
-                                emoji: '📝',
-                                label: 'Detail Pengeluaran',
-                                color: theme.colorScheme.error,
-                              ),
-                              const SizedBox(height: 10),
-                              TextFormField(
-                                controller: _amountController,
-                                keyboardType: TextInputType.text,
-                                inputFormatters: [RupiahInputFormatter()],
-                                decoration: InputDecoration(
-                                  hintText: 'Nominal pengeluaran',
-                                  suffix: _amountValue > 0
-                                      ? Text(
-                                          _currencyFormatter.format(
-                                            _amountValue,
-                                          ),
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: theme.colorScheme.error,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        )
-                                      : null,
-                                ),
-                                onChanged: (_) => setState(() {}),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Nominal wajib diisi';
-                                  }
-                                  final amount = RupiahInputFormatter.parse(
-                                    value,
-                                  );
-                                  if (amount <= 0) return 'Nominal tidak valid';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              TextFormField(
-                                controller: _titleController,
-                                decoration: const InputDecoration(
-                                  hintText: 'Catatan / judul pengeluaran',
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Judul wajib diisi';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _qtyController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(
-                                          RegExp(r'[0-9.,]'),
-                                        ),
-                                      ],
-                                      decoration: const InputDecoration(
-                                        hintText: 'Jml (ops.)',
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _unitController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Satuan (ops.)',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              // ── Section 3: Waktu ────────────────────────────
-                              const SizedBox(height: 16),
-                              const _SectionDivider(),
-                              const SizedBox(height: 12),
-                              _SectionHeader(
-                                emoji: '📅',
-                                label: 'Kapan?',
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(height: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  InkWell(
-                                    onTap: _pickDate,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: InputDecorator(
-                                      decoration: const InputDecoration(
-                                        hintText: 'Tanggal',
-                                      ),
-                                      child: Text(
-                                        DateFormat(
-                                          'dd MMM yyyy',
-                                          'id',
-                                        ).format(_selectedDate),
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  InkWell(
-                                    onTap: _pickTime,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        hintText: 'Jam',
-                                        suffix: _selectedTime != null
-                                            ? GestureDetector(
-                                                onTap: () => setState(
-                                                  () => _selectedTime = null,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.close_rounded,
-                                                  size: 16,
-                                                ),
-                                              )
-                                            : null,
-                                      ),
-                                      child: Text(
-                                        _timeLabel(),
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              // ── Save Button ──────────────────────────────────
-                              const SizedBox(height: 20),
-                              SwipeButton(
-                                label: widget.existingTransaction == null
-                                    ? 'Swipe untuk simpan'
-                                    : 'Swipe untuk update',
-                                onSwipeComplete: _saveExpense,
-                                isLoading: _isSaving,
-                                isDark:
-                                    Theme.of(context).brightness ==
-                                    Brightness.dark,
+                              _DetailRow(
+                                label: 'Sumber Uang',
+                                value: selectedMoneyLocationText,
+                                icon: Icons.savings_rounded,
+                                isPlaceholder:
+                                    _selectedMoneyLocationId == null,
+                                showDivider: false,
+                                onTap: _openMoneyLocationPicker,
                               ),
                             ],
                           ),
-                        ),
+
+                          // ── Kapan: tanggal & jam sejajar ───────────────────
+                          const SizedBox(height: 18),
+                          const _SectionLabel('Kapan'),
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: _pickDate,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InputDecorator(
+                                    decoration: const InputDecoration(
+                                      labelText: 'Tanggal',
+                                    ),
+                                    child: Text(
+                                      DateFormat(
+                                        'dd MMM yyyy',
+                                        'id',
+                                      ).format(_selectedDate),
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: _pickTime,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      labelText: 'Jam',
+                                      suffixIcon: _selectedTime == null
+                                          ? null
+                                          : IconButton(
+                                              tooltip: 'Kosongkan jam',
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                                size: 16,
+                                              ),
+                                              onPressed: () => setState(
+                                                () => _selectedTime = null,
+                                              ),
+                                            ),
+                                    ),
+                                    child: Text(
+                                      _timeLabel(),
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // ── Simpan ─────────────────────────────────────────
+                          const SizedBox(height: 24),
+                          SwipeButton(
+                            label: widget.existingTransaction == null
+                                ? 'Swipe untuk simpan'
+                                : 'Swipe untuk update',
+                            onSwipeComplete: _saveExpense,
+                            isLoading: _isSaving,
+                            isDark:
+                                Theme.of(context).brightness == Brightness.dark,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1040,70 +1092,102 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
   }
 }
 
-class _FinancialPlanSelectorField extends StatelessWidget {
-  const _FinancialPlanSelectorField({
-    required this.plans,
-    required this.selectedPlanId,
-    required this.selectedText,
+/// Satu baris pilihan di dalam [_DetailGroup].
+///
+/// Sengaja TIDAK berbentuk kotak seperti field ketikan: baris ini membuka
+/// bottom sheet, bukan memunculkan keyboard. Bentuk yang berbeda untuk
+/// perilaku yang berbeda.
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    required this.icon,
     required this.onTap,
+    this.isPlaceholder = false,
+    this.showDivider = true,
   });
 
-  final List<FinancialPlan> plans;
-  final int? selectedPlanId;
-  final String selectedText;
+  final String label;
+  final String value;
+  final IconData icon;
   final VoidCallback onTap;
+
+  /// Nilai belum dipilih — dirender redup supaya tidak terbaca sebagai pilihan.
+  final bool isPlaceholder;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).cardTheme.color ??
-            Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
-      ),
+    final theme = Theme.of(context);
+
+    return Semantics(
+      button: true,
+      label: '$label: $value',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.flag_rounded, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  selectedText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              child: Row(
+                children: [
+                  Icon(icon, size: 17, color: theme.hintColor),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 74,
+                    child: Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: isPlaceholder
+                            ? FontWeight.w400
+                            : FontWeight.w600,
+                        color: isPlaceholder ? theme.hintColor : null,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: theme.hintColor,
+                  ),
+                ],
               ),
-              const Icon(Icons.expand_more_rounded),
-            ],
-          ),
+            ),
+            if (showDivider)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 12,
+                endIndent: 12,
+                color: theme.dividerColor.withValues(alpha: 0.4),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _PocketSelectorField extends StatelessWidget {
-  const _PocketSelectorField({
-    required this.selectedPocketId,
-    required this.selectedText,
-    required this.onTap,
-  });
+/// Pembungkus untuk sekelompok [_DetailRow] — satu border, bukan satu per baris.
+class _DetailGroup extends StatelessWidget {
+  const _DetailGroup({required this.children});
 
-  final int? selectedPocketId;
-  final String selectedText;
-  final VoidCallback onTap;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color:
             Theme.of(context).cardTheme.color ??
@@ -1111,72 +1195,7 @@ class _PocketSelectorField extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.account_balance_wallet_rounded, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  selectedText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Icon(Icons.expand_more_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategorySelectorField extends StatelessWidget {
-  const _CategorySelectorField({
-    required this.selectedText,
-    required this.onTap,
-  });
-
-  final String selectedText;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).cardTheme.color ??
-            Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.category_rounded, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  selectedText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Icon(Icons.expand_more_rounded),
-            ],
-          ),
-        ),
-      ),
+      child: Column(children: children),
     );
   }
 }
@@ -1323,29 +1342,37 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.emoji,
-    required this.label,
-    required this.color,
-  });
+/// Label seksi: huruf besar kecil-renggang dengan garis rambut.
+///
+/// Menggantikan emoji + label berwarna. Emoji tidak mewarisi warna yang
+/// dioper, jadi labelnya berwarna sementara emojinya tidak. Warna error juga
+/// dilepas — merah harus berarti "ada yang salah", bukan nama seksi.
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
 
-  final String emoji;
   final String label;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 6),
         Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: color,
+          label.toUpperCase(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.hintColor,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
+            letterSpacing: 1.2,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: theme.dividerColor.withValues(alpha: 0.4),
           ),
         ),
       ],
@@ -1353,15 +1380,86 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
+/// Field nominal sebagai elemen utama layar.
+///
+/// Dibuat tanpa kotak: prefiks `Rp` kecil dan redup, angka berukuran display
+/// dengan `tabular-nums`, dan garis bawah tebal sebagai pengganti border.
+/// Tetap menerima ekspresi kalkulator ("50k+20k"), karena itu keyboard-nya
+/// `text` dan bukan numerik.
+class _AmountHeroField extends StatelessWidget {
+  const _AmountHeroField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+    final theme = Theme.of(context);
+    final expenseColor = theme.colorScheme.error;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              'Rp',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.hintColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [RupiahInputFormatter()],
+                style: theme.textTheme.displaySmall?.copyWith(
+                  color: expenseColor,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  hintStyle: theme.textTheme.displaySmall?.copyWith(
+                    color: theme.hintColor.withValues(alpha: 0.4),
+                    fontWeight: FontWeight.w800,
+                  ),
+                  // Kotak dilepas — garis bawah yang menandai field ini.
+                  filled: false,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.only(bottom: 6),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                ),
+                onChanged: (_) => onChanged(),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nominal wajib diisi';
+                  }
+                  if (RupiahInputFormatter.parse(value) <= 0) {
+                    return 'Nominal tidak valid';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        Container(height: 2, color: expenseColor.withValues(alpha: 0.85)),
+        const SizedBox(height: 7),
+        Text(
+          'Ketik angka, atau hitung langsung: 50k+20k',
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+        ),
+      ],
     );
   }
 }

@@ -11,12 +11,16 @@ class RecentSection extends StatelessWidget {
     required this.transactions,
     required this.isLoading,
     required this.headerBottom,
+    this.moneyLocationNames = const {},
   });
 
   final ThemeData theme;
   final List<FinanceTransaction> transactions;
   final bool isLoading;
   final Widget headerBottom;
+
+  /// Nama lokasi per id, diteruskan ke tiap baris transaksi.
+  final Map<int, String> moneyLocationNames;
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +59,19 @@ class RecentSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Belum ada transaksi nih.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
+                      'Belum ada catatan di sini.',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // "Belum ada data" adalah jalan buntu. Menyebut tombol yang
+                    // harus ditekan memberi satu langkah berikutnya yang jelas.
+                    Text(
+                      'Tekan tombol Keluar di atas begitu jajan pertama.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
                       ),
                     ),
                   ],
@@ -71,7 +85,12 @@ class RecentSection extends StatelessWidget {
               itemCount: transactions.length > 10 ? 10 : transactions.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) =>
-                  TransactionTile(item: transactions[index], theme: theme),
+                  TransactionTile(
+                    item: transactions[index],
+                    theme: theme,
+                    moneyLocationName:
+                        moneyLocationNames[transactions[index].moneyLocationId],
+                  ),
             ),
         ],
       ),

@@ -76,6 +76,10 @@ class AppTheme {
   static const Color neoCoral = Color(0xFFFF9D8E);
   static const Color neoLavender = Color(0xFFC8B6FF);
 
+  /// Bulu PiRa, si kapibara maskot. Cokelat hangat yang tetap terbaca di atas
+  /// latar mint kartu saldo maupun latar kartu biasa.
+  static const Color piraFur = Color(0xFFC98A5B);
+
   // ─── Dark Mode ───────────────────────────────────────────────────────────────
   static const Color darkScaffold = Color(0xFF121212);
   static const Color darkCard = Color(0xFF1E1E1E);

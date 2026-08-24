@@ -4,6 +4,7 @@ class FinanceTransaction {
     this.bookPeriodId,
     this.financialPlanId,
     this.pocketId,
+    this.moneyLocationId,
     required this.title,
     required this.amount,
     required this.type,
@@ -17,6 +18,7 @@ class FinanceTransaction {
   final int? bookPeriodId;
   final int? financialPlanId;
   final int? pocketId;
+  final int? moneyLocationId;
   final String title;
   final double amount;
   final String type;
@@ -32,6 +34,7 @@ class FinanceTransaction {
     int? bookPeriodId,
     int? financialPlanId,
     int? pocketId,
+    int? moneyLocationId,
     String? title,
     double? amount,
     String? type,
@@ -45,6 +48,7 @@ class FinanceTransaction {
       bookPeriodId: bookPeriodId ?? this.bookPeriodId,
       financialPlanId: financialPlanId ?? this.financialPlanId,
       pocketId: pocketId ?? this.pocketId,
+      moneyLocationId: moneyLocationId ?? this.moneyLocationId,
       title: title ?? this.title,
       amount: amount ?? this.amount,
       type: type ?? this.type,
@@ -61,6 +65,7 @@ class FinanceTransaction {
       'book_period_id': bookPeriodId,
       'financial_plan_id': financialPlanId,
       'pocket_id': pocketId,
+      'money_location_id': moneyLocationId,
       'title': title,
       'amount': amount,
       'type': type,
@@ -77,6 +82,7 @@ class FinanceTransaction {
       bookPeriodId: (map['book_period_id'] as num?)?.toInt(),
       financialPlanId: (map['financial_plan_id'] as num?)?.toInt(),
       pocketId: (map['pocket_id'] as num?)?.toInt(),
+      moneyLocationId: (map['money_location_id'] as num?)?.toInt(),
       title: map['title'] as String? ?? '',
       amount: (map['amount'] as num?)?.toDouble() ?? 0,
       type: map['type'] as String? ?? 'EXPENSE',
@@ -93,6 +99,7 @@ class FinanceTransaction {
       keyMapping['book_period_id'] ?? 'book_period_id': bookPeriodId,
       keyMapping['financial_plan_id'] ?? 'financial_plan_id': financialPlanId,
       keyMapping['pocket_id'] ?? 'pocket_id': pocketId,
+      keyMapping['money_location_id'] ?? 'money_location_id': moneyLocationId,
       keyMapping['title'] ?? 'title': title,
       keyMapping['amount'] ?? 'amount': amount,
       keyMapping['type'] ?? 'type': type,

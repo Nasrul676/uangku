@@ -70,9 +70,21 @@ class AiChatService {
                 'description':
                     'Tanggal (YYYY-MM-DD). Jika tidak disebutkan gunakan hari ini.',
               },
+              'money_location': {
+                'type': 'STRING',
+                'description':
+                    'Nama lokasi penyimpanan uang, misal "Dompet" atau "Rekening / ATM". '
+                    'Kosongkan kalau pengguna tidak menyebutkannya.',
+              },
             },
             'required': ['title', 'amount', 'type', 'category', 'date'],
           },
+        },
+        {
+          'name': 'get_money_locations',
+          'description':
+              'Mendapatkan daftar lokasi penyimpanan uang beserta sisa saldo tiap lokasi '
+              '(dompet, rekening, e-wallet).',
         },
         {
           'name': 'get_financial_plans',

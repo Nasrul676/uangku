@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/custom_loading_indicator.dart';
 import '../models/financial_plan.dart';
 import '../models/pocket.dart';
+import '../widgets/money_location_picker.dart';
 import '../widgets/animated_bouncing_card.dart';
 import '../widgets/custom_bottom_sheet.dart';
 
@@ -33,6 +34,7 @@ class _RecurringTransactionInputScreenState
   String _type = 'EXPENSE';
   int? _selectedFinancialPlanId;
   int? _selectedPocketId;
+  int? _selectedMoneyLocationId;
   String _frequency = 'MONTHLY'; // MONTHLY or WEEKLY
   DateTime _nextDate = DateTime.now();
   final bool _isSaving = false;
@@ -59,6 +61,7 @@ class _RecurringTransactionInputScreenState
         _nextDate = parsedDate;
       }
       _selectedPocketId = existing.pocketId;
+      _selectedMoneyLocationId = existing.moneyLocationId;
       _selectedFinancialPlanId = existing.financialPlanId;
     } else {
       _categoryController.text = 'Langganan';
@@ -104,6 +107,7 @@ class _RecurringTransactionInputScreenState
       isActive: widget.existingTransaction?.isActive ?? true,
       pocketId: _type == 'EXPENSE' ? _selectedPocketId : null,
       financialPlanId: _type == 'EXPENSE' ? _selectedFinancialPlanId : null,
+      moneyLocationId: _selectedMoneyLocationId,
     );
 
     await GlobalActionOverlay.run(() async {
@@ -222,6 +226,20 @@ class _RecurringTransactionInputScreenState
     });
   }
 
+  Future<void> _openMoneyLocationPicker() async {
+    final choice = await showMoneyLocationPicker(
+      context: context,
+      selectedId: _selectedMoneyLocationId,
+      title: _type == 'INCOME' ? 'Uang ini masuk ke mana?' : 'Uang ini dari mana?',
+      noneSubtitle: 'Tidak dicatat tempat simpannya',
+    );
+
+    if (!mounted || choice == null) return;
+    if (choice.locationId != _selectedMoneyLocationId) {
+      setState(() => _selectedMoneyLocationId = choice.locationId);
+    }
+  }
+
   Future<void> _openPocketPicker(List<Pocket> pockets) async {
     final selected = await showModalBottomSheet<int?>(
       context: context,
@@ -316,6 +334,23 @@ class _RecurringTransactionInputScreenState
       for (final pocket in pockets) {
         if (pocket.id == _selectedPocketId) {
           selectedPocketText = pocket.name;
+          break;
+        }
+      }
+    }
+
+    // Lokasi yang sudah dihapus tidak boleh menyisakan pilihan hantu di form.
+    final moneyLocations = provider.moneyLocations;
+    if (_selectedMoneyLocationId != null &&
+        !moneyLocations.any((item) => item.id == _selectedMoneyLocationId)) {
+      _selectedMoneyLocationId = null;
+    }
+
+    String selectedMoneyLocationText = 'Tanpa Lokasi';
+    if (_selectedMoneyLocationId != null) {
+      for (final item in moneyLocations) {
+        if (item.id == _selectedMoneyLocationId) {
+          selectedMoneyLocationText = item.name;
           break;
         }
       }
@@ -429,6 +464,15 @@ class _RecurringTransactionInputScreenState
                             ),
                             const SizedBox(height: 16),
                           ],
+                          // Lokasi berlaku untuk pemasukan maupun pengeluaran,
+                          // jadi barisnya di luar blok khusus pengeluaran.
+                          _PocketSelectorField(
+                            selectedPocketId: _selectedMoneyLocationId,
+                            selectedText: selectedMoneyLocationText,
+                            icon: Icons.savings_rounded,
+                            onTap: _openMoneyLocationPicker,
+                          ),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _titleController,
                             decoration: const InputDecoration(
@@ -688,11 +732,13 @@ class _PocketSelectorField extends StatelessWidget {
     required this.selectedPocketId,
     required this.selectedText,
     required this.onTap,
+    this.icon = Icons.account_balance_wallet_rounded,
   });
 
   final int? selectedPocketId;
   final String selectedText;
   final VoidCallback onTap;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -712,7 +758,7 @@ class _PocketSelectorField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_wallet_rounded, size: 18),
+              Icon(icon, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

@@ -10,6 +10,7 @@ class RecurringTransaction {
     this.isActive = true,
     this.pocketId,
     this.financialPlanId,
+    this.moneyLocationId,
   });
 
   final int? id;
@@ -22,6 +23,7 @@ class RecurringTransaction {
   final bool isActive;
   final int? pocketId;
   final int? financialPlanId;
+  final int? moneyLocationId;
 
   Map<String, dynamic> toMap() {
     return {
@@ -35,6 +37,7 @@ class RecurringTransaction {
       'is_active': isActive ? 1 : 0,
       'pocket_id': pocketId,
       'financial_plan_id': financialPlanId,
+      'money_location_id': moneyLocationId,
     };
   }
 
@@ -50,6 +53,7 @@ class RecurringTransaction {
       isActive: (map['is_active'] as int) == 1,
       pocketId: map['pocket_id'] as int?,
       financialPlanId: map['financial_plan_id'] as int?,
+      moneyLocationId: map['money_location_id'] as int?,
     );
   }
 
@@ -64,6 +68,7 @@ class RecurringTransaction {
     bool? isActive,
     int? pocketId,
     int? financialPlanId,
+    int? moneyLocationId,
   }) {
     return RecurringTransaction(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class RecurringTransaction {
       isActive: isActive ?? this.isActive,
       pocketId: pocketId ?? this.pocketId,
       financialPlanId: financialPlanId ?? this.financialPlanId,
+      moneyLocationId: moneyLocationId ?? this.moneyLocationId,
     );
   }
 }

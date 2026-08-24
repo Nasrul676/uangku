@@ -6,6 +6,8 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan.dart';
+import '../models/money_location.dart';
+import '../models/money_transfer.dart';
 import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
 import '../models/saving_expense.dart';
@@ -20,7 +22,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const _dbName = 'uangkeluar.db';
-  static const _dbVersion = 18;
+  static const _dbVersion = 19;
   static const transactionsTable = 'transactions';
   static const bookPeriodsTable = 'book_periods';
   static const financialPlansTable = 'financial_plans';
@@ -33,6 +35,8 @@ class DatabaseHelper {
   static const recurringTransactionsTable = 'recurring_transactions';
   static const chatSessionsTable = 'chat_sessions';
   static const chatMessagesTable = 'chat_messages';
+  static const moneyLocationsTable = 'money_locations';
+  static const moneyTransfersTable = 'money_transfers';
 
   Database? _database;
 
@@ -73,263 +77,346 @@ class DatabaseHelper {
         await _createSchema(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute('''
-            ALTER TABLE $transactionsTable
-            ADD COLUMN book_period_id INTEGER
-          ''');
-
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $bookPeriodsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              label TEXT NOT NULL,
-              start_date TEXT NOT NULL,
-              end_date TEXT,
-              is_closed INTEGER NOT NULL DEFAULT 0
-            )
-          ''');
-        }
-
-        if (oldVersion < 3) {
-          await db.execute('''
-            ALTER TABLE $transactionsTable
-            ADD COLUMN financial_plan_id INTEGER
-          ''');
-
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $financialPlansTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              book_period_id INTEGER NOT NULL,
-              title TEXT NOT NULL,
-              target_amount REAL NOT NULL,
-              target_date TEXT NOT NULL
-            )
-          ''');
-        }
-
-        if (oldVersion < 4) {
-          await db.execute('''
-            ALTER TABLE $transactionsTable
-            ADD COLUMN time TEXT
-          ''');
-        }
-
-        if (oldVersion < 5) {
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_transactions_book_period_id ON $transactionsTable(book_period_id)',
-          );
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_financial_plans_book_period_id ON $financialPlansTable(book_period_id)',
-          );
-        }
-
-        if (oldVersion < 6) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $shoppingItemsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              book_period_id INTEGER NOT NULL,
-              title TEXT NOT NULL,
-              amount REAL NOT NULL,
-              category TEXT NOT NULL,
-              date TEXT NOT NULL,
-              time TEXT,
-              quantity REAL NOT NULL,
-              unit TEXT NOT NULL,
-              is_bought INTEGER NOT NULL DEFAULT 0,
-              expense_transaction_id INTEGER
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_shopping_items_book_period_id ON $shoppingItemsTable(book_period_id)',
-          );
-        }
-
-        if (oldVersion < 7) {
-          // Check if column already exists (added in version 6 in some builds)
-          var columns = await db.rawQuery(
-            'PRAGMA table_info($shoppingItemsTable)',
-          );
-          bool columnExists = columns.any(
-            (column) => column['name'] == 'expense_transaction_id',
-          );
-
-          if (!columnExists) {
-            await db.execute('''
-              ALTER TABLE $shoppingItemsTable
-              ADD COLUMN expense_transaction_id INTEGER
-            ''');
-          }
-
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
-          );
-        }
-
-        if (oldVersion < 8) {
-          await db.execute('''
-            ALTER TABLE $transactionsTable
-            ADD COLUMN pocket_id INTEGER
-          ''');
-
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $pocketsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              book_period_id INTEGER NOT NULL,
-              name TEXT NOT NULL,
-              icon TEXT NOT NULL,
-              allocation_type TEXT NOT NULL,
-              allocation_value REAL NOT NULL,
-              current_balance REAL NOT NULL DEFAULT 0
-            )
-          ''');
-
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
-          );
-        }
-
-        if (oldVersion < 9) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $notificationsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              title TEXT NOT NULL,
-              subtitle TEXT NOT NULL,
-              type TEXT NOT NULL,
-              is_read INTEGER NOT NULL DEFAULT 0,
-              created_at TEXT NOT NULL
-            )
-          ''');
-        }
-        if (oldVersion < 10) {
-          await db.execute('''
-            ALTER TABLE $financialPlansTable
-            ADD COLUMN category TEXT
-          ''');
-        }
-        if (oldVersion < 11) {
-          await db.execute('''
-            ALTER TABLE $bookPeriodsTable
-            ADD COLUMN plan_budget REAL NOT NULL DEFAULT 0
-          ''');
-        }
-        if (oldVersion < 12) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $savingGoalsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              title TEXT NOT NULL,
-              target_amount REAL NOT NULL,
-              current_amount REAL NOT NULL DEFAULT 0,
-              target_date TEXT,
-              icon TEXT
-            )
-          ''');
-
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $recurringTransactionsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              type TEXT NOT NULL,
-              amount REAL NOT NULL,
-              title TEXT NOT NULL,
-              category TEXT NOT NULL,
-              frequency TEXT NOT NULL,
-              next_date TEXT NOT NULL,
-              is_active INTEGER NOT NULL DEFAULT 1,
-              pocket_id INTEGER,
-              financial_plan_id INTEGER
-            )
-          ''');
-        }
-        if (oldVersion < 13) {
-          await db.execute('''
-            ALTER TABLE $recurringTransactionsTable
-            ADD COLUMN pocket_id INTEGER
-          ''');
-          await db.execute('''
-            ALTER TABLE $recurringTransactionsTable
-            ADD COLUMN financial_plan_id INTEGER
-          ''');
-        }
-        if (oldVersion < 14) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $savingHistoriesTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              saving_goal_id INTEGER NOT NULL,
-              amount REAL NOT NULL,
-              who TEXT NOT NULL,
-              date TEXT NOT NULL
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
-          );
-        }
-        if (oldVersion < 15) {
-          var columns = await db.rawQuery(
-            'PRAGMA table_info($savingGoalsTable)',
-          );
-          bool columnExists = columns.any(
-            (column) => column['name'] == 'order_index',
-          );
-          if (!columnExists) {
-            await db.execute('''
-              ALTER TABLE $savingGoalsTable
-              ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
-            ''');
-          }
-        }
-        if (oldVersion < 16) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $savingExpensesTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              saving_goal_id INTEGER NOT NULL,
-              amount REAL NOT NULL,
-              purpose TEXT NOT NULL,
-              date TEXT NOT NULL,
-              time TEXT NOT NULL
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
-          );
-        }
-        if (oldVersion < 17) {
-          var columns = await db.rawQuery(
-            'PRAGMA table_info($savingGoalsTable)',
-          );
-          bool columnExists = columns.any((column) => column['name'] == 'type');
-          if (!columnExists) {
-            await db.execute('''
-              ALTER TABLE $savingGoalsTable
-              ADD COLUMN type TEXT NOT NULL DEFAULT 'money'
-            ''');
-          }
-        }
-        if (oldVersion < 18) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $chatSessionsTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              title TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL
-            )
-          ''');
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS $chatMessagesTable (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              session_id INTEGER NOT NULL,
-              role TEXT NOT NULL,
-              text TEXT NOT NULL,
-              action TEXT,
-              action_data TEXT,
-              timestamp TEXT NOT NULL
-            )
-          ''');
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON $chatMessagesTable(session_id)',
-          );
-        }
+        await _applyMigrations(db, oldVersion);
       },
     );
+  }
+
+  /// Migrasi dipisah dari `openDatabase` supaya jalurnya bisa diuji: test
+  /// membuat skema versi lama, memanggil ini, lalu memeriksa hasilnya —
+  /// tanpa perlu benar-benar membuka file database versi lama.
+  static Future<void> _applyMigrations(Database db, int oldVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE $transactionsTable
+        ADD COLUMN book_period_id INTEGER
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $bookPeriodsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          label TEXT NOT NULL,
+          start_date TEXT NOT NULL,
+          end_date TEXT,
+          is_closed INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('''
+        ALTER TABLE $transactionsTable
+        ADD COLUMN financial_plan_id INTEGER
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $financialPlansTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_period_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          target_amount REAL NOT NULL,
+          target_date TEXT NOT NULL
+        )
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        ALTER TABLE $transactionsTable
+        ADD COLUMN time TEXT
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_transactions_book_period_id ON $transactionsTable(book_period_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_financial_plans_book_period_id ON $financialPlansTable(book_period_id)',
+      );
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $shoppingItemsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_period_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          amount REAL NOT NULL,
+          category TEXT NOT NULL,
+          date TEXT NOT NULL,
+          time TEXT,
+          quantity REAL NOT NULL,
+          unit TEXT NOT NULL,
+          is_bought INTEGER NOT NULL DEFAULT 0,
+          expense_transaction_id INTEGER
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_shopping_items_book_period_id ON $shoppingItemsTable(book_period_id)',
+      );
+    }
+
+    if (oldVersion < 7) {
+      // Check if column already exists (added in version 6 in some builds)
+      var columns = await db.rawQuery(
+        'PRAGMA table_info($shoppingItemsTable)',
+      );
+      bool columnExists = columns.any(
+        (column) => column['name'] == 'expense_transaction_id',
+      );
+
+      if (!columnExists) {
+        await db.execute('''
+          ALTER TABLE $shoppingItemsTable
+          ADD COLUMN expense_transaction_id INTEGER
+        ''');
+      }
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_shopping_items_expense_transaction_id ON $shoppingItemsTable(expense_transaction_id)',
+      );
+    }
+
+    if (oldVersion < 8) {
+      await db.execute('''
+        ALTER TABLE $transactionsTable
+        ADD COLUMN pocket_id INTEGER
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $pocketsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_period_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          icon TEXT NOT NULL,
+          allocation_type TEXT NOT NULL,
+          allocation_value REAL NOT NULL,
+          current_balance REAL NOT NULL DEFAULT 0
+        )
+      ''');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_pockets_book_period_id ON $pocketsTable(book_period_id)',
+      );
+    }
+
+    if (oldVersion < 9) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $notificationsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          subtitle TEXT NOT NULL,
+          type TEXT NOT NULL,
+          is_read INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 10) {
+      await db.execute('''
+        ALTER TABLE $financialPlansTable
+        ADD COLUMN category TEXT
+      ''');
+    }
+    if (oldVersion < 11) {
+      await db.execute('''
+        ALTER TABLE $bookPeriodsTable
+        ADD COLUMN plan_budget REAL NOT NULL DEFAULT 0
+      ''');
+    }
+    if (oldVersion < 12) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $savingGoalsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          target_amount REAL NOT NULL,
+          current_amount REAL NOT NULL DEFAULT 0,
+          target_date TEXT,
+          icon TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $recurringTransactionsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          amount REAL NOT NULL,
+          title TEXT NOT NULL,
+          category TEXT NOT NULL,
+          frequency TEXT NOT NULL,
+          next_date TEXT NOT NULL,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          pocket_id INTEGER,
+          financial_plan_id INTEGER
+        )
+      ''');
+    }
+    if (oldVersion < 13) {
+      await db.execute('''
+        ALTER TABLE $recurringTransactionsTable
+        ADD COLUMN pocket_id INTEGER
+      ''');
+      await db.execute('''
+        ALTER TABLE $recurringTransactionsTable
+        ADD COLUMN financial_plan_id INTEGER
+      ''');
+    }
+    if (oldVersion < 14) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $savingHistoriesTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          saving_goal_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          who TEXT NOT NULL,
+          date TEXT NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_saving_histories_goal_id ON $savingHistoriesTable(saving_goal_id)',
+      );
+    }
+    if (oldVersion < 15) {
+      var columns = await db.rawQuery(
+        'PRAGMA table_info($savingGoalsTable)',
+      );
+      bool columnExists = columns.any(
+        (column) => column['name'] == 'order_index',
+      );
+      if (!columnExists) {
+        await db.execute('''
+          ALTER TABLE $savingGoalsTable
+          ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
+        ''');
+      }
+    }
+    if (oldVersion < 16) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $savingExpensesTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          saving_goal_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          purpose TEXT NOT NULL,
+          date TEXT NOT NULL,
+          time TEXT NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_saving_expenses_goal_id ON $savingExpensesTable(saving_goal_id)',
+      );
+    }
+    if (oldVersion < 17) {
+      var columns = await db.rawQuery(
+        'PRAGMA table_info($savingGoalsTable)',
+      );
+      bool columnExists = columns.any((column) => column['name'] == 'type');
+      if (!columnExists) {
+        await db.execute('''
+          ALTER TABLE $savingGoalsTable
+          ADD COLUMN type TEXT NOT NULL DEFAULT 'money'
+        ''');
+      }
+    }
+    if (oldVersion < 18) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $chatSessionsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $chatMessagesTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          role TEXT NOT NULL,
+          text TEXT NOT NULL,
+          action TEXT,
+          action_data TEXT,
+          timestamp TEXT NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON $chatMessagesTable(session_id)',
+      );
+    }
+    if (oldVersion < 19) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $moneyLocationsTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          icon TEXT NOT NULL,
+          initial_balance REAL NOT NULL DEFAULT 0,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          is_archived INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      ''');
+      for (final table in [transactionsTable, recurringTransactionsTable]) {
+        final columns = await db.rawQuery('PRAGMA table_info($table)');
+        // PRAGMA balik kosong kalau tabelnya belum ada — tidak ada yang perlu
+        // di-ALTER, dan memaksakannya cuma akan melempar error.
+        if (columns.isEmpty) continue;
+        final columnExists = columns.any(
+          (column) => column['name'] == 'money_location_id',
+        );
+        if (!columnExists) {
+          await db.execute('''
+            ALTER TABLE $table
+            ADD COLUMN money_location_id INTEGER
+          ''');
+        }
+      }
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_transactions_money_location_id ON $transactionsTable(money_location_id)',
+      );
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $moneyTransfersTable (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          from_location_id INTEGER,
+          to_location_id INTEGER,
+          amount REAL NOT NULL,
+          date TEXT NOT NULL,
+          time TEXT,
+          note TEXT,
+          created_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_money_transfers_from ON $moneyTransfersTable(from_location_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_money_transfers_to ON $moneyTransfersTable(to_location_id)',
+      );
+      await _seedDefaultMoneyLocations(db);
+    }
+  }
+
+  /// Isi dua lokasi bawaan supaya picker tidak kosong saat pertama dibuka.
+  /// Hanya jalan kalau tabel masih benar-benar kosong, jadi aman dipanggil
+  /// ulang dan tidak akan menimpa lokasi buatan pengguna.
+  static Future<void> _seedDefaultMoneyLocations(Database db) async {
+    final existing = await db.query(moneyLocationsTable, limit: 1);
+    if (existing.isNotEmpty) return;
+
+    final now = DateTime.now().toIso8601String();
+    await db.insert(moneyLocationsTable, {
+      'name': 'Dompet',
+      'icon': 'wallet',
+      'initial_balance': 0.0,
+      'sort_order': 0,
+      'is_archived': 0,
+      'created_at': now,
+    });
+    await db.insert(moneyLocationsTable, {
+      'name': 'Rekening / ATM',
+      'icon': 'credit_card',
+      'initial_balance': 0.0,
+      'sort_order': 1,
+      'is_archived': 0,
+      'created_at': now,
+    });
   }
 
   static Future<void> _createSchema(Database db) async {
@@ -339,6 +426,7 @@ class DatabaseHelper {
         book_period_id INTEGER,
         financial_plan_id INTEGER,
         pocket_id INTEGER,
+        money_location_id INTEGER,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
         type TEXT NOT NULL,
@@ -405,7 +493,8 @@ class DatabaseHelper {
         next_date TEXT NOT NULL,
         is_active INTEGER NOT NULL DEFAULT 1,
         pocket_id INTEGER,
-        financial_plan_id INTEGER
+        financial_plan_id INTEGER,
+        money_location_id INTEGER
       )
     ''');
 
@@ -445,6 +534,31 @@ class DatabaseHelper {
         allocation_type TEXT NOT NULL,
         allocation_value REAL NOT NULL,
         current_balance REAL NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $moneyLocationsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        initial_balance REAL NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $moneyTransfersTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_location_id INTEGER,
+        to_location_id INTEGER,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT,
+        note TEXT,
+        created_at TEXT NOT NULL
       )
     ''');
 
@@ -504,6 +618,17 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON $chatMessagesTable(session_id)',
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_money_location_id ON $transactionsTable(money_location_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_money_transfers_from ON $moneyTransfersTable(from_location_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_money_transfers_to ON $moneyTransfersTable(to_location_id)',
+    );
+
+    await _seedDefaultMoneyLocations(db);
   }
 
   Future<void> resetShoppingItemsByTransactionId(int transactionId) async {
@@ -678,6 +803,10 @@ class DatabaseHelper {
   /// test bisa menyiapkan database in-memory tanpa menyentuh singleton.
   static Future<void> createSchemaForTesting(Database db) => _createSchema(db);
 
+  @visibleForTesting
+  static Future<void> applyMigrationsForTesting(Database db, int oldVersion) =>
+      _applyMigrations(db, oldVersion);
+
   /// Menghapus buku beserta seluruh baris yang bergantung padanya.
   ///
   /// Menerima [db] sebagai parameter (bukan lewat singleton) supaya perilaku
@@ -779,6 +908,112 @@ class DatabaseHelper {
   Future<void> deletePocket(int id) async {
     final db = await database;
     await db.delete(pocketsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<MoneyLocation>> getAllMoneyLocations() async {
+    final db = await database;
+    final result = await db.query(
+      moneyLocationsTable,
+      orderBy: 'sort_order ASC, id ASC',
+    );
+    return result.map(MoneyLocation.fromMap).toList();
+  }
+
+  Future<int> insertMoneyLocation(MoneyLocation location) async {
+    final db = await database;
+    return db.insert(
+      moneyLocationsTable,
+      location.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> updateMoneyLocation(MoneyLocation location) async {
+    final db = await database;
+    await db.update(
+      moneyLocationsTable,
+      location.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [location.id],
+    );
+  }
+
+  /// Menghapus lokasi tidak boleh ikut menghapus transaksinya — uangnya nyata
+  /// keluar-masuk, cuma keterangan tempatnya yang hilang. Transaksi terkait
+  /// dilepas jadi "belum ditentukan" dalam satu transaksi DB supaya tidak
+  /// pernah ada baris yang menunjuk lokasi hantu.
+  ///
+  /// Perpindahan uang diperlakukan sama: barisnya **tidak** dihapus, hanya
+  /// sisi yang mati yang di-null-kan. Kalau transfer ATM → Dompet ikut
+  /// terhapus waktu ATM dibuang, saldo Dompet ikut berkurang — padahal Dompet
+  /// benar-benar menerima uang itu. Baris baru dibuang kalau kedua sisinya
+  /// sudah hilang, karena saat itu ia tidak memengaruhi saldo siapa pun.
+  Future<void> deleteMoneyLocation(int id) async {
+    final db = await database;
+    await deleteMoneyLocationFrom(db, id);
+  }
+
+  /// Dipisah dari [deleteMoneyLocation] supaya aturannya bisa diuji di atas
+  /// basis data in-memory — aturan ini gampang salah dan mahal kalau salah.
+  @visibleForTesting
+  static Future<void> deleteMoneyLocationFrom(Database db, int id) async {
+    await db.transaction((txn) async {
+      await txn.update(
+        transactionsTable,
+        {'money_location_id': null},
+        where: 'money_location_id = ?',
+        whereArgs: [id],
+      );
+      await txn.update(
+        moneyTransfersTable,
+        {'from_location_id': null},
+        where: 'from_location_id = ?',
+        whereArgs: [id],
+      );
+      await txn.update(
+        moneyTransfersTable,
+        {'to_location_id': null},
+        where: 'to_location_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        moneyTransfersTable,
+        where: 'from_location_id IS NULL AND to_location_id IS NULL',
+      );
+      await txn.delete(moneyLocationsTable, where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  Future<List<MoneyTransfer>> getAllMoneyTransfers() async {
+    final db = await database;
+    final result = await db.query(
+      moneyTransfersTable,
+      orderBy: 'date DESC, time DESC, id DESC',
+    );
+    return result.map(MoneyTransfer.fromMap).toList();
+  }
+
+  Future<int> insertMoneyTransfer(MoneyTransfer transfer) async {
+    final db = await database;
+    return db.insert(
+      moneyTransfersTable,
+      transfer.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<void> deleteMoneyTransfer(int id) async {
+    final db = await database;
+    await db.delete(moneyTransfersTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> countTransactionsByMoneyLocation(int id) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM $transactionsTable WHERE money_location_id = ?',
+      [id],
+    );
+    return (result.first['total'] as num?)?.toInt() ?? 0;
   }
 
   Future<List<Map<String, dynamic>>> getAllNotifications() async {

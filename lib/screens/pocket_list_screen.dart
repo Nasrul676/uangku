@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
+import '../theme/app_theme.dart';
 import 'pocket_form_screen.dart';
 import 'pocket_detail_screen.dart';
 import '../utils/icon_picker_utils.dart'; // We'll create this to map string icons
@@ -87,9 +88,10 @@ class PocketListScreen extends StatelessWidget {
                         CircleAvatar(
                           radius: 32,
                           backgroundColor: const Color(0xFFE5F0FF),
-                          child: Text(
-                            IconPickerUtils.getIcon(pocket.icon),
-                            style: const TextStyle(fontSize: 32),
+                          child: Icon(
+                            IconPickerUtils.getLucideIcon(pocket.icon),
+                            size: 30,
+                            color: AppTheme.borderColor,
                           ),
                         ),
                         const Spacer(),

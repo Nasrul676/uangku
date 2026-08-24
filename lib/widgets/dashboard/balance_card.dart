@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_card.dart';
-import 'dashboard_buttons.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/daily_budget.dart';
+import '../../utils/icon_picker_utils.dart';
+import '../../utils/money_location_balance.dart';
+import 'pira_mascot.dart';
 
-class BalanceCard extends StatelessWidget {
+/// Kartu saldo beranda.
+///
+/// Dulu kartu ini menumpuk enam angka sekaligus, dan salah satunya — "Selisih"
+/// — nilainya persis sama dengan saldo di atasnya, karena keduanya
+/// `netBalance`. Sekarang tersisa satu angka besar, lalu satu kalimat yang
+/// menerjemahkannya jadi keputusan hari ini.
+///
+/// Rincian pemasukan dan pengeluaran tidak dibuang, hanya dilipat di balik
+/// satu ketukan. Beranda jadi tenang tanpa menghilangkan angka yang sudah
+/// jadi kebiasaan dilihat.
+class BalanceCard extends StatefulWidget {
   const BalanceCard({
     super.key,
     required this.theme,
@@ -15,6 +29,13 @@ class BalanceCard extends StatelessWidget {
     required this.onToggleBalanceVisibility,
     required this.onAddIncome,
     required this.onAddExpense,
+    this.mood = PiraMood.santai,
+    this.budget,
+    this.locations = const [],
+    this.unassignedBalance = 0,
+    this.onManageLocations,
+    this.mascotKey,
+    this.onTapMascot,
   });
 
   final ThemeData theme;
@@ -25,16 +46,45 @@ class BalanceCard extends StatelessWidget {
   final VoidCallback onToggleBalanceVisibility;
   final VoidCallback onAddIncome;
   final VoidCallback onAddExpense;
+  final PiraMood mood;
+
+  /// Null kalau angkanya tidak bisa dipercaya — buku sudah lewat, saldo habis,
+  /// atau belum ada pengeluaran untuk jadi dasar perkiraan. Kalimatnya
+  /// dihilangkan, bukan diisi tebakan.
+  final DailyBudget? budget;
+
+  /// Saldo per tempat penyimpanan uang. Kosong berarti pengguna belum memakai
+  /// fiturnya — bagiannya tidak dirender sama sekali, bukan dirender kosong.
+  final List<MoneyLocationSummary> locations;
+
+  /// Sisa dari transaksi yang belum ditandai lokasinya.
+  ///
+  /// Tanpa baris ini daftar di atasnya akan terbaca seolah sudah menjelaskan
+  /// seluruh uang pengguna — padahal transaksi lama semuanya masih kosong.
+  final double unassignedBalance;
+
+  final VoidCallback? onManageLocations;
+
+  /// Dipakai beranda untuk menyuruh PiRa bereaksi saat transaksi tersimpan.
+  final GlobalKey<PiraMascotState>? mascotKey;
+
+  final VoidCallback? onTapMascot;
+
+  @override
+  State<BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<BalanceCard> {
+  bool _showDetail = false;
 
   @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final budget = widget.budget;
+
     return AppCard(
-      isInteractive: true,
-      padding: const EdgeInsets.all(14),
-      color: Theme.of(context).colorScheme.primaryContainer,
-      onTap: () {
-        // Toggle visibility maybe?
-      },
+      padding: const EdgeInsets.all(16),
+      color: AppTheme.neoMint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -42,9 +92,11 @@ class BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Dompet Kamu',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  'SISA UANGMU',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: AppTheme.borderColor.withValues(alpha: 0.72),
                   ),
                 ),
               ),
@@ -52,82 +104,281 @@ class BalanceCard extends StatelessWidget {
                 tooltip: 'Tampilkan atau sembunyikan saldo',
                 visualDensity: VisualDensity.compact,
                 splashRadius: 18,
-                onPressed: onToggleBalanceVisibility,
+                onPressed: widget.onToggleBalanceVisibility,
                 icon: Icon(
-                  isBalanceHidden
-                      ? Icons.visibility_off_rounded
-                      : Icons.visibility_rounded,
+                  widget.isBalanceHidden ? LucideIcons.eyeOff : LucideIcons.eye,
                   size: 18,
+                  color: AppTheme.borderColor,
                 ),
               ),
-              const Icon(Icons.cloud_done_rounded, size: 16),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Saldo Kamu Sekarang',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          AnimatedVisibilityCurrencyText(
-            value: netBalance,
-            isHidden: isBalanceHidden,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 34,
-              fontWeight: FontWeight.w700,
-            ),
-            childBuilder: (style) =>
-                AnimatedNetBalanceText(value: netBalance, style: style),
-          ),
-          const SizedBox(height: 8),
-          SummaryRow(
-            label: 'Total Pemasukan',
-            value: totalIncome,
-            isHidden: isBalanceHidden,
-          ),
-          SummaryRow(
-            label: 'Total Pengeluaran',
-            value: totalExpense,
-            labelColor: AppTheme.expenseRed,
-            valueColor: AppTheme.expenseRed,
-            isHidden: isBalanceHidden,
-          ),
-          SummaryRow(
-            label: 'Selisih',
-            value: netBalance,
-            withSign: true,
-            isHidden: isBalanceHidden,
-          ),
-          const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: ActionButton(
-                  label: 'Pemasukan',
-                  icon: Icons.south_west_rounded,
-                  background: Theme.of(context).cardTheme.color ?? Colors.white,
-                  iconBackground: AppTheme.incomeLight,
-                  onTap: onAddIncome,
+                // PiRa yang membesar dan `textScaler` yang bisa sampai 1,3
+                // sama-sama menggerus ruang angka ini. `scaleDown` membuatnya
+                // mengecil seperlunya alih-alih luber keluar kartu.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedVisibilityCurrencyText(
+                    value: widget.netBalance,
+                    isHidden: widget.isBalanceHidden,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.8,
+                      color: AppTheme.borderColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    childBuilder: (style) => AnimatedNetBalanceText(
+                      value: widget.netBalance,
+                      style: style,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
+              PiraMascot(
+                key: widget.mascotKey,
+                mood: widget.mood,
+                size: 88,
+                onTap: widget.onTapMascot,
+              ),
+            ],
+          ),
+
+          if (budget != null && !widget.isBalanceHidden) ...[
+            const SizedBox(height: 12),
+            _PlainLine(text: describeBudget(budget)),
+          ],
+
+          const SizedBox(height: 12),
+          _DetailToggle(
+            expanded: _showDetail,
+            onTap: () => setState(() => _showDetail = !_showDetail),
+          ),
+          // Sengaja AnimatedSize dengan anak bersyarat, bukan AnimatedCrossFade:
+          // yang terakhir tetap membangun anak yang tersembunyi, jadi barisnya
+          // masih ada di pohon widget walau tak terlihat.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: !_showDetail
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      children: [
+                        // Kartu ini selalu berlatar mint, terang di mode
+                        // gelap maupun terang. Tanpa warna eksplisit, teksnya
+                        // ikut warna tema — putih di mode gelap, yang di atas
+                        // mint cuma 1.35:1 dan praktis tak terbaca. Tinta
+                        // gelap memberi 11.3:1.
+                        SummaryRow(
+                          label: 'Total Pemasukan',
+                          value: widget.totalIncome,
+                          labelColor: AppTheme.borderColor,
+                          valueColor: AppTheme.borderColor,
+                          isHidden: widget.isBalanceHidden,
+                        ),
+                        SummaryRow(
+                          label: 'Total Pengeluaran',
+                          value: widget.totalExpense,
+                          labelColor: AppTheme.expenseRed,
+                          valueColor: AppTheme.expenseRed,
+                          isHidden: widget.isBalanceHidden,
+                        ),
+                        if (widget.locations.isNotEmpty)
+                          _MoneyLocationBreakdown(
+                            locations: widget.locations,
+                            unassignedBalance: widget.unassignedBalance,
+                            isHidden: widget.isBalanceHidden,
+                            onManage: widget.onManageLocations,
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+
+          const SizedBox(height: 14),
+          Row(
+            children: [
               Expanded(
-                child: ActionButton(
-                  label: 'Pengeluaran',
-                  icon: Icons.north_east_rounded,
-                  background: AppTheme.expenseLight,
-                  iconBackground: AppTheme.expenseRed,
-                  labelColor: AppTheme.expenseRed,
-                  iconColor: Colors.white,
-                  onTap: onAddExpense,
+                child: ChunkyActionButton(
+                  label: 'Masuk',
+                  icon: LucideIcons.arrowDown,
+                  background: AppTheme.neoPaper,
+                  onTap: widget.onAddIncome,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ChunkyActionButton(
+                  label: 'Keluar',
+                  icon: LucideIcons.arrowUp,
+                  background: AppTheme.neoCoral,
+                  onTap: widget.onAddExpense,
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Kalimat biasa di bawah saldo — bagian yang membuat angkanya bisa dipakai.
+class _PlainLine extends StatelessWidget {
+  const _PlainLine({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppTheme.neoPaper.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: AppTheme.borderColor, width: 2),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          height: 1.4,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.borderColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailToggle extends StatelessWidget {
+  const _DetailToggle({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              expanded ? 'Sembunyikan rincian' : 'Lihat rincian',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.borderColor.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(width: 3),
+            AnimatedRotation(
+              turns: expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: const Icon(
+                LucideIcons.chevronDown,
+                size: 15,
+                color: AppTheme.borderColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tombol aksi utama beranda.
+///
+/// Tebal, selebar setengah layar, dengan bayangan keras yang mengecil saat
+/// ditekan — gerakan "tertekan" yang sama dengan bahasa neo-brutalis di layar
+/// lain. Sebelumnya tombol ini kecil dan tenggelam di dasar kartu saldo.
+class ChunkyActionButton extends StatefulWidget {
+  const ChunkyActionButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.background,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color background;
+  final VoidCallback onTap;
+
+  @override
+  State<ChunkyActionButton> createState() => _ChunkyActionButtonState();
+}
+
+class _ChunkyActionButtonState extends State<ChunkyActionButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final offset = _pressed ? 2.0 : 0.0;
+
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: () {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(offset, offset, 0),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.borderColor, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.borderColor,
+                offset: Offset(3 - offset, 4 - offset),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 18, color: AppTheme.borderColor),
+              const SizedBox(width: 7),
+              // Di layar sempit dengan `textScaler` 1,3, label ini melebihi
+              // lebar tombolnya. Dikecilkan seperlunya, bukan dipotong —
+              // "Kel…" tidak menolong siapa pun.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.borderColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -346,6 +597,7 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
     this.withSign = false,
     this.isHidden = false,
     this.childBuilder,
+    this.alignment = Alignment.centerLeft,
   });
 
   final double value;
@@ -353,6 +605,9 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
   final bool withSign;
   final bool isHidden;
   final Widget Function(TextStyle? style)? childBuilder;
+
+  /// Ke mana angkanya merapat kalau ruangnya lebih lebar dari teksnya.
+  final AlignmentGeometry alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -363,6 +618,17 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       reverseDuration: const Duration(milliseconds: 180),
+      // Tata letak bawaan `AnimatedSwitcher` menumpuk anaknya di tengah, dan
+      // di dalam `Expanded` yang lebar itu membuat angka saldo terlihat
+      // melayang alih-alih sejajar dengan labelnya. Perataannya hanya bisa
+      // diubah lewat `layoutBuilder`, bukan lewat parameter.
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        alignment: alignment,
+        children: <Widget>[
+          ...previousChildren,
+          ?currentChild,
+        ],
+      ),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (child, animation) {
@@ -387,6 +653,144 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
               key: const ValueKey('currency-visible'),
               child: visibleChild,
             ),
+    );
+  }
+}
+
+
+/// Rincian "uangnya ada di mana" di dalam panel lipat kartu saldo.
+///
+/// Angka besar di atas kartu adalah saldo buku yang sedang dipilih, sedangkan
+/// saldo lokasi dihitung dari seluruh riwayat — dua cakupan yang berbeda.
+/// Karena itu daftar ini diberi judulnya sendiri dan tidak pernah diklaim
+/// sebagai rincian dari angka di atasnya.
+class _MoneyLocationBreakdown extends StatelessWidget {
+  const _MoneyLocationBreakdown({
+    required this.locations,
+    required this.unassignedBalance,
+    required this.isHidden,
+    this.onManage,
+  });
+
+  final List<MoneyLocationSummary> locations;
+  final double unassignedBalance;
+  final bool isHidden;
+  final VoidCallback? onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: AppTheme.borderColor.withValues(alpha: 0.18),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'UANGMU ADA DI MANA',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                  color: AppTheme.borderColor.withValues(alpha: 0.72),
+                ),
+              ),
+            ),
+            if (onManage != null)
+              InkWell(
+                onTap: onManage,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'Atur',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.borderColor,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        for (final summary in locations)
+          _MoneyLocationRow(
+            icon: IconPickerUtils.getLucideIcon(summary.icon),
+            label: summary.name,
+            value: summary.balance,
+            isHidden: isHidden,
+          ),
+        if (unassignedBalance != 0)
+          _MoneyLocationRow(
+            icon: LucideIcons.circleHelp,
+            label: 'Belum ditentukan',
+            value: unassignedBalance,
+            isHidden: isHidden,
+            muted: true,
+          ),
+      ],
+    );
+  }
+}
+
+class _MoneyLocationRow extends StatelessWidget {
+  const _MoneyLocationRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isHidden,
+    this.muted = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final double value;
+  final bool isHidden;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = AppTheme.borderColor.withValues(alpha: muted ? 0.6 : 0.9);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(color: color),
+            ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedVisibilityCurrencyText(
+            value: value,
+            isHidden: isHidden,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: value < 0 ? AppTheme.expenseRed : color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

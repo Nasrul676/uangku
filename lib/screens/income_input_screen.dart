@@ -17,6 +17,7 @@ import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/ai_chat_bubble.dart';
 import '../widgets/calculator_bubble.dart';
 import '../utils/error_message.dart';
+import '../widgets/money_location_picker.dart';
 
 class IncomeInputScreen extends StatefulWidget {
   const IncomeInputScreen({super.key, this.existingTransaction});
@@ -36,6 +37,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
   String _category = 'Gaji';
   bool _isSaving = false;
   bool _isAddingCategory = false;
+  int? _selectedMoneyLocationId;
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
         }
       }
       _category = existing.category;
+      _selectedMoneyLocationId = existing.moneyLocationId;
     }
   }
 
@@ -177,6 +180,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
             time: _selectedTime == null
                 ? null
                 : _formatTimeForStorage(_selectedTime!),
+            moneyLocationId: _selectedMoneyLocationId,
           );
         } else {
           await context.read<TransactionProvider>().addTransaction(
@@ -188,6 +192,7 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
             time: _selectedTime == null
                 ? null
                 : _formatTimeForStorage(_selectedTime!),
+            moneyLocationId: _selectedMoneyLocationId,
           );
         }
 
@@ -219,6 +224,20 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _openMoneyLocationPicker() async {
+    final choice = await showMoneyLocationPicker(
+      context: context,
+      selectedId: _selectedMoneyLocationId,
+      title: 'Uang ini masuk ke mana?',
+      noneSubtitle: 'Tidak dicatat tempat simpannya',
+    );
+
+    if (!mounted || choice == null) return;
+    if (choice.locationId != _selectedMoneyLocationId) {
+      setState(() => _selectedMoneyLocationId = choice.locationId);
     }
   }
 
@@ -477,6 +496,23 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
       _category = categories.first;
     }
 
+    // Lokasi yang sudah dihapus tidak boleh menyisakan pilihan hantu di form.
+    final moneyLocations = provider.moneyLocations;
+    if (_selectedMoneyLocationId != null &&
+        !moneyLocations.any((item) => item.id == _selectedMoneyLocationId)) {
+      _selectedMoneyLocationId = null;
+    }
+
+    String selectedMoneyLocationText = 'Belum dipilih';
+    if (_selectedMoneyLocationId != null) {
+      for (final item in moneyLocations) {
+        if (item.id == _selectedMoneyLocationId) {
+          selectedMoneyLocationText = item.name;
+          break;
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
@@ -596,6 +632,18 @@ class _IncomeInputScreenState extends State<IncomeInputScreen> {
                                 selectedText: _category,
                                 onTap: () => _openCategoryPicker(categories),
                               ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Masuk ke',
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              _CategorySelectorField(
+                                selectedText: selectedMoneyLocationText,
+                                icon: Icons.savings_rounded,
+                                isPlaceholder:
+                                    _selectedMoneyLocationId == null,
+                                onTap: _openMoneyLocationPicker,
+                              ),
                               const SizedBox(height: 14),
                               SwipeButton(
                                 label: widget.existingTransaction == null
@@ -654,10 +702,17 @@ class _CategorySelectorField extends StatelessWidget {
   const _CategorySelectorField({
     required this.selectedText,
     required this.onTap,
+    this.icon = Icons.category_rounded,
+    this.isPlaceholder = false,
   });
 
   final String selectedText;
   final VoidCallback onTap;
+  final IconData icon;
+
+  /// Teks placeholder dirender redup supaya tidak terbaca sebagai nama lokasi
+  /// yang benar-benar dipilih.
+  final bool isPlaceholder;
 
   @override
   Widget build(BuildContext context) {
@@ -677,13 +732,19 @@ class _CategorySelectorField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.category_rounded, size: 18),
+              Icon(icon, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   selectedText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: isPlaceholder
+                      ? TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color
+                              ?.withValues(alpha: 0.55),
+                        )
+                      : null,
                 ),
               ),
               const Icon(Icons.expand_more_rounded),

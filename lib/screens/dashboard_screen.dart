@@ -23,6 +23,8 @@ import '../widgets/custom_bottom_sheet.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'expense_input_screen.dart';
 import 'income_input_screen.dart';
+import 'money_location_list_screen.dart';
+import 'money_transfer_screen.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
 import 'book_period_recap_screen.dart';
@@ -36,6 +38,10 @@ import 'receipt_result_screen.dart';
 import '../widgets/app_card.dart';
 import '../widgets/dashboard/dashboard_buttons.dart';
 import '../widgets/dashboard/balance_card.dart';
+import '../widgets/dashboard/daily_allowance_card.dart';
+import '../widgets/dashboard/greeting_header.dart';
+import '../widgets/dashboard/pira_mascot.dart';
+import '../utils/daily_budget.dart';
 import '../widgets/dashboard/dashboard_pocket_section.dart';
 import '../widgets/dashboard/graph_card.dart';
 import '../widgets/dashboard/financial_plan_card.dart';
@@ -71,6 +77,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   int _previousIndex = 0;
   String _recentFilter = 'ALL';
+
+  /// Dipakai untuk menyuruh PiRa bereaksi setelah transaksi tersimpan —
+  /// tanda bahwa catatannya masuk, bukan cuma layar yang tertutup.
+  final GlobalKey<PiraMascotState> _mascotKey = GlobalKey<PiraMascotState>();
   String _chartFilter = 'EXPENSE';
   int _chartRangeDays = 7;
   late String _userName;
@@ -300,24 +310,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<FinancialPlanDraft?> _openFinancialPlanInputDialog({
-    String title = 'Rencana Keuangan Baru',
-    String actionLabel = 'Simpan',
+    String title = 'Rencana baru',
+    String actionLabel = 'Simpan rencana',
     required List<BookPeriod> targetBooks,
     int? defaultBookId,
     FinancialPlan? initialPlan,
   }) async {
-    return showZoomDialog<FinancialPlanDraft?>(
+    return showFinancialPlanSheet(
       context: context,
-      builder: (dialogContext) {
-        return FinancialPlanInputDialog(
-          title: title,
-          actionLabel: actionLabel,
-          targetBooks: targetBooks,
-          defaultBookId: defaultBookId,
-          parsePlanAmount: _parsePlanAmount,
-          initialPlan: initialPlan,
-        );
-      },
+      title: title,
+      actionLabel: actionLabel,
+      targetBooks: targetBooks,
+      defaultBookId: defaultBookId,
+      parsePlanAmount: _parsePlanAmount,
+      initialPlan: initialPlan,
     );
   }
 
@@ -335,8 +341,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final draft = await _openFinancialPlanInputDialog(
-      title: 'Edit Rencana Keuangan',
-      actionLabel: 'Update',
+      title: 'Edit rencana',
+      actionLabel: 'Simpan perubahan',
       targetBooks: targetBooks,
       defaultBookId: plan.bookPeriodId,
       initialPlan: plan,
@@ -478,6 +484,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  /// PiRa menyapa balik saat dicolek. Kalimatnya ikut suasana, jadi
+  /// mencoleknya tetap memberi kabar — bukan sekadar gerakan lucu.
+  void _greetFromPira(PiraMood mood) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(greetingForMood(mood)),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _openIncomeInput() async {
     if (!await _ensureBookIsOpen()) return;
     if (!mounted) return;
@@ -488,6 +508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context,
         MaterialPageRoute(builder: (_) => const IncomeInputScreen()),
       );
+      _mascotKey.currentState?.react();
     } finally {
       if (mounted) {
         setState(() => _isOpeningInput = false);
@@ -505,6 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context,
         MaterialPageRoute(builder: (_) => const ExpenseInputScreen()),
       );
+      _mascotKey.currentState?.react();
     } finally {
       if (mounted) {
         setState(() => _isOpeningInput = false);
@@ -970,15 +992,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                   final netBalance = totalIncome - totalExpense;
                   final currentTabKey = ValueKey(_currentIndex);
-                  final currentTitle = _currentIndex == 1
-                      ? 'Transaksi'
-                      : _currentIndex == 2
-                      ? 'Belanja'
-                      : _currentIndex == 3
-                      ? 'Pengaturan'
-                      : 'Beranda';
                   final userName = _userName;
-                  final greeting = userName.isEmpty ? 'Hai,' : 'Hai, $userName';
+                  // Sapaannya menyatu di sini, bukan diulang lagi di badan
+                  // halaman. Waktunya ikut jam supaya terasa menyapa, bukan
+                  // memasang label tetap.
+                  final hello = greetingFor(DateTime.now());
+                  final greeting = userName.isEmpty
+                      ? '$hello 👋'
+                      : '$hello, $userName 👋';
 
                   return Stack(
                     children: [
@@ -999,10 +1020,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ?.copyWith(
                                               fontWeight: FontWeight.w700,
                                             ),
-                                      ),
-                                      Text(
-                                        currentTitle,
-                                        style: theme.textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
@@ -1277,6 +1294,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return const SizedBox.shrink();
                   },
                 ),
+                // Pindah uang butuh dua tempat. Kalau syaratnya belum
+                // terpenuhi, menawarkannya cuma mengantar pengguna ke jalan
+                // buntu — sama seperti "Transfer Antar Buku" di atas.
+                Consumer<TransactionProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.moneyLocations.length < 2) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: QuickAddSheetItem(
+                        icon: Icons.sync_alt_rounded,
+                        title: 'Pindah Uang',
+                        subtitle: 'Tarik tunai, setor, atau top-up e-wallet',
+                        color: const Color(0xFFE0F2F1),
+                        iconColor: AppTheme.fabIconColor,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MoneyTransferScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 8),
                 QuickAddSheetItem(
                   icon: Icons.document_scanner_rounded,
@@ -1527,12 +1573,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 3:
         return const SettingsScreen(isEmbedded: true);
       default:
+        final now = DateTime.now();
+        final activeBook = provider.activeBookPeriod;
+        final budget = activeBook == null
+            ? null
+            : buildDailyBudget(
+                book: activeBook,
+                transactions: allTransactions,
+                balance: netBalance,
+                today: now,
+              );
+        // Rasio yang sama dipakai `BookRecap.spentRatio` di laporan, jadi
+        // wajah celengan dan angka laporan tidak akan pernah bercerita beda.
+        final mood = moodForRatio(
+          totalIncome > 0 ? totalExpense / totalIncome : null,
+        );
+
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           child: Column(
             children: [
+              EntranceAnimation(
+                type: EntranceType.fadeScale,
+                delay: const Duration(milliseconds: 50),
+                duration: const Duration(milliseconds: 500),
+                child: GreetingHeader(now: now, activeBook: activeBook),
+              ),
+              const SizedBox(height: 6),
               // Balance card — flip entrance
               EntranceAnimation(
                 type: EntranceType.flipX,
@@ -1550,8 +1619,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   onAddIncome: onAddIncome,
                   onAddExpense: onAddExpense,
+                  mood: mood,
+                  budget: budget,
+                  mascotKey: _mascotKey,
+                  onTapMascot: () => _greetFromPira(mood),
+                  locations: provider.moneyLocationSummaries,
+                  unassignedBalance: provider.unassignedMoneyBalance,
+                  onManageLocations: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MoneyLocationListScreen(),
+                    ),
+                  ),
                 ),
               ),
+              if (budget != null && !provider.isBalanceHidden) ...[
+                const SizedBox(height: 4),
+                EntranceAnimation(
+                  type: EntranceType.slideUp,
+                  delay: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 500),
+                  child: DailyAllowanceCard(budget: budget),
+                ),
+              ],
               const SizedBox(height: 10),
               // Pockets — muncul satu per satu (animasi di dalam widget)
               DashboardPocketSection(provider: provider),
@@ -1593,6 +1683,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   theme: theme,
                   transactions: filteredRecent,
                   isLoading: provider.isLoading,
+                  moneyLocationNames: provider.moneyLocationNames,
                   headerBottom: Row(
                     children: [
                       FilterButton(
@@ -1691,6 +1782,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   transactions: expenseTransactions,
                   isLoading: provider.isLoading,
                   emptyText: 'Belum ada data pengeluaran.',
+                  moneyLocationNames: provider.moneyLocationNames,
                 ),
                 TransactionsCard(
                   theme: theme,
@@ -1698,6 +1790,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   transactions: incomeTransactions,
                   isLoading: provider.isLoading,
                   emptyText: 'Belum ada data pemasukan.',
+                  moneyLocationNames: provider.moneyLocationNames,
                 ),
                 FinancialPlanCard(
                   theme: theme,

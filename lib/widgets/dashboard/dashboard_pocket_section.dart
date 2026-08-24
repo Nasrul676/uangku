@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/transaction_provider.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/icon_picker_utils.dart';
+import '../../utils/rupiah_compact.dart';
 import '../../screens/pocket_form_screen.dart';
 import '../../screens/pocket_detail_screen.dart';
 import '../app_card.dart';
@@ -12,6 +14,20 @@ class DashboardPocketSection extends StatelessWidget {
   final TransactionProvider provider;
 
   const DashboardPocketSection({super.key, required this.provider});
+
+  /// Warna batang isi, sejajar indeksnya dengan [_cardColors] supaya kartu dan
+  /// batangnya tetap terbaca sebagai satu kesatuan. Pastel kartunya sendiri
+  /// terlalu pucat untuk dipakai sebagai batang.
+  static const List<Color> _accentColors = [
+    AppTheme.neoYellow,
+    AppTheme.neoMint,
+    AppTheme.incomeLight,
+    AppTheme.neoBlue,
+    AppTheme.neoBlue,
+    AppTheme.neoLavender,
+    AppTheme.neoCoral,
+    AppTheme.fabBgColor,
+  ];
 
   static const List<Color> _cardColors = [
     Color(0xFFFFF9E6), // Soft Yellow
@@ -149,12 +165,23 @@ class DashboardPocketSection extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundColor: const Color(0xFFE5F0FF),
-                        child: Text(
-                          IconPickerUtils.getIcon(pocket.icon),
-                          style: const TextStyle(fontSize: 32),
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: _accentColors[index % _accentColors.length],
+                          borderRadius: BorderRadius.circular(13),
+                          // Kartu kantong selalu berlatar pastel terang, juga
+                          // di mode gelap, jadi garisnya memang harus gelap.
+                          border: Border.all(
+                            color: AppTheme.borderColor,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          IconPickerUtils.getLucideIcon(pocket.icon),
+                          size: 22,
+                          color: AppTheme.borderColor,
                         ),
                       ),
                       const Spacer(),
@@ -181,17 +208,16 @@ class DashboardPocketSection extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        pocket.allocationType == 'PERCENTAGE'
-                            ? '${pocket.allocationValue.toInt()}% Pemasukan'
-                            : 'Target: ${currencyFormatter.format(pocket.allocationValue)}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF666666),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 6),
+                      _PocketFill(
+                        balance: effectiveBalance,
+                        target: pocket.allocationType == 'PERCENTAGE'
+                            ? null
+                            : pocket.allocationValue,
+                        percentOfIncome: pocket.allocationType == 'PERCENTAGE'
+                            ? pocket.allocationValue
+                            : null,
+                        accent: _accentColors[index % _accentColors.length],
                       ),
                     ],
                   ),
@@ -199,6 +225,95 @@ class DashboardPocketSection extends StatelessWidget {
               ),
             );
           },
+        ),
+      ],
+    );
+  }
+}
+
+/// Batang isi kantong.
+///
+/// Sekali lihat langsung ketahuan mana yang hampir penuh — sebelumnya
+/// informasi itu cuma teks "Target: Rp 5.000.000" yang harus dibandingkan
+/// sendiri dengan saldonya.
+class _PocketFill extends StatelessWidget {
+  const _PocketFill({
+    required this.balance,
+    required this.target,
+    required this.percentOfIncome,
+    required this.accent,
+  });
+
+  final double balance;
+
+  /// Null untuk kantong beralokasi persentase — kantong seperti itu tidak
+  /// punya garis akhir, jadi tidak ada yang bisa dijadikan batang.
+  final double? target;
+  final double? percentOfIncome;
+  final Color accent;
+
+  /// Kartu kantong berlatar pastel terang di kedua mode tema, jadi warna
+  /// teksnya tidak boleh ikut tema. `theme.hintColor` di mode gelap berwarna
+  /// abu terang dan hilang sama sekali di atas pastel.
+  static const _mutedOnPastel = Color(0xFF6B6B6B);
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = target;
+
+    if (goal == null || goal <= 0) {
+      return Text(
+        percentOfIncome == null
+            ? 'Tanpa target'
+            : '${percentOfIncome!.toInt()}% dari pemasukan',
+        style: const TextStyle(fontSize: 10, color: _mutedOnPastel),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    final ratio = (balance / goal).clamp(0.0, 1.0);
+    final percent = (ratio * 100).round();
+    final nearlyFull = ratio >= 0.9;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          label: 'Terisi $percent persen dari target',
+          child: Container(
+            height: 9,
+            decoration: BoxDecoration(
+              color: AppTheme.neoPaper,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: AppTheme.borderColor, width: 1.6),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: ratio,
+                  child: Container(color: accent),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          // Dorongan kecil untuk kantong yang tinggal sedikit lagi — inilah
+          // bedanya alat pencatat dengan alat yang bikin semangat menabung.
+          nearlyFull
+              ? '$percent% — dikit lagi!'
+              : '$percent% dari ${compactRupiah(goal)}',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: nearlyFull ? FontWeight.w800 : FontWeight.w400,
+            color: nearlyFull ? AppTheme.incomeGreen : _mutedOnPastel,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

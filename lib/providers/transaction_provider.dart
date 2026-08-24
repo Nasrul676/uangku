@@ -7,6 +7,8 @@ import '../models/book_period.dart';
 import '../models/finance_transaction.dart';
 import '../models/financial_plan_input.dart';
 import '../models/financial_plan.dart';
+import '../models/money_location.dart';
+import '../models/money_transfer.dart';
 import '../models/pocket.dart';
 import '../models/recurring_transaction.dart';
 import '../models/saving_goal.dart';
@@ -17,6 +19,7 @@ import '../services/app_settings_service.dart';
 import '../services/background_notification_service.dart';
 import '../services/database_helper.dart';
 import '../services/home_balance_widget_service.dart';
+import '../utils/money_location_balance.dart';
 import '../services/notification_service.dart';
 import '../services/sync_api_service.dart';
 import '../services/ai_chat_service.dart';
@@ -51,6 +54,8 @@ class TransactionProvider extends ChangeNotifier {
   List<BookPeriod> _bookPeriods = [];
   List<FinancialPlan> _allFinancialPlans = [];
   List<Pocket> _allPockets = [];
+  List<MoneyLocation> _allMoneyLocations = [];
+  List<MoneyTransfer> _moneyTransfers = [];
   List<AppNotification> _persistentNotifications = [];
   List<SavingGoal> _savingGoals = [];
   List<RecurringTransaction> _recurringTransactions = [];
@@ -87,6 +92,17 @@ class TransactionProvider extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  /// Lokasi uang tidak disaring per buku — sengaja. Kantong adalah jatah satu
+  /// periode, lokasi adalah tempat uangnya benar-benar berada.
+  List<MoneyLocation> get moneyLocations => _allMoneyLocations
+      .where((location) => !location.archived)
+      .toList(growable: false);
+
+  /// Perpindahan uang antar lokasi, terbaru dulu. Sengaja tidak digabung ke
+  /// [transactions]: ini bukan arus kas, dan mencampurnya akan membuat total
+  /// pemasukan/pengeluaran ikut menggelembung.
+  List<MoneyTransfer> get moneyTransfers => _moneyTransfers;
+
   List<FinanceTransaction> get allTransactions => _allTransactions;
 
   List<BookPeriod> get bookPeriods => _bookPeriods;
@@ -99,6 +115,51 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   List<FinancialPlan> get activeBookFinancialPlans => financialPlans;
+
+  /// Budget yang tersedia untuk rencana di sebuah buku.
+  ///
+  /// Mengikuti aturan yang sama dengan kartu ringkasan di dasbor: kalau buku
+  /// sudah punya pemasukan, total pemasukan itulah budget-nya; kalau belum,
+  /// pakai `plan_budget` yang diisi manual.
+  double planBudgetBasisForBook(int bookPeriodId) {
+    var totalIncome = 0.0;
+    for (final tx in _allTransactions) {
+      if (tx.bookPeriodId == bookPeriodId && tx.type == 'INCOME') {
+        totalIncome += tx.amount;
+      }
+    }
+    if (totalIncome > 0) return totalIncome;
+
+    for (final book in _bookPeriods) {
+      if (book.id == bookPeriodId) return book.planBudget;
+    }
+    return 0;
+  }
+
+  /// Total target seluruh rencana di sebuah buku.
+  ///
+  /// [excludingPlanId] dipakai saat mengedit, supaya rencana yang sedang
+  /// diubah tidak ikut terhitung dua kali.
+  double totalPlannedForBook(int bookPeriodId, {int? excludingPlanId}) {
+    var total = 0.0;
+    for (final plan in _allFinancialPlans) {
+      if (plan.bookPeriodId != bookPeriodId) continue;
+      if (excludingPlanId != null && plan.id == excludingPlanId) continue;
+      total += plan.targetAmount;
+    }
+    return total;
+  }
+
+  /// Jumlah rencana lain di sebuah buku — untuk label "Rencana lain (n)".
+  int plannedCountForBook(int bookPeriodId, {int? excludingPlanId}) {
+    var count = 0;
+    for (final plan in _allFinancialPlans) {
+      if (plan.bookPeriodId != bookPeriodId) continue;
+      if (excludingPlanId != null && plan.id == excludingPlanId) continue;
+      count++;
+    }
+    return count;
+  }
 
   List<SavingGoal> get savingGoals => _savingGoals;
   List<RecurringTransaction> get recurringTransactions =>
@@ -175,6 +236,8 @@ class TransactionProvider extends ChangeNotifier {
     await loadBookPeriods();
     await loadFinancialPlans();
     await loadPockets();
+    await loadMoneyLocations();
+    await loadMoneyTransfers();
     await loadSavingGoals();
     await loadRecurringTransactions();
     await loadNotifications();
@@ -226,6 +289,28 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> loadPockets() async {
     try {
       _allPockets = await _databaseHelper.getAllPockets();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMoneyLocations() async {
+    try {
+      _allMoneyLocations = await _databaseHelper.getAllMoneyLocations();
+      _invalidateDerivedCaches();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMoneyTransfers() async {
+    try {
+      _moneyTransfers = await _databaseHelper.getAllMoneyTransfers();
+      _invalidateDerivedCaches();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -437,10 +522,24 @@ class TransactionProvider extends ChangeNotifier {
           category: category,
           date: date,
           time: DateFormat('HH:mm').format(now),
+          moneyLocationId: _resolveMoneyLocationByName(args['money_location']),
         );
         return {
           'status': 'success',
           'message': 'Transaksi berhasil ditambahkan',
+        };
+      } else if (name == 'get_money_locations') {
+        return {
+          'status': 'success',
+          'data': moneyLocationSummaries
+              .map(
+                (summary) => {
+                  'id': summary.id,
+                  'name': summary.name,
+                  'balance': summary.balance,
+                },
+              )
+              .toList(),
         };
       } else if (name == 'get_financial_plans') {
         final plans = _allFinancialPlans.map((p) {
@@ -501,6 +600,22 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  /// Mencocokkan nama lokasi dari AI ke id yang ada.
+  ///
+  /// Kalau tidak ketemu, hasilnya null — transaksinya tetap tercatat tanpa
+  /// lokasi. Lebih baik satu keterangan hilang daripada uang tercatat di
+  /// tempat yang salah gara-gara tebakan model.
+  int? _resolveMoneyLocationByName(dynamic rawName) {
+    if (rawName is! String) return null;
+    final needle = rawName.trim().toLowerCase();
+    if (needle.isEmpty) return null;
+
+    for (final location in _allMoneyLocations) {
+      if (location.name.toLowerCase() == needle) return location.id;
+    }
+    return null;
+  }
+
   Future<void> loadRecurringTransactions() async {
     try {
       _recurringTransactions = await _databaseHelper
@@ -533,6 +648,7 @@ class TransactionProvider extends ChangeNotifier {
           date: nextDate,
           pocketId: tx.pocketId,
           financialPlanId: tx.financialPlanId,
+          moneyLocationId: tx.moneyLocationId,
         );
 
         // Advance next date
@@ -999,6 +1115,7 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? financialPlanId,
     int? pocketId,
+    int? moneyLocationId,
   }) async {
     final selectedBookId = _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -1041,6 +1158,7 @@ class TransactionProvider extends ChangeNotifier {
       bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
       pocketId: pocketId,
+      moneyLocationId: moneyLocationId,
       title: title,
       amount: amount,
       type: type,
@@ -1065,6 +1183,7 @@ class TransactionProvider extends ChangeNotifier {
     int? bookId,
     int? pocketId,
     int? financialPlanId,
+    int? moneyLocationId,
   }) async {
     final selectedBookId = bookId ?? _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -1092,6 +1211,7 @@ class TransactionProvider extends ChangeNotifier {
       bookPeriodId: selectedBookId,
       pocketId: pocketId,
       financialPlanId: financialPlanId,
+      moneyLocationId: moneyLocationId,
       title: title,
       amount: amount,
       type: type,
@@ -1122,6 +1242,7 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? financialPlanId,
     int? pocketId,
+    int? moneyLocationId,
   }) async {
     final selectedBookId = _currentTransactionScopeBookId;
     if (selectedBookId == null) {
@@ -1165,6 +1286,7 @@ class TransactionProvider extends ChangeNotifier {
       bookPeriodId: selectedBookId,
       financialPlanId: financialPlanId,
       pocketId: pocketId,
+      moneyLocationId: moneyLocationId,
       title: title,
       amount: amount,
       type: type,
@@ -1534,6 +1656,131 @@ class TransactionProvider extends ChangeNotifier {
     await loadPockets();
   }
 
+  Future<int> addMoneyLocation({
+    required String name,
+    required String icon,
+    double initialBalance = 0,
+  }) async {
+    final location = MoneyLocation(
+      name: name,
+      icon: icon,
+      initialBalance: initialBalance,
+      sortOrder: _allMoneyLocations.length,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    final id = await _databaseHelper.insertMoneyLocation(location);
+    await loadMoneyLocations();
+    return id;
+  }
+
+  Future<void> updateMoneyLocation(MoneyLocation location) async {
+    await _databaseHelper.updateMoneyLocation(location);
+    await loadMoneyLocations();
+  }
+
+  /// Transaksinya tidak ikut terhapus, cuma kehilangan keterangan lokasi —
+  /// karena itu daftar transaksi perlu dimuat ulang juga.
+  Future<void> deleteMoneyLocation(int id) async {
+    await _databaseHelper.deleteMoneyLocation(id);
+    await loadMoneyLocations();
+    await loadMoneyTransfers();
+    await loadTransactions();
+  }
+
+  Future<int> countTransactionsInMoneyLocation(int id) =>
+      _databaseHelper.countTransactionsByMoneyLocation(id);
+
+  /// Mencatat perpindahan uang antar lokasi.
+  ///
+  /// Tidak menyentuh tabel transaksi sama sekali, jadi total pemasukan,
+  /// pengeluaran, budget rencana, alokasi kantong, jatah harian, grafik, dan
+  /// laporan semuanya tidak ikut bergerak.
+  Future<int> addMoneyTransfer({
+    required int fromLocationId,
+    required int toLocationId,
+    required double amount,
+    required DateTime date,
+    String? note,
+  }) async {
+    if (fromLocationId == toLocationId) {
+      throw Exception('Lokasi asal dan tujuan tidak boleh sama.');
+    }
+    if (amount <= 0) {
+      throw Exception('Nominal perpindahan harus lebih dari nol.');
+    }
+    if (moneyLocationById(fromLocationId) == null ||
+        moneyLocationById(toLocationId) == null) {
+      throw Exception('Lokasi yang dipilih sudah tidak ada.');
+    }
+
+    final now = DateTime.now();
+    final transfer = MoneyTransfer(
+      fromLocationId: fromLocationId,
+      toLocationId: toLocationId,
+      amount: amount,
+      date: DateFormat('yyyy-MM-dd').format(_normalizeDate(date)),
+      time: DateFormat('HH:mm').format(now),
+      note: (note == null || note.trim().isEmpty) ? null : note.trim(),
+      createdAt: now.toIso8601String(),
+    );
+
+    final id = await _databaseHelper.insertMoneyTransfer(transfer);
+    await loadMoneyTransfers();
+    return id;
+  }
+
+  Future<void> deleteMoneyTransfer(int id) async {
+    await _databaseHelper.deleteMoneyTransfer(id);
+    await loadMoneyTransfers();
+  }
+
+  MoneyLocation? moneyLocationById(int id) {
+    for (final location in _allMoneyLocations) {
+      if (location.id == id) return location;
+    }
+    return null;
+  }
+
+  double getMoneyLocationBalance(int id) {
+    final location = moneyLocationById(id);
+    if (location == null) return 0;
+    return resolveMoneyLocationBalance(
+      location: location,
+      netTotals: _moneyLocationNetTotals,
+    );
+  }
+
+  List<MoneyLocationSummary> get moneyLocationSummaries {
+    final netTotals = _moneyLocationNetTotals;
+    return moneyLocations
+        .map(
+          (location) => MoneyLocationSummary(
+            location: location,
+            balance: resolveMoneyLocationBalance(
+              location: location,
+              netTotals: netTotals,
+            ),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// Nama lokasi per id, untuk melabeli baris transaksi tanpa perlu mencari
+  /// ulang di daftar lokasi setiap kali satu baris dirender.
+  Map<int, String> get moneyLocationNames {
+    final names = <int, String>{};
+    for (final location in _allMoneyLocations) {
+      final id = location.id;
+      if (id != null) names[id] = location.name;
+    }
+    return names;
+  }
+
+  /// Sisa uang dari transaksi yang belum ditandai lokasinya. Dihitung dari
+  /// seluruh riwayat, sama seperti saldo lokasi, supaya keduanya bisa
+  /// dijumlahkan tanpa membandingkan dua cakupan yang berbeda.
+  double get unassignedMoneyBalance => unassignedNetTotal(_allTransactions);
+
   Future<void> deletePocket(int id) async {
     await _databaseHelper.deletePocket(id);
     await loadPockets();
@@ -1546,8 +1793,20 @@ class TransactionProvider extends ChangeNotifier {
   /// transaksi) per frame. Sekarang satu kali sapuan mengisi peta ini.
   Map<int, double>? _pocketRealizationCache;
 
+  Map<int, double>? _moneyLocationNetCache;
+
   void _invalidateDerivedCaches() {
     _pocketRealizationCache = null;
+    _moneyLocationNetCache = null;
+  }
+
+  Map<int, double> get _moneyLocationNetTotals {
+    final cached = _moneyLocationNetCache;
+    if (cached != null) return cached;
+    return _moneyLocationNetCache = buildMoneyLocationNetTotals(
+      _allTransactions,
+      transfers: _moneyTransfers,
+    );
   }
 
   Map<int, double> get _pocketRealizations {

@@ -10,6 +10,7 @@ import '../providers/transaction_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_card.dart';
+import 'money_location_list_screen.dart';
 import '../widgets/backup_restore_tile.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_loading_indicator.dart';
@@ -367,6 +368,42 @@ class _SettingsContentState extends State<SettingsContent>
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       children: [
+        AppCard(
+          isInteractive: true,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MoneyLocationListScreen(),
+            ),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lokasi Uang',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Atur tempat uangmu disimpan — dompet, rekening, atau e-wallet.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.textTheme.bodySmall?.color,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
         AppCard(
           isInteractive: true,
           padding: const EdgeInsets.all(12),

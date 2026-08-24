@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
+import '../theme/app_theme.dart';
 import '../utils/icon_picker_utils.dart';
 import '../utils/rupiah_input_formatter.dart';
 import '../widgets/custom_bottom_sheet.dart';
@@ -140,9 +141,10 @@ class PocketDetailScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: Text(
-                          IconPickerUtils.getIcon(pocket.icon),
-                          style: const TextStyle(fontSize: 40),
+                        child: Icon(
+                          IconPickerUtils.getLucideIcon(pocket.icon),
+                          size: 38,
+                          color: AppTheme.borderColor,
                         ),
                       ),
                     ),

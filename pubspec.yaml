@@ -60,7 +60,8 @@ dependencies:
   image_cropper: ^12.2.1
   google_mlkit_text_recognition: ^0.15.1
   flutter_secure_storage: ^10.3.1
-
+  pdf: ^3.12.0
+  lucide_icons_flutter: ^3.1.15
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -111,6 +112,10 @@ flutter:
 
   assets:
     - assets/lottie/
+    # Hanya berkas langsung di dalam folder ini yang ikut dibundel — berkas
+    # asli 2048px di `source/` sengaja tidak didaftarkan supaya tidak menambah
+    # 8 MB ke ukuran aplikasi.
+    - assets/maskot-pira/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
