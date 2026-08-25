@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/transaction_provider.dart';
 import 'calculator_sheet.dart';
 
 class CalculatorBubble extends StatefulWidget {
@@ -35,6 +38,14 @@ class _CalculatorBubbleState extends State<CalculatorBubble> {
 
   @override
   Widget build(BuildContext context) {
+    // Digerbangi di dalam widgetnya sendiri, bukan di tiap layar: pintasan ini
+    // dipasang di delapan layar, dan gerbang yang harus diulang delapan kali
+    // adalah gerbang yang cepat atau lambat terlewat di layar kesembilan.
+    final isVisible = context.select<TransactionProvider, bool>(
+      (provider) => provider.showCalculatorShortcut,
+    );
+    if (!isVisible) return const SizedBox.shrink();
+
     return Positioned(
       left: _position.dx,
       top: _position.dy,

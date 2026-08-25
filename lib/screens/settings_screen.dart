@@ -372,9 +372,7 @@ class _SettingsContentState extends State<SettingsContent>
           isInteractive: true,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const MoneyLocationListScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const MoneyLocationListScreen()),
           ),
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -383,10 +381,7 @@ class _SettingsContentState extends State<SettingsContent>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Lokasi Uang',
-                      style: theme.textTheme.titleMedium,
-                    ),
+                    Text('Lokasi Uang', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 6),
                     Text(
                       'Atur tempat uangmu disimpan — dompet, rekening, atau e-wallet.',
@@ -454,6 +449,25 @@ class _SettingsContentState extends State<SettingsContent>
               ),
               const SizedBox(height: 12),
               const _FontSelectorRow(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          isInteractive: true,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Pintasan Melayang', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                'Tombol bulat yang mengambang di atas layar. Matikan kalau '
+                'terasa menghalangi isi layar.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              const _FloatingShortcutToggles(),
             ],
           ),
         ),
@@ -778,6 +792,76 @@ class _SettingsContentState extends State<SettingsContent>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dua sakelar pintasan melayang.
+///
+/// Keduanya menulis ke [TransactionProvider], jadi tombolnya di layar lain
+/// langsung ikut hilang atau muncul tanpa perlu membuka ulang layarnya.
+class _FloatingShortcutToggles extends StatelessWidget {
+  const _FloatingShortcutToggles();
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<TransactionProvider>();
+
+    return Column(
+      children: [
+        _ShortcutSwitch(
+          icon: Icons.calculate_rounded,
+          title: 'Pintasan Kalkulator',
+          subtitle: 'Tombol hitung cepat saat mengisi nominal.',
+          value: provider.showCalculatorShortcut,
+          onChanged: provider.setShowCalculatorShortcut,
+        ),
+        _ShortcutSwitch(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Pintasan Asisten AI',
+          subtitle: 'Tombol tanya-jawab soal keuanganmu.',
+          value: provider.showAiAssistantShortcut,
+          onChanged: provider.setShowAiAssistantShortcut,
+        ),
+      ],
+    );
+  }
+}
+
+class _ShortcutSwitch extends StatelessWidget {
+  const _ShortcutSwitch({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SwitchListTile.adaptive(
+      value: value,
+      onChanged: onChanged,
+      contentPadding: EdgeInsets.zero,
+      // Ikonnya di depan judul, bukan menggantikan kata "mati" atau "nyala":
+      // posisi sakelar saja sudah menyampaikan keadaannya tanpa bergantung
+      // pada warna.
+      secondary: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
     );
   }
 }

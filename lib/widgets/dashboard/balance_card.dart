@@ -15,9 +15,14 @@ import 'pira_mascot.dart';
 /// `netBalance`. Sekarang tersisa satu angka besar, lalu satu kalimat yang
 /// menerjemahkannya jadi keputusan hari ini.
 ///
-/// Rincian pemasukan dan pengeluaran tidak dibuang, hanya dilipat di balik
-/// satu ketukan. Beranda jadi tenang tanpa menghilangkan angka yang sudah
-/// jadi kebiasaan dilihat.
+/// Rincian pemasukan, pengeluaran, dan sebaran lokasi uang terbuka sejak
+/// beranda dibuka. Angka yang harus diketuk dulu praktis tidak pernah dibaca;
+/// yang mau beranda ringkas tinggal melipatnya sendiri, dan itu keputusan
+/// yang jauh lebih jarang diambil daripada kebutuhan melihat rinciannya.
+///
+/// PiRa tidak lagi berdiri di samping angka saldo, melainkan duduk di dalam
+/// kartu pesan di bawahnya — maskot dan kalimat yang ia sampaikan jadi satu
+/// benda, bukan dua elemen yang kebetulan bertetangga.
 class BalanceCard extends StatefulWidget {
   const BalanceCard({
     super.key,
@@ -49,8 +54,8 @@ class BalanceCard extends StatefulWidget {
   final PiraMood mood;
 
   /// Null kalau angkanya tidak bisa dipercaya — buku sudah lewat, saldo habis,
-  /// atau belum ada pengeluaran untuk jadi dasar perkiraan. Kalimatnya
-  /// dihilangkan, bukan diisi tebakan.
+  /// atau belum ada pengeluaran untuk jadi dasar perkiraan. Perkiraan harinya
+  /// diganti sapaan PiRa, bukan diisi tebakan.
   final DailyBudget? budget;
 
   /// Saldo per tempat penyimpanan uang. Kosong berarti pengguna belum memakai
@@ -75,7 +80,9 @@ class BalanceCard extends StatefulWidget {
 }
 
 class _BalanceCardState extends State<BalanceCard> {
-  bool _showDetail = false;
+  /// Terbuka sejak awal. Lihat catatan di dokumentasi kelas: melipat rincian
+  /// adalah pilihan sesekali, membacanya adalah kebiasaan harian.
+  bool _showDetail = true;
 
   @override
   Widget build(BuildContext context) {
@@ -113,47 +120,45 @@ class _BalanceCardState extends State<BalanceCard> {
               ),
             ],
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                // PiRa yang membesar dan `textScaler` yang bisa sampai 1,3
-                // sama-sama menggerus ruang angka ini. `scaleDown` membuatnya
-                // mengecil seperlunya alih-alih luber keluar kartu.
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedVisibilityCurrencyText(
-                    value: widget.netBalance,
-                    isHidden: widget.isBalanceHidden,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
-                      color: AppTheme.borderColor,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                    childBuilder: (style) => AnimatedNetBalanceText(
-                      value: widget.netBalance,
-                      style: style,
-                    ),
-                  ),
+          // Sekarang angka saldo memakai seluruh lebar kartu — PiRa sudah
+          // pindah ke kartu pesan di bawah. `scaleDown` tetap dipertahankan
+          // karena `textScaler` masih bisa sampai 1,3 dan saldo belasan juta
+          // tetap bisa melebihi lebar layar sempit.
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: AnimatedVisibilityCurrencyText(
+                value: widget.netBalance,
+                isHidden: widget.isBalanceHidden,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  color: AppTheme.borderColor,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+                childBuilder: (style) => AnimatedNetBalanceText(
+                  value: widget.netBalance,
+                  style: style,
                 ),
               ),
-              const SizedBox(width: 8),
-              PiraMascot(
-                key: widget.mascotKey,
-                mood: widget.mood,
-                size: 88,
-                onTap: widget.onTapMascot,
-              ),
-            ],
+            ),
           ),
 
-          if (budget != null && !widget.isBalanceHidden) ...[
-            const SizedBox(height: 12),
-            _PlainLine(text: describeBudget(budget)),
-          ],
+          const SizedBox(height: 12),
+          // Kartu pesan selalu ada, karena PiRa tinggal di dalamnya. Saat
+          // angkanya tidak bisa dipercaya atau saldo sedang disembunyikan,
+          // yang berganti hanya kalimatnya — maskotnya tidak ikut hilang.
+          _PiraMessage(
+            text: (budget != null && !widget.isBalanceHidden)
+                ? describeBudget(budget)
+                : greetingForMood(widget.mood),
+            mood: widget.mood,
+            mascotKey: widget.mascotKey,
+            onTapMascot: widget.onTapMascot,
+          ),
 
           const SizedBox(height: 12),
           _DetailToggle(
@@ -232,29 +237,56 @@ class _BalanceCardState extends State<BalanceCard> {
   }
 }
 
-/// Kalimat biasa di bawah saldo — bagian yang membuat angkanya bisa dipakai.
-class _PlainLine extends StatelessWidget {
-  const _PlainLine({required this.text});
+/// Kartu pesan di bawah saldo — bagian yang membuat angkanya bisa dipakai,
+/// sekarang beserta PiRa yang menyampaikannya.
+///
+/// Maskot dan kalimat digabung dalam satu bingkai supaya terbaca sebagai
+/// "PiRa sedang bilang sesuatu", bukan sebagai stiker yang menempel di sebelah
+/// angka. Ketukan hanya aktif pada maskotnya, jadi teksnya tetap bisa
+/// diseleksi pembaca layar tanpa memicu sapaan.
+class _PiraMessage extends StatelessWidget {
+  const _PiraMessage({
+    required this.text,
+    required this.mood,
+    this.mascotKey,
+    this.onTapMascot,
+  });
 
   final String text;
+  final PiraMood mood;
+  final GlobalKey<PiraMascotState>? mascotKey;
+  final VoidCallback? onTapMascot;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
       decoration: BoxDecoration(
         color: AppTheme.neoPaper.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: AppTheme.borderColor, width: 2),
       ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          height: 1.4,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.borderColor,
-        ),
+      child: Row(
+        children: [
+          PiraMascot(
+            key: mascotKey,
+            mood: mood,
+            size: 64,
+            onTap: onTapMascot,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.borderColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -276,11 +308,21 @@ class _DetailToggle extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              expanded ? 'Sembunyikan rincian' : 'Lihat rincian',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppTheme.borderColor.withValues(alpha: 0.8),
+            // "Sembunyikan rincian" di `textScaler` 1,3 lebih lebar dari
+            // kartunya sendiri di layar 320px. Dikecilkan seperlunya, bukan
+            // dipotong — label tombol yang terpenggal berhenti jadi label.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  expanded ? 'Sembunyikan rincian' : 'Lihat rincian',
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.borderColor.withValues(alpha: 0.8),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 3),
@@ -406,20 +448,39 @@ class SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 2),
+      // Dulu label dan angka sama-sama non-flex dengan `Spacer` di tengah,
+      // jadi keduanya minta lebar penuhnya dan barisnya luber begitu hurufnya
+      // diperbesar. Sekarang masing-masing punya jatah: labelnya dipotong
+      // rapi, angkanya mengecil seperlunya — angka yang terpenggal tidak ada
+      // gunanya sama sekali.
       child: Row(
         children: [
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: labelColor),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: labelColor),
+            ),
           ),
-          const Spacer(),
-          AnimatedVisibilityCurrencyText(
-            value: value,
-            withSign: withSign,
-            isHidden: isHidden,
-            style: TextStyle(fontWeight: FontWeight.w700, color: valueColor),
+          const SizedBox(width: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: AnimatedVisibilityCurrencyText(
+                value: value,
+                withSign: withSign,
+                isHidden: isHidden,
+                alignment: Alignment.centerRight,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: valueColor,
+                ),
+              ),
+            ),
           ),
         ],
       ),

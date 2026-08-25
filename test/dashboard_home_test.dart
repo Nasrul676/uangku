@@ -85,8 +85,6 @@ void main() {
       tester,
     ) async {
       await pumpBalance(tester);
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('UANGMU ADA DI MANA'), findsNothing);
     });
@@ -99,8 +97,6 @@ void main() {
           summary(2, 'Rekening / ATM', 2250000),
         ],
       );
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('UANGMU ADA DI MANA'), findsOneWidget);
       expect(find.text('Dompet'), findsOneWidget);
@@ -117,8 +113,6 @@ void main() {
         locations: [summary(1, 'Dompet', 150000)],
         unassignedBalance: 90000,
       );
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('Belum ditentukan'), findsOneWidget);
       expect(find.text('Rp 90.000'), findsOneWidget);
@@ -128,8 +122,6 @@ void main() {
       tester,
     ) async {
       await pumpBalance(tester, locations: [summary(1, 'Dompet', 150000)]);
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('Belum ditentukan'), findsNothing);
     });
@@ -142,19 +134,18 @@ void main() {
         hidden: true,
         locations: [summary(1, 'Dompet', 150000)],
       );
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('Dompet'), findsOneWidget);
       expect(find.text('Rp 150.000'), findsNothing);
     });
 
-    testWidgets('rincian lokasi tetap terlipat sebelum diketuk', (
+    testWidgets('rincian lokasi sudah terbuka tanpa perlu diketuk', (
       tester,
     ) async {
       await pumpBalance(tester, locations: [summary(1, 'Dompet', 150000)]);
 
-      expect(find.text('UANGMU ADA DI MANA'), findsNothing);
+      expect(find.text('UANGMU ADA DI MANA'), findsOneWidget);
+      expect(find.text('Dompet'), findsOneWidget);
     });
   });
 
@@ -204,8 +195,6 @@ void main() {
       tester,
     ) async {
       await pumpBalance(tester);
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       final label = tester.widget<Text>(find.text('Total Pemasukan'));
       expect(label.style?.color, AppTheme.borderColor);
@@ -233,8 +222,6 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       final label = tester.widget<Text>(find.text('Total Pemasukan'));
       expect(label.style?.color, AppTheme.borderColor);
@@ -249,19 +236,26 @@ void main() {
       expect(find.text('Rp 2.400.000'), findsOneWidget);
       // "Selisih" nilainya persis sama dengan saldo — barisnya sudah dibuang.
       expect(find.text('Selisih'), findsNothing);
-      // Rincian ada, tapi terlipat.
-      expect(find.text('Total Pemasukan'), findsNothing);
     });
 
-    testWidgets('rincian muncul setelah satu ketukan', (tester) async {
+    testWidgets('rincian terbuka sejak beranda dibuka', (tester) async {
       await pumpBalance(tester);
-
-      await tester.tap(find.text('Lihat rincian'));
-      await tester.pumpAndSettle();
 
       expect(find.text('Total Pemasukan'), findsOneWidget);
       expect(find.text('Total Pengeluaran'), findsOneWidget);
       expect(find.text('Sembunyikan rincian'), findsOneWidget);
+    });
+
+    testWidgets('masih bisa dilipat sendiri kalau mau beranda ringkas', (
+      tester,
+    ) async {
+      await pumpBalance(tester);
+
+      await tester.tap(find.text('Sembunyikan rincian'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Total Pemasukan'), findsNothing);
+      expect(find.text('Lihat rincian'), findsOneWidget);
     });
 
     testWidgets('kalimat penjelas ikut tampil kalau jatahnya bisa dihitung', (
@@ -293,6 +287,53 @@ void main() {
       // kalau angkanya tetap bocor lewat sini.
       expect(find.textContaining('Rp 171rb'), findsNothing);
       expect(find.textContaining('Cukup sampai'), findsNothing);
+    });
+
+    testWidgets('PiRa duduk di dalam kartu pesan, bukan di sebelah saldo', (
+      tester,
+    ) async {
+      await pumpBalance(tester, withBudget: budget());
+
+      // Bingkai terdekat yang membungkus maskot adalah kartu pesan itu
+      // sendiri — kalimatnya harus ada di dalam bingkai yang sama, bukan
+      // sekadar bertetangga di kolom kartu saldo.
+      final messageCard = find
+          .ancestor(
+            of: find.byType(PiraMascot),
+            matching: find.byType(Container),
+          )
+          .first;
+
+      expect(
+        find.descendant(
+          of: messageCard,
+          matching: find.textContaining('Cukup sampai 31 Agu'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('kartu pesan tetap ada walau jatahnya belum bisa dihitung', (
+      tester,
+    ) async {
+      // Tanpa budget dulu kartunya hilang sama sekali. Sekarang PiRa tinggal
+      // di dalamnya, jadi yang berganti cuma kalimatnya.
+      await pumpBalance(tester, mood: PiraMood.hatiHati);
+
+      expect(find.byType(PiraMascot), findsOneWidget);
+      expect(
+        find.text(greetingForMood(PiraMood.hatiHati)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('maskot tidak ikut hilang saat saldo disembunyikan', (
+      tester,
+    ) async {
+      await pumpBalance(tester, withBudget: budget(), hidden: true);
+
+      expect(find.byType(PiraMascot), findsOneWidget);
+      expect(find.text(greetingForMood(PiraMood.santai)), findsOneWidget);
     });
 
     testWidgets('dua tombol aksi utama tersedia', (tester) async {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/transaction_provider.dart';
 import '../screens/ai_chat_panel.dart';
 
 class AiChatBubble extends StatefulWidget {
@@ -34,6 +37,14 @@ class _AiChatBubbleState extends State<AiChatBubble> {
 
   @override
   Widget build(BuildContext context) {
+    // Digerbangi di dalam widgetnya sendiri, bukan di tiap layar: pintasan ini
+    // dipasang di delapan layar, dan gerbang yang harus diulang delapan kali
+    // adalah gerbang yang cepat atau lambat terlewat di layar kesembilan.
+    final isVisible = context.select<TransactionProvider, bool>(
+      (provider) => provider.showAiAssistantShortcut,
+    );
+    if (!isVisible) return const SizedBox.shrink();
+
     return Positioned(
       left: _position.dx,
       top: _position.dy,

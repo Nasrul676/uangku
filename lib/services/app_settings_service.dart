@@ -14,6 +14,8 @@ class AppSettingsService {
   static const appFontFamilyKey = 'app_font_family';
   static const geminiApiKeyKey = 'gemini_api_key';
   static const geminiModelKey = 'gemini_model';
+  static const showCalculatorShortcutKey = 'show_calculator_shortcut';
+  static const showAiAssistantShortcutKey = 'show_ai_assistant_shortcut';
 
   static const defaultMapping = {
     'id': 'id',
@@ -187,6 +189,29 @@ class AppSettingsService {
       return;
     }
     await _secureStorage.write(key: geminiApiKeyKey, value: apiKey);
+  }
+
+  /// Kedua pintasan melayang menyala secara bawaan — itu keadaan yang sudah
+  /// dipakai pengguna sebelum setelan ini ada, jadi memperbarui aplikasi tidak
+  /// boleh diam-diam menghilangkan tombol yang sudah jadi kebiasaan.
+  Future<bool> getShowCalculatorShortcut() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(showCalculatorShortcutKey) ?? true;
+  }
+
+  Future<void> saveShowCalculatorShortcut(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(showCalculatorShortcutKey, value);
+  }
+
+  Future<bool> getShowAiAssistantShortcut() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(showAiAssistantShortcutKey) ?? true;
+  }
+
+  Future<void> saveShowAiAssistantShortcut(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(showAiAssistantShortcutKey, value);
   }
 
   Future<String> getGeminiModel() async {

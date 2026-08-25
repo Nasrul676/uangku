@@ -76,6 +76,13 @@ class TransactionProvider extends ChangeNotifier {
   bool _isBalanceHidden = false;
   bool _isRemovingBookPeriod = false;
 
+  /// Kedua pintasan melayang menyala sampai `loadSettings()` berkata lain.
+  /// Nilai awalnya sengaja `true`, sama dengan bawaan di penyimpanan: kalau
+  /// dimulai dari `false`, tombolnya akan berkedip hilang-muncul di setiap
+  /// kali aplikasi dibuka.
+  bool _showCalculatorShortcut = true;
+  bool _showAiAssistantShortcut = true;
+
   List<FinanceTransaction> get transactions {
     final selectedId = _selectedBookPeriodId;
     if (selectedId == null) return _allTransactions;
@@ -189,6 +196,8 @@ class TransactionProvider extends ChangeNotifier {
   int get planNotificationHour => _planNotificationHour;
   int get planNotificationMinute => _planNotificationMinute;
   bool get isBalanceHidden => _isBalanceHidden;
+  bool get showCalculatorShortcut => _showCalculatorShortcut;
+  bool get showAiAssistantShortcut => _showAiAssistantShortcut;
   bool get isRemovingBookPeriod => _isRemovingBookPeriod;
   String get geminiApiKey => _geminiApiKey;
   String get geminiModel => _geminiModel;
@@ -1004,6 +1013,24 @@ class TransactionProvider extends ChangeNotifier {
     _planNotificationMinute = await _settingsService
         .getPlanNotificationMinute();
     _isBalanceHidden = await _settingsService.getHideBalance();
+    _showCalculatorShortcut = await _settingsService
+        .getShowCalculatorShortcut();
+    _showAiAssistantShortcut = await _settingsService
+        .getShowAiAssistantShortcut();
+    notifyListeners();
+  }
+
+  Future<void> setShowCalculatorShortcut(bool value) async {
+    if (_showCalculatorShortcut == value) return;
+    _showCalculatorShortcut = value;
+    await _settingsService.saveShowCalculatorShortcut(value);
+    notifyListeners();
+  }
+
+  Future<void> setShowAiAssistantShortcut(bool value) async {
+    if (_showAiAssistantShortcut == value) return;
+    _showAiAssistantShortcut = value;
+    await _settingsService.saveShowAiAssistantShortcut(value);
     notifyListeners();
   }
 
