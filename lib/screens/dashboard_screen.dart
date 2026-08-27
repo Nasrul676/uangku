@@ -40,6 +40,8 @@ import '../widgets/dashboard/dashboard_buttons.dart';
 import '../widgets/dashboard/balance_card.dart';
 import '../widgets/dashboard/daily_allowance_card.dart';
 import '../widgets/dashboard/greeting_header.dart';
+import '../widgets/dashboard/dashboard_header_bar.dart';
+import '../widgets/transaction_calendar_panel.dart';
 import '../widgets/dashboard/pira_mascot.dart';
 import '../utils/daily_budget.dart';
 import '../widgets/dashboard/dashboard_pocket_section.dart';
@@ -81,6 +83,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Dipakai untuk menyuruh PiRa bereaksi setelah transaksi tersimpan —
   /// tanda bahwa catatannya masuk, bukan cuma layar yang tertutup.
   final GlobalKey<PiraMascotState> _mascotKey = GlobalKey<PiraMascotState>();
+
+  /// Menghubungkan gulir beranda dengan bar hijau di atasnya: begitu angka
+  /// saldo tergulung ke atas, salinannya naik menggantikan sapaan.
+  final ScrollController _homeScrollController = ScrollController();
   String _chartFilter = 'EXPENSE';
   int _chartRangeDays = 7;
   late String _userName;
@@ -110,6 +116,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _openExpenseInput();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _homeScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadLoggedInUserName() async {
@@ -954,257 +966,242 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(5, 10, 5, 0),
-              child: Consumer<TransactionProvider>(
-                builder: (context, provider, _) {
-                  final allTransactions = provider.transactions;
-                  final financialPlans = provider.financialPlans;
-                  final selectedBookId = provider.selectedBookPeriodId;
-                  final activeBook = provider.activeBookPeriod;
-                  final chartBookId = selectedBookId ?? activeBook?.id;
-                  final chartTransactions = chartBookId == null
-                      ? const <FinanceTransaction>[]
-                      : allTransactions
-                            .where((item) => item.bookPeriodId == chartBookId)
-                            .toList(growable: false);
-                  final incomeTransactions = allTransactions
-                      .where((item) => item.type == 'INCOME')
-                      .toList();
-                  final expenseTransactions = allTransactions
-                      .where((item) => item.type == 'EXPENSE')
-                      .toList();
+          // SafeArea sengaja tidak membungkus seluruh badan halaman: bar
+          // hijaunya harus menembus sampai belakang bilah status, kalau tidak
+          // akan tersisa pita abu setipis rambut di atas hijaunya.
+          body: Consumer<TransactionProvider>(
+            builder: (context, provider, _) {
+              final allTransactions = provider.transactions;
+              final financialPlans = provider.financialPlans;
+              final selectedBookId = provider.selectedBookPeriodId;
+              final activeBook = provider.activeBookPeriod;
+              final chartBookId = selectedBookId ?? activeBook?.id;
+              final chartTransactions = chartBookId == null
+                  ? const <FinanceTransaction>[]
+                  : allTransactions
+                        .where((item) => item.bookPeriodId == chartBookId)
+                        .toList(growable: false);
+              final incomeTransactions = allTransactions
+                  .where((item) => item.type == 'INCOME')
+                  .toList();
+              final expenseTransactions = allTransactions
+                  .where((item) => item.type == 'EXPENSE')
+                  .toList();
 
-                  final filteredRecent = _recentFilter == 'INCOME'
-                      ? incomeTransactions
-                      : _recentFilter == 'EXPENSE'
-                      ? expenseTransactions
-                      : allTransactions;
+              final filteredRecent = _recentFilter == 'INCOME'
+                  ? incomeTransactions
+                  : _recentFilter == 'EXPENSE'
+                  ? expenseTransactions
+                  : allTransactions;
 
-                  final totalIncome = incomeTransactions.fold<double>(
-                    0,
-                    (sum, tx) => sum + tx.amount,
-                  );
-                  final totalExpense = expenseTransactions.fold<double>(
-                    0,
-                    (sum, tx) => sum + tx.amount,
-                  );
-                  final netBalance = totalIncome - totalExpense;
-                  final currentTabKey = ValueKey(_currentIndex);
-                  final userName = _userName;
-                  // Sapaannya menyatu di sini, bukan diulang lagi di badan
-                  // halaman. Waktunya ikut jam supaya terasa menyapa, bukan
-                  // memasang label tetap.
-                  final hello = greetingFor(DateTime.now());
-                  final greeting = userName.isEmpty
-                      ? '$hello 👋'
-                      : '$hello, $userName 👋';
+              final totalIncome = incomeTransactions.fold<double>(
+                0,
+                (sum, tx) => sum + tx.amount,
+              );
+              final totalExpense = expenseTransactions.fold<double>(
+                0,
+                (sum, tx) => sum + tx.amount,
+              );
+              final netBalance = totalIncome - totalExpense;
+              final currentTabKey = ValueKey(_currentIndex);
+              final userName = _userName;
+              // Sapaannya menyatu di sini, bukan diulang lagi di badan
+              // halaman. Waktunya ikut jam supaya terasa menyapa, bukan
+              // memasang label tetap.
+              final hello = greetingFor(DateTime.now());
+              final greeting = userName.isEmpty
+                  ? '$hello 👋'
+                  : '$hello, $userName 👋';
 
-                  return Stack(
+              return Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_currentIndex == 0) ...[
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        greeting,
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Consumer<ShoppingProvider>(
-                                  builder: (context, shoppingProvider, child) {
-                                    final count =
-                                        shoppingProvider.unboughtCount;
-                                    return Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        CircleIconButton(
-                                          tooltip: 'Daftar belanja',
-                                          icon: Icons.shopping_cart_outlined,
-                                          onTap: () {
-                                            setState(() {
-                                              _previousIndex = _currentIndex;
-                                              _currentIndex = 2;
-                                            });
-                                          },
-                                        ),
-                                        if (count > 0)
-                                          Positioned(
-                                            right: -2,
-                                            top: -2,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(3),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFFF9F1C),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: const Color(
-                                                    0xFF111111,
-                                                  ),
-                                                  width: 1.5,
-                                                ),
-                                                boxShadow: [
-                                                  const BoxShadow(
-                                                    color: Color(0xFF111111),
-                                                    offset: Offset(1, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 16,
-                                                minHeight: 16,
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  count > 99
-                                                      ? '99+'
-                                                      : count.toString(),
-                                                  style: const TextStyle(
-                                                    color: Color(0xFF111111),
-                                                    fontSize: 8,
-                                                    fontWeight: FontWeight.w900,
-                                                    height: 1.0,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                Stack(
+                      if (_currentIndex == 0)
+                        DashboardHeaderBar(
+                          greeting: greeting,
+                          netBalance: netBalance,
+                          isBalanceHidden: provider.isBalanceHidden,
+                          scrollController: _homeScrollController,
+                          actions: [
+                            Consumer<ShoppingProvider>(
+                              builder: (context, shoppingProvider, child) {
+                                final count = shoppingProvider.unboughtCount;
+                                return Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    AnimatedBellIcon(
-                                      animate:
-                                          provider.unreadNotificationCount > 0,
-                                      child: CircleIconButton(
-                                        tooltip: 'Notifikasi',
-                                        icon: Icons.notifications_none_rounded,
-                                        onTap: () {
-                                          _showNotificationsBottomSheet(
-                                            context,
-                                            provider,
-                                            theme,
-                                          );
-                                        },
-                                      ),
+                                    CircleIconButton(
+                                      tooltip: 'Daftar belanja',
+                                      filled: false,
+                                      icon: Icons.shopping_cart_outlined,
+                                      onTap: () {
+                                        setState(() {
+                                          _previousIndex = _currentIndex;
+                                          _currentIndex = 2;
+                                        });
+                                      },
                                     ),
-                                    if (provider.unreadNotificationCount > 0)
+                                    if (count > 0)
                                       Positioned(
-                                        right: 0,
-                                        top: 0,
+                                        right: -2,
+                                        top: -2,
                                         child: Container(
-                                          width: 10,
-                                          height: 10,
+                                          padding: const EdgeInsets.all(3),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFE53935),
+                                            color: const Color(0xFFFF9F1C),
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: Colors.white,
+                                              color: const Color(0xFF111111),
                                               width: 1.5,
+                                            ),
+                                            boxShadow: [
+                                              const BoxShadow(
+                                                color: Color(0xFF111111),
+                                                offset: Offset(1, 1),
+                                              ),
+                                            ],
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              count > 99
+                                                  ? '99+'
+                                                  : count.toString(),
+                                              style: const TextStyle(
+                                                color: Color(0xFF111111),
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.w900,
+                                                height: 1.0,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                   ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              reverseDuration: const Duration(
-                                milliseconds: 260,
-                              ),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              transitionBuilder: (child, animation) {
-                                final isForward =
-                                    _currentIndex >= _previousIndex;
-                                final isIncoming = child.key == currentTabKey;
-                                final horizontalShift = isForward
-                                    ? 0.16
-                                    : -0.16;
-
-                                final offsetTween = isIncoming
-                                    ? Tween<Offset>(
-                                        begin: Offset(horizontalShift, 0),
-                                        end: Offset.zero,
-                                      )
-                                    : Tween<Offset>(
-                                        begin: Offset.zero,
-                                        end: Offset(-horizontalShift, 0),
-                                      );
-
-                                final positionAnimation = offsetTween.animate(
-                                  CurvedAnimation(
-                                    parent: isIncoming
-                                        ? animation
-                                        : ReverseAnimation(animation),
-                                    curve: Curves.easeOutCubic,
-                                  ),
-                                );
-
-                                final opacityAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: isIncoming
-                                      ? Curves.easeOut
-                                      : Curves.easeIn,
-                                );
-
-                                return FadeTransition(
-                                  opacity: opacityAnimation,
-                                  child: SlideTransition(
-                                    position: positionAnimation,
-                                    child: child,
-                                  ),
                                 );
                               },
-                              child: KeyedSubtree(
-                                key: currentTabKey,
-                                child: _buildCurrentTab(
-                                  theme: theme,
-                                  provider: provider,
-                                  allTransactions: allTransactions,
-                                  chartTransactions: chartTransactions,
-                                  financialPlans: financialPlans,
-                                  incomeTransactions: incomeTransactions,
-                                  expenseTransactions: expenseTransactions,
-                                  filteredRecent: filteredRecent,
-                                  totalIncome: totalIncome,
-                                  totalExpense: totalExpense,
-                                  netBalance: netBalance,
-                                  onAddIncome: _openIncomeInput,
-                                  onAddExpense: _openExpenseInput,
+                            ),
+                            const SizedBox(width: 8),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                AnimatedBellIcon(
+                                  animate: provider.unreadNotificationCount > 0,
+                                  child: CircleIconButton(
+                                    tooltip: 'Notifikasi',
+                                    filled: false,
+                                    icon: Icons.notifications_none_rounded,
+                                    onTap: () {
+                                      _showNotificationsBottomSheet(
+                                        context,
+                                        provider,
+                                        theme,
+                                      );
+                                    },
+                                  ),
                                 ),
+                                if (provider.unreadNotificationCount > 0)
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE53935),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        )
+                      else
+                        // Hanya sisipan bilah status. Jarak 10px di bawahnya
+                        // sudah dipasang tiap tab lewat paddingnya sendiri.
+                        SizedBox(height: MediaQuery.paddingOf(context).top),
+                      Expanded(
+                        child: SafeArea(
+                          top: false,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            reverseDuration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) {
+                              final isForward = _currentIndex >= _previousIndex;
+                              final isIncoming = child.key == currentTabKey;
+                              final horizontalShift = isForward ? 0.16 : -0.16;
+
+                              final offsetTween = isIncoming
+                                  ? Tween<Offset>(
+                                      begin: Offset(horizontalShift, 0),
+                                      end: Offset.zero,
+                                    )
+                                  : Tween<Offset>(
+                                      begin: Offset.zero,
+                                      end: Offset(-horizontalShift, 0),
+                                    );
+
+                              final positionAnimation = offsetTween.animate(
+                                CurvedAnimation(
+                                  parent: isIncoming
+                                      ? animation
+                                      : ReverseAnimation(animation),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              );
+
+                              final opacityAnimation = CurvedAnimation(
+                                parent: animation,
+                                curve: isIncoming
+                                    ? Curves.easeOut
+                                    : Curves.easeIn,
+                              );
+
+                              return FadeTransition(
+                                opacity: opacityAnimation,
+                                child: SlideTransition(
+                                  position: positionAnimation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: KeyedSubtree(
+                              key: currentTabKey,
+                              child: _buildCurrentTab(
+                                theme: theme,
+                                provider: provider,
+                                allTransactions: allTransactions,
+                                chartTransactions: chartTransactions,
+                                financialPlans: financialPlans,
+                                incomeTransactions: incomeTransactions,
+                                expenseTransactions: expenseTransactions,
+                                filteredRecent: filteredRecent,
+                                totalIncome: totalIncome,
+                                totalExpense: totalExpense,
+                                netBalance: netBalance,
+                                onAddIncome: _openIncomeInput,
+                                onAddExpense: _openExpenseInput,
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
-                  );
-                },
-              ),
-            ),
+                  ),
+                ],
+              );
+            },
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
@@ -1558,20 +1555,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required VoidCallback onAddExpense,
   }) {
     switch (_currentIndex) {
+      // Sisipan 5px ini dulu dipasang sekali untuk seluruh badan halaman.
+      // Sekarang tiap tab memasangnya sendiri, karena beranda perlu kartu
+      // saldonya menempel ke tepi layar sementara sisanya tetap masuk.
       case 1:
-        return _buildTransactionsTabScreen(
-          theme: theme,
-          provider: provider,
-          allTransactions: allTransactions,
-          financialPlans: financialPlans,
-          incomeTransactions: incomeTransactions,
-          expenseTransactions: expenseTransactions,
-          totalIncome: totalIncome,
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(5, 10, 5, 0),
+          child: _buildTransactionsTabScreen(
+            theme: theme,
+            provider: provider,
+            allTransactions: allTransactions,
+            financialPlans: financialPlans,
+            incomeTransactions: incomeTransactions,
+            expenseTransactions: expenseTransactions,
+            totalIncome: totalIncome,
+          ),
         );
       case 2:
-        return const ShoppingListScreen(isEmbedded: true);
+        return const Padding(
+          padding: EdgeInsets.fromLTRB(5, 10, 5, 0),
+          child: ShoppingListScreen(isEmbedded: true),
+        );
       case 3:
-        return const SettingsScreen(isEmbedded: true);
+        return const Padding(
+          padding: EdgeInsets.fromLTRB(5, 10, 5, 0),
+          child: SettingsScreen(isEmbedded: true),
+        );
       default:
         final now = DateTime.now();
         final activeBook = provider.activeBookPeriod;
@@ -1589,133 +1598,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
           totalIncome > 0 ? totalExpense / totalIncome : null,
         );
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          child: Column(
-            children: [
-              EntranceAnimation(
-                type: EntranceType.fadeScale,
-                delay: const Duration(milliseconds: 50),
-                duration: const Duration(milliseconds: 500),
-                child: GreetingHeader(now: now, activeBook: activeBook),
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // Di belakang daftarnya, bukan di depan: bidang ini cuma mengisi
+            // celah yang terbuka saat daftarnya ditarik melewati puncak.
+            // Tanpa itu, celahnya memperlihatkan latar scaffold dan hijau
+            // beranda terlihat terpotong pita gelap.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: HeaderOverscrollFill(
+                scrollController: _homeScrollController,
               ),
-              const SizedBox(height: 6),
-              // Balance card — flip entrance
-              EntranceAnimation(
-                type: EntranceType.flipX,
-                delay: const Duration(milliseconds: 100),
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeOutBack,
-                child: BalanceCard(
-                  theme: theme,
-                  totalIncome: totalIncome,
-                  totalExpense: totalExpense,
-                  netBalance: netBalance,
-                  isBalanceHidden: provider.isBalanceHidden,
-                  onToggleBalanceVisibility: () {
-                    provider.setBalanceHidden(!provider.isBalanceHidden);
-                  },
-                  onAddIncome: onAddIncome,
-                  onAddExpense: onAddExpense,
-                  mood: mood,
-                  budget: budget,
-                  mascotKey: _mascotKey,
-                  onTapMascot: () => _greetFromPira(mood),
-                  locations: provider.moneyLocationSummaries,
-                  unassignedBalance: provider.unassignedMoneyBalance,
-                  onManageLocations: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MoneyLocationListScreen(),
+            ),
+            SingleChildScrollView(
+              // Controller-nya dibagi dengan bar hijau di atas, yang memakai
+              // posisinya untuk menaikkan saldo menggantikan sapaan.
+              controller: _homeScrollController,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              child: Column(
+                children: [
+                  // Kartu saldo menempel ke tepi kiri-kanan layar, menyambung
+                  // dengan bar hijau di atasnya. Tanggal dan chip buku ikut masuk
+                  // ke dalamnya lewat slot `header` — kalau dibiarkan berdiri di
+                  // luar, keduanya membelah bidang hijau jadi dua potong.
+                  EntranceAnimation(
+                    type: EntranceType.flipX,
+                    delay: const Duration(milliseconds: 100),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutBack,
+                    child: BalanceCard(
+                      header: GreetingHeader(
+                        now: now,
+                        activeBook: activeBook,
+                        inkColor: AppTheme.borderColor,
+                      ),
+                      theme: theme,
+                      totalIncome: totalIncome,
+                      totalExpense: totalExpense,
+                      netBalance: netBalance,
+                      isBalanceHidden: provider.isBalanceHidden,
+                      onToggleBalanceVisibility: () {
+                        provider.setBalanceHidden(!provider.isBalanceHidden);
+                      },
+                      onAddIncome: onAddIncome,
+                      onAddExpense: onAddExpense,
+                      mood: mood,
+                      budget: budget,
+                      mascotKey: _mascotKey,
+                      onTapMascot: () => _greetFromPira(mood),
+                      locations: provider.moneyLocationSummaries,
+                      unassignedBalance: provider.unassignedMoneyBalance,
+                      onManageLocations: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MoneyLocationListScreen(),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              if (budget != null && !provider.isBalanceHidden) ...[
-                const SizedBox(height: 4),
-                EntranceAnimation(
-                  type: EntranceType.slideUp,
-                  delay: const Duration(milliseconds: 300),
-                  duration: const Duration(milliseconds: 500),
-                  child: DailyAllowanceCard(budget: budget),
-                ),
-              ],
-              const SizedBox(height: 10),
-              // Pockets — muncul satu per satu (animasi di dalam widget)
-              DashboardPocketSection(provider: provider),
-              const SizedBox(height: 10),
-              // Chart — slide from bottom
-              EntranceAnimation(
-                type: EntranceType.slideUp,
-                delay: const Duration(milliseconds: 500),
-                duration: const Duration(milliseconds: 700),
-                child: GraphCard(
-                  theme: theme,
-                  transactions: chartTransactions,
-                  selectedType: _chartFilter,
-                  selectedRangeDays: _chartRangeDays,
-                  selectedDetail: _selectedChartDetail,
-                  onSelectType: (type) => setState(() {
-                    _chartFilter = type;
-                    _selectedChartDetail = null;
-                  }),
-                  onSelectRangeDays: (days) => setState(() {
-                    _chartRangeDays = days;
-                    _selectedChartDetail = null;
-                  }),
-                  onBarTap: (detail) => setState(() {
-                    final isSame =
-                        _selectedChartDetail?.dayLabel == detail.dayLabel &&
-                        _selectedChartDetail?.amount == detail.amount;
-                    _selectedChartDetail = isSame ? null : detail;
-                  }),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Recent transactions — fade scale
-              EntranceAnimation(
-                type: EntranceType.fadeScale,
-                delay: const Duration(milliseconds: 700),
-                duration: const Duration(milliseconds: 600),
-                child: RecentSection(
-                  theme: theme,
-                  transactions: filteredRecent,
-                  isLoading: provider.isLoading,
-                  moneyLocationNames: provider.moneyLocationNames,
-                  headerBottom: Row(
-                    children: [
-                      FilterButton(
-                        label: 'Pemasukan',
-                        selected: _recentFilter == 'INCOME',
-                        onTap: () => setState(() {
-                          _recentFilter = _recentFilter == 'INCOME'
-                              ? 'ALL'
-                              : 'INCOME';
-                        }),
-                      ),
-                      const SizedBox(width: 8),
-                      FilterButton(
-                        label: 'Pengeluaran',
-                        selected: _recentFilter == 'EXPENSE',
-                        textColor: AppTheme.expenseRed,
-                        selectedColor: AppTheme.expenseLight,
-                        onTap: () => setState(() {
-                          _recentFilter = _recentFilter == 'EXPENSE'
-                              ? 'ALL'
-                              : 'EXPENSE';
-                        }),
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: Column(
+                      children: [
+                        if (budget != null && !provider.isBalanceHidden) ...[
+                          const SizedBox(height: 4),
+                          EntranceAnimation(
+                            type: EntranceType.slideUp,
+                            delay: const Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 500),
+                            child: DailyAllowanceCard(budget: budget),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        // Pockets — muncul satu per satu (animasi di dalam widget)
+                        DashboardPocketSection(provider: provider),
+                        const SizedBox(height: 10),
+                        // Chart — slide from bottom
+                        EntranceAnimation(
+                          type: EntranceType.slideUp,
+                          delay: const Duration(milliseconds: 500),
+                          duration: const Duration(milliseconds: 700),
+                          child: GraphCard(
+                            theme: theme,
+                            transactions: chartTransactions,
+                            selectedType: _chartFilter,
+                            selectedRangeDays: _chartRangeDays,
+                            selectedDetail: _selectedChartDetail,
+                            onSelectType: (type) => setState(() {
+                              _chartFilter = type;
+                              _selectedChartDetail = null;
+                            }),
+                            onSelectRangeDays: (days) => setState(() {
+                              _chartRangeDays = days;
+                              _selectedChartDetail = null;
+                            }),
+                            onBarTap: (detail) => setState(() {
+                              final isSame =
+                                  _selectedChartDetail?.dayLabel ==
+                                      detail.dayLabel &&
+                                  _selectedChartDetail?.amount == detail.amount;
+                              _selectedChartDetail = isSame ? null : detail;
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Kalender bulan berjalan. Grafik di atasnya menunjukkan
+                        // tujuh hari terakhir sebagai batang; kalender menunjukkan
+                        // sebulan penuh sebagai bentuk — keduanya menjawab "kapan"
+                        // pada rentang yang berbeda.
+                        if (activeBook != null)
+                          EntranceAnimation(
+                            type: EntranceType.slideUp,
+                            delay: const Duration(milliseconds: 600),
+                            duration: const Duration(milliseconds: 600),
+                            child: TransactionCalendarPanel(
+                              book: activeBook,
+                              transactions: allTransactions
+                                  .where(
+                                    (tx) => tx.bookPeriodId == activeBook.id,
+                                  )
+                                  .toList(growable: false),
+                              today: now,
+                              moneyLocationNames: provider.moneyLocationNames,
+                            ),
+                          ),
+                        const SizedBox(height: 10),
+                        // Recent transactions — fade scale
+                        EntranceAnimation(
+                          type: EntranceType.fadeScale,
+                          delay: const Duration(milliseconds: 700),
+                          duration: const Duration(milliseconds: 600),
+                          child: RecentSection(
+                            theme: theme,
+                            transactions: filteredRecent,
+                            isLoading: provider.isLoading,
+                            moneyLocationNames: provider.moneyLocationNames,
+                            headerBottom: Row(
+                              children: [
+                                FilterButton(
+                                  label: 'Pemasukan',
+                                  selected: _recentFilter == 'INCOME',
+                                  onTap: () => setState(() {
+                                    _recentFilter = _recentFilter == 'INCOME'
+                                        ? 'ALL'
+                                        : 'INCOME';
+                                  }),
+                                ),
+                                const SizedBox(width: 8),
+                                FilterButton(
+                                  label: 'Pengeluaran',
+                                  selected: _recentFilter == 'EXPENSE',
+                                  textColor: AppTheme.expenseRed,
+                                  selectedColor: AppTheme.expenseLight,
+                                  onTap: () => setState(() {
+                                    _recentFilter = _recentFilter == 'EXPENSE'
+                                        ? 'ALL'
+                                        : 'EXPENSE';
+                                  }),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 120,
+                        ), // Transparent space for navbar clearance
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(
-                height: 120,
-              ), // Transparent space for navbar clearance
-            ],
-          ),
+            ),
+          ],
         );
     }
   }

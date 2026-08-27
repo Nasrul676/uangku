@@ -41,6 +41,7 @@ class BalanceCard extends StatefulWidget {
     this.onManageLocations,
     this.mascotKey,
     this.onTapMascot,
+    this.header,
   });
 
   final ThemeData theme;
@@ -75,6 +76,13 @@ class BalanceCard extends StatefulWidget {
 
   final VoidCallback? onTapMascot;
 
+  /// Baris yang duduk paling atas di dalam kartu, sebelum label "SISA UANGMU".
+  ///
+  /// Beranda mengisinya dengan tanggal dan chip buku aktif. Keduanya dulu
+  /// berdiri sendiri di atas kartu, di atas latar abu — yang memutus bidang
+  /// hijau jadi dua potong begitu kartunya dibuat menempel ke tepi layar.
+  final Widget? header;
+
   @override
   State<BalanceCard> createState() => _BalanceCardState();
 }
@@ -88,13 +96,28 @@ class _BalanceCardState extends State<BalanceCard> {
   Widget build(BuildContext context) {
     final theme = widget.theme;
     final budget = widget.budget;
+    final header = widget.header;
 
     return AppCard(
-      padding: const EdgeInsets.all(16),
+      // Menempel ke tepi kiri dan kanan layar, menyambung mulus dengan bar
+      // hijau di atasnya. Sudut bawahnya saja yang dibulatkan — sudut atas
+      // yang ikut membulat akan memunculkan celah abu di pertemuan keduanya.
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       color: AppTheme.neoMint,
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
+      // Tanpa bingkai sama sekali. Bingkai satu sisi bukan bingkai seragam,
+      // dan Flutter tidak bisa menggambarnya mengikuti sudut membulat — garis
+      // lurusnya melewati lengkungan dan terbaca sebagai potongan. Batas
+      // kartunya sudah cukup dijelaskan oleh warna dan sudut bawahnya.
+      border: const Border(),
+      // Bayangan keras bawaan tema bergeser (6,6) — di kartu selebar layar
+      // ujungnya terpotong dan menyisakan balok hitam menggantung.
+      boxShadow: const [],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (header != null) ...[header, const SizedBox(height: 8)],
           Row(
             children: [
               Expanded(
@@ -175,35 +198,42 @@ class _BalanceCardState extends State<BalanceCard> {
             child: !_showDetail
                 ? const SizedBox(width: double.infinity)
                 : Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Column(
                       children: [
-                        // Kartu ini selalu berlatar mint, terang di mode
-                        // gelap maupun terang. Tanpa warna eksplisit, teksnya
-                        // ikut warna tema — putih di mode gelap, yang di atas
-                        // mint cuma 1.35:1 dan praktis tak terbaca. Tinta
-                        // gelap memberi 11.3:1.
-                        SummaryRow(
-                          label: 'Total Pemasukan',
-                          value: widget.totalIncome,
-                          labelColor: AppTheme.borderColor,
-                          valueColor: AppTheme.borderColor,
-                          isHidden: widget.isBalanceHidden,
+                        // Dua angka yang berlawanan arah, jadi dua bidang yang
+                        // berdampingan — bukan dua baris bertumpuk yang harus
+                        // dibaca berurutan untuk tahu mana yang lebih besar.
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _AmountTile(
+                                label: 'MASUK',
+                                value: widget.totalIncome,
+                                valueColor: AppTheme.incomeGreen,
+                                isHidden: widget.isBalanceHidden,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _AmountTile(
+                                label: 'KELUAR',
+                                value: widget.totalExpense,
+                                valueColor: AppTheme.expenseRed,
+                                isHidden: widget.isBalanceHidden,
+                              ),
+                            ),
+                          ],
                         ),
-                        SummaryRow(
-                          label: 'Total Pengeluaran',
-                          value: widget.totalExpense,
-                          labelColor: AppTheme.expenseRed,
-                          valueColor: AppTheme.expenseRed,
-                          isHidden: widget.isBalanceHidden,
-                        ),
-                        if (widget.locations.isNotEmpty)
+                        if (widget.locations.isNotEmpty) ...[
+                          const SizedBox(height: 10),
                           _MoneyLocationBreakdown(
                             locations: widget.locations,
                             unassignedBalance: widget.unassignedBalance,
                             isHidden: widget.isBalanceHidden,
                             onManage: widget.onManageLocations,
                           ),
+                        ],
                       ],
                     ),
                   ),
@@ -269,13 +299,6 @@ class _PiraMessage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          PiraMascot(
-            key: mascotKey,
-            mood: mood,
-            size: 64,
-            onTap: onTapMascot,
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
@@ -286,6 +309,8 @@ class _PiraMessage extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 10),
+          PiraMascot(key: mascotKey, mood: mood, size: 64, onTap: onTapMascot),
         ],
       ),
     );
@@ -426,59 +451,89 @@ class _ChunkyActionButtonState extends State<ChunkyActionButton> {
   }
 }
 
-class SummaryRow extends StatelessWidget {
-  const SummaryRow({
-    super.key,
+/// Warna label kecil di atas bidang kertas.
+///
+/// Kartu saldo selalu berlatar mint dan bidang ini selalu kertas terang, di
+/// mode gelap maupun terang. Warna yang diwarisi tema akan jadi putih di mode
+/// gelap — praktis tak terbaca di atas keduanya.
+final Color _paperLabelInk = AppTheme.borderColor.withValues(alpha: 0.55);
+
+/// Bidang kertas di dalam kartu saldo yang serba mint.
+///
+/// Dipakai bersama oleh ubin Masuk/Keluar dan kartu "uangmu ada di mana",
+/// supaya rinciannya terbaca sebagai satu keluarga bentuk, bukan tiga kotak
+/// yang kebetulan bertetangga.
+class _PaperPanel extends StatelessWidget {
+  const _PaperPanel({required this.child, required this.padding});
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppTheme.neoPaper,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderColor, width: 2),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Satu ubin angka: label kecil di atas, nominalnya di bawah.
+///
+/// Nominalnya rata kiri di bawah labelnya, bukan didorong ke kanan. Dua ubin
+/// bersebelahan dengan angka yang sama-sama rata kiri bisa dibandingkan
+/// sekilas; angka yang dirapatkan ke tepi masing-masing tidak.
+class _AmountTile extends StatelessWidget {
+  const _AmountTile({
     required this.label,
     required this.value,
-    this.withSign = false,
-    this.labelColor,
-    this.valueColor,
-    this.isHidden = false,
+    required this.valueColor,
+    required this.isHidden,
   });
 
   final String label;
   final double value;
-  final bool withSign;
-  final Color? labelColor;
-  final Color? valueColor;
+  final Color valueColor;
   final bool isHidden;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 2),
-      // Dulu label dan angka sama-sama non-flex dengan `Spacer` di tengah,
-      // jadi keduanya minta lebar penuhnya dan barisnya luber begitu hurufnya
-      // diperbesar. Sekarang masing-masing punya jatah: labelnya dipotong
-      // rapi, angkanya mengecil seperlunya — angka yang terpenggal tidak ada
-      // gunanya sama sekali.
-      child: Row(
+    final theme = Theme.of(context);
+
+    return _PaperPanel(
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: labelColor),
+          Text(
+            label,
+            maxLines: 1,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: _paperLabelInk,
             ),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: AnimatedVisibilityCurrencyText(
-                value: value,
-                withSign: withSign,
-                isHidden: isHidden,
-                alignment: Alignment.centerRight,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: valueColor,
-                ),
+          const SizedBox(height: 3),
+          // Ubinnya cuma selebar setengah kartu. Saldo delapan digit dengan
+          // `textScaler` 1,3 melebihi lebar itu — dikecilkan seperlunya, bukan
+          // dipotong, karena angka yang terpenggal tidak ada gunanya.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: AnimatedVisibilityCurrencyText(
+              value: value,
+              isHidden: isHidden,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: valueColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -685,10 +740,7 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
       // diubah lewat `layoutBuilder`, bukan lewat parameter.
       layoutBuilder: (currentChild, previousChildren) => Stack(
         alignment: alignment,
-        children: <Widget>[
-          ...previousChildren,
-          ?currentChild,
-        ],
+        children: <Widget>[...previousChildren, ?currentChild],
       ),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
@@ -718,7 +770,6 @@ class AnimatedVisibilityCurrencyText extends StatelessWidget {
   }
 }
 
-
 /// Rincian "uangnya ada di mana" di dalam panel lipat kartu saldo.
 ///
 /// Angka besar di atas kartu adalah saldo buku yang sedang dipilih, sedangkan
@@ -742,66 +793,68 @@ class _MoneyLocationBreakdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 10),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: AppTheme.borderColor.withValues(alpha: 0.18),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'UANGMU ADA DI MANA',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
-                  color: AppTheme.borderColor.withValues(alpha: 0.72),
+    // Pemisah lama berupa garis tipis di dalam bidang mint yang sama. Sekarang
+    // daftarnya punya bidang kertasnya sendiri — cakupannya memang berbeda
+    // dari angka di atasnya, dan bidang terpisah mengatakan itu tanpa kata.
+    return _PaperPanel(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'UANGMU ADA DI MANA',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: _paperLabelInk,
+                  ),
                 ),
               ),
-            ),
-            if (onManage != null)
-              InkWell(
-                onTap: onManage,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: Text(
-                    'Atur',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.borderColor,
-                      decoration: TextDecoration.underline,
+              if (onManage != null)
+                InkWell(
+                  onTap: onManage,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      'Atur',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.borderColor,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        for (final summary in locations)
-          _MoneyLocationRow(
-            icon: IconPickerUtils.getLucideIcon(summary.icon),
-            label: summary.name,
-            value: summary.balance,
-            isHidden: isHidden,
+            ],
           ),
-        if (unassignedBalance != 0)
-          _MoneyLocationRow(
-            icon: LucideIcons.circleHelp,
-            label: 'Belum ditentukan',
-            value: unassignedBalance,
-            isHidden: isHidden,
-            muted: true,
-          ),
-      ],
+          const SizedBox(height: 6),
+          for (final summary in locations)
+            _MoneyLocationRow(
+              icon: IconPickerUtils.getLucideIcon(summary.icon),
+              label: summary.name,
+              value: summary.balance,
+              isHidden: isHidden,
+            ),
+          if (unassignedBalance != 0)
+            _MoneyLocationRow(
+              icon: LucideIcons.circleHelp,
+              label: 'Belum ditentukan',
+              value: unassignedBalance,
+              isHidden: isHidden,
+              // Ikonnya saja yang diberi warna penanda. Labelnya sudah
+              // menyebut sendiri apa masalahnya, jadi warnanya menegaskan —
+              // bukan satu-satunya cara tahu baris ini perlu dibereskan.
+              iconColor: AppTheme.expenseRed,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -812,26 +865,29 @@ class _MoneyLocationRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.isHidden,
-    this.muted = false,
+    this.iconColor,
   });
 
   final IconData icon;
   final String label;
   final double value;
   final bool isHidden;
-  final bool muted;
+
+  /// Null berarti ikut tinta barisnya. Dipakai baris "belum ditentukan"
+  /// untuk menandai dirinya sendiri.
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppTheme.borderColor.withValues(alpha: muted ? 0.6 : 0.9);
+    final color = AppTheme.borderColor.withValues(alpha: 0.9);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 3),
+      padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: iconColor ?? color),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,

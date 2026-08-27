@@ -83,6 +83,15 @@ void main() {
     ) async {
       await pumpDetail(tester);
 
+      // ListView membangun anaknya secara malas, dan panel kategori kini
+      // duduk di bawah kalender pengeluaran.
+      await tester.scrollUntilVisible(
+        find.text('Makanan'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
       expect(find.text('Makanan'), findsOneWidget);
       expect(find.text('Transport'), findsOneWidget);
       expect(find.text('Lainnya (2 kategori)'), findsOneWidget);
@@ -95,10 +104,15 @@ void main() {
 
       // Tidak diulang inline di layar ini.
       expect(find.text('LAPORAN ARUS KAS'), findsNothing);
-      expect(find.text('Laporan arus kas lengkap'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Laporan arus kas lengkap'));
+      await tester.scrollUntilVisible(
+        find.text('Laporan arus kas lengkap'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
+
+      expect(find.text('Laporan arus kas lengkap'), findsOneWidget);
       await tester.tap(find.text('Laporan arus kas lengkap'));
       await tester.pumpAndSettle();
 

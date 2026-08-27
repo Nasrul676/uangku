@@ -312,7 +312,9 @@ class _ExpenseInputScreenState extends State<ExpenseInputScreen> {
       }
 
       final titleText = autofillTitle?.trim();
-      if (titleText != null && titleText.isNotEmpty) {
+      if (titleText != null &&
+          titleText.isNotEmpty &&
+          _titleController.text.trim().isEmpty) {
         _titleController.value = TextEditingValue(
           text: titleText,
           selection: TextSelection.collapsed(offset: titleText.length),

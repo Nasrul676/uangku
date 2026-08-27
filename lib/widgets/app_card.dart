@@ -16,6 +16,7 @@ class AppCard extends StatelessWidget {
     this.borderRadius,
     this.isInteractive = false,
     this.border,
+    this.boxShadow,
   });
 
   final Widget child;
@@ -26,6 +27,11 @@ class AppCard extends StatelessWidget {
   final BorderRadiusGeometry? borderRadius;
   final bool isInteractive;
   final BoxBorder? border;
+
+  /// Menimpa bayangan bawaan tema. Daftar kosong berarti "tanpa bayangan" —
+  /// dipakai kartu yang menempel ke tepi layar, yang bayangan kerasnya justru
+  /// terpotong tepi dan menyisakan garis hitam menggantung.
+  final List<BoxShadow>? boxShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +60,7 @@ class AppCard extends StatelessWidget {
                 ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
                 : BorderRadius.circular(12)),
         border: border ?? themeExtension?.cardBorder,
-        boxShadow: themeExtension?.cardShadow,
+        boxShadow: boxShadow ?? themeExtension?.cardShadow,
       ),
       child: child,
     );

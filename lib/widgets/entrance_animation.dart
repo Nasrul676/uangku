@@ -52,6 +52,13 @@ class _EntranceAnimationState extends State<EntranceAnimation> {
       duration: widget.duration,
       curve: widget.curve,
       builder: (context, value, child) {
+        // Begitu animasinya selesai, anaknya dikembalikan telanjang. `Transform`
+        // yang tertinggal — walau matriksnya sudah identitas — tetap memaksa
+        // lapisan komposit tersendiri, dan tepi lapisan itu meninggalkan garis
+        // rambut latar yang terlihat seperti bingkai di sambungan dua bidang
+        // sewarna.
+        if (value >= 1) return child!;
+
         switch (widget.type) {
           case EntranceType.flipX:
             return _buildFlip(value, child!);

@@ -55,6 +55,80 @@ String greetingForMood(PiraMood mood) {
   }
 }
 
+/// Satu periode penuh gerakan menganggur PiRa.
+///
+/// Sengaja panjang: yang dicari kesan mengapung, bukan bergetar. Semua
+/// suasana memakai periode yang sama dan hanya berbeda jumlah putarannya, jadi
+/// suasana bisa berganti di tengah jalan tanpa perlu menyetel ulang controller
+/// — yang akan membuat PiRa meloncat balik ke titik awal.
+const Duration piraDriftPeriod = Duration(seconds: 18);
+
+/// Bagaimana PiRa hanyut saat tidak disentuh.
+///
+/// Sumbu X dan Y punya jumlah putaran yang berbeda, jadi lintasannya berupa
+/// angka delapan — hanyut ke segala arah, bukan naik-turun di satu garis.
+class PiraDrift {
+  const PiraDrift({
+    required this.amplitudeX,
+    required this.amplitudeY,
+    required this.tilt,
+    required this.cyclesX,
+    required this.cyclesY,
+    required this.cyclesTilt,
+  });
+
+  /// Simpangan dalam piksel, diukur pada PiRa berukuran 64. Ukuran lain
+  /// menskalakannya, supaya maskot kecil tidak bergoyang sejauh yang besar.
+  final double amplitudeX;
+  final double amplitudeY;
+
+  /// Kemiringan maksimum dalam radian.
+  final double tilt;
+
+  /// Jumlah putaran penuh dalam satu [piraDriftPeriod]. Wajib bilangan bulat:
+  /// pecahan membuat gerakannya tersentak saat pengulangan kembali ke awal.
+  final int cyclesX;
+  final int cyclesY;
+  final int cyclesTilt;
+}
+
+/// Gerakannya ikut suasana, sama seperti wajahnya.
+///
+/// Yang santai mengapung lebar dan lambat; yang mulai waspada bergerak lebih
+/// kecil tapi lebih sering, seperti tidak bisa diam; yang baknya kering nyaris
+/// tidak bergerak — tetap tenang, cuma kehabisan tenaga.
+PiraDrift driftForMood(PiraMood mood) {
+  switch (mood) {
+    case PiraMood.santai:
+      return const PiraDrift(
+        amplitudeX: 4.0,
+        amplitudeY: 5.0,
+        tilt: 0.032,
+        cyclesX: 2,
+        cyclesY: 3,
+        cyclesTilt: 2,
+      );
+    case PiraMood.hatiHati:
+      return const PiraDrift(
+        amplitudeX: 2.4,
+        amplitudeY: 2.8,
+        tilt: 0.05,
+        cyclesX: 5,
+        cyclesY: 7,
+        cyclesTilt: 5,
+      );
+    case PiraMood.lewatBatas:
+      return const PiraDrift(
+        amplitudeX: 2.0,
+        amplitudeY: 3.0,
+        tilt: 0.018,
+        cyclesX: 1,
+        cyclesY: 2,
+        cyclesTilt: 1,
+      );
+  }
+}
+
 /// PiRa — kapibara yang berendam di bak, wajah dan tinggi airnya mengikuti
 /// keadaan uangmu.
 ///
@@ -62,12 +136,7 @@ String greetingForMood(PiraMood mood) {
 /// tetap tenang waktu saldonya menipis berkata "masih bisa dibenahi", bukan
 /// "kamu gagal" — dan pengguna yang merasa dihakimi berhenti mencatat.
 class PiraMascot extends StatefulWidget {
-  const PiraMascot({
-    super.key,
-    required this.mood,
-    this.size = 58,
-    this.onTap,
-  });
+  const PiraMascot({super.key, required this.mood, this.size = 58, this.onTap});
 
   final PiraMood mood;
   final double size;
@@ -80,16 +149,18 @@ class PiraMascot extends StatefulWidget {
 }
 
 class PiraMascotState extends State<PiraMascot>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   /// Reaksi sekali jalan — dipakai saat dicolek maupun saat transaksi
-  /// tersimpan.
-  ///
-  /// Sengaja tidak ada animasi napas yang berputar terus. Di ukuran 54 piksel
-  /// amplitudonya cuma sepersekian piksel — tak terlihat, tapi tetap membakar
-  /// baterai selama beranda terbuka, dan membuat setiap test yang menyentuh
-  /// kartu saldo tidak pernah bisa `pumpAndSettle`. PiRa bergerak hanya di
-  /// saat yang berarti: dicolek, transaksi tersimpan, dan suasana berubah.
+  /// tersimpan. Berlapis di atas gerakan menganggur, bukan menggantikannya.
   late final AnimationController _react;
+
+  /// Gerakan menganggur yang berputar terus selama PiRa terlihat.
+  ///
+  /// Hanya menggerakkan `Transform` di atas satu gambar yang sudah di-cache —
+  /// tidak ada tata letak yang dihitung ulang tiap frame. Tetap saja ini
+  /// berarti beranda menggambar terus-menerus, jadi ia benar-benar berhenti
+  /// (bukan sekadar beramplitudo nol) saat pengguna mematikan animasi.
+  late final AnimationController _drift;
 
   @override
   void initState() {
@@ -98,11 +169,28 @@ class PiraMascotState extends State<PiraMascot>
       vsync: this,
       duration: const Duration(milliseconds: 620),
     );
+    _drift = AnimationController(vsync: this, duration: piraDriftPeriod);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncDrift();
+  }
+
+  void _syncDrift() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      if (_drift.isAnimating) _drift.stop();
+      _drift.value = 0;
+      return;
+    }
+    if (!_drift.isAnimating) _drift.repeat();
   }
 
   @override
   void dispose() {
     _react.dispose();
+    _drift.dispose();
     super.dispose();
   }
 
@@ -134,21 +222,33 @@ class PiraMascotState extends State<PiraMascot>
         child: SizedBox.square(
           dimension: widget.size,
           child: AnimatedBuilder(
-            animation: _react,
+            animation: Listenable.merge([_react, _drift]),
             builder: (context, child) {
+              final drift = driftForMood(widget.mood);
+              // Simpangannya ditakar pada PiRa berukuran 64 — yang seukuran
+              // kuku jari tidak boleh berayun sejauh yang seukuran kartu.
+              final span = widget.size / 64;
+              final phase = _drift.value * 2 * math.pi;
+
+              // Keduanya sinus, jadi pada nilai controller 0 posisinya persis
+              // di titik asal. Itu yang membuat "animasi dimatikan" benar-
+              // benar berarti diam, bukan diam di tempat yang meleset.
+              final driftX =
+                  math.sin(phase * drift.cyclesX) * drift.amplitudeX * span;
+              final driftY =
+                  math.sin(phase * drift.cyclesY) * drift.amplitudeY * span;
+              final driftTilt = math.sin(phase * drift.cyclesTilt) * drift.tilt;
+
               // Satu lompatan yang mereda, bukan pantulan berulang — di
               // beranda yang tenang, gerakan berlebih terasa berisik.
               final t = _react.value;
               final decay = t == 0 ? 0.0 : math.sin(t * math.pi) * (1 - t);
 
               return Transform.translate(
-                offset: Offset(0, -decay * widget.size * 0.16),
+                offset: Offset(driftX, driftY - decay * widget.size * 0.16),
                 child: Transform.rotate(
-                  angle: decay * 0.10,
-                  child: Transform.scale(
-                    scale: 1 + decay * 0.06,
-                    child: child,
-                  ),
+                  angle: driftTilt + decay * 0.10,
+                  child: Transform.scale(scale: 1 + decay * 0.06, child: child),
                 ),
               );
             },
@@ -175,8 +275,9 @@ class _MoodImage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Berkasnya 512px sedangkan tampilnya sebesar kuku jari. Tanpa batas ini
     // Flutter menyimpan bitmap penuh di memori untuk setiap suasana.
-    final cacheSize =
-        (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 512);
+    final cacheSize = (size * MediaQuery.devicePixelRatioOf(context))
+        .round()
+        .clamp(64, 512);
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 420),

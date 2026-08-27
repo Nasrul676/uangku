@@ -6,6 +6,7 @@ import '../models/finance_transaction.dart';
 import '../utils/cashflow_export.dart';
 import '../utils/cashflow_recap.dart';
 import '../widgets/app_card.dart';
+import '../widgets/transaction_calendar_panel.dart';
 import '../theme/app_theme.dart';
 import 'cashflow_statement_screen.dart';
 
@@ -41,6 +42,16 @@ class BookCashflowDetailScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           _FlowPanel(recap: recap),
+          const SizedBox(height: 12),
+
+          // Ditaruh sebelum rincian kategori: setelah tahu berapa yang keluar,
+          // pertanyaan berikutnya biasanya "kapan", baru "untuk apa".
+          TransactionCalendarPanel(
+            book: book,
+            transactions: transactions,
+            today: DateTime.now(),
+            moneyLocationNames: moneyLocationNames,
+          ),
           const SizedBox(height: 12),
 
           if (categories.isNotEmpty) ...[

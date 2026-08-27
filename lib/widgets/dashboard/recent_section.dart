@@ -84,13 +84,12 @@ class RecentSection extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: transactions.length > 10 ? 10 : transactions.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) =>
-                  TransactionTile(
-                    item: transactions[index],
-                    theme: theme,
-                    moneyLocationName:
-                        moneyLocationNames[transactions[index].moneyLocationId],
-                  ),
+              itemBuilder: (context, index) => TransactionTile(
+                item: transactions[index],
+                theme: theme,
+                moneyLocationName:
+                    moneyLocationNames[transactions[index].moneyLocationId],
+              ),
             ),
         ],
       ),

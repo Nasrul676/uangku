@@ -72,7 +72,15 @@ class AppTheme {
   static const Color neoInk = Color(0xFF121212);
   static const Color neoYellow = Color(0xFFFFD84D);
   static const Color neoBlue = Color(0xFF8EC5FF);
-  static const Color neoMint = Color(0xFF98E6A8);
+
+  /// Hijau utama aplikasi — bar sapaan dan kartu saldo beranda memakainya
+  /// sebagai bidang selebar layar.
+  ///
+  /// Sengaja lebih tua dan kurang jenuh daripada mint terang: bidang sebesar
+  /// itu dengan hijau menyala terasa menyilaukan, terutama pagi hari dan di
+  /// mode gelap. Kontras tinta gelap di atasnya turun dari 11,4:1 ke 8,4:1 —
+  /// masih jauh di atas ambang AAA 7:1, apalagi AA 4,5:1.
+  static const Color neoMint = Color(0xFF7CC894);
   static const Color neoCoral = Color(0xFFFF9D8E);
   static const Color neoLavender = Color(0xFFC8B6FF);
 

@@ -176,10 +176,17 @@ class CircleIconButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.tooltip,
+    this.filled = true,
   });
 
   final IconData icon;
   final VoidCallback onTap;
+
+  /// Kalau false, ikonnya berdiri langsung di atas latar di belakangnya.
+  ///
+  /// Dipakai di bar hijau beranda: di sana latar tombolnya jadi bidang putih
+  /// yang memotong hijau, padahal ikonnya sendiri sudah cukup terbaca.
+  final bool filled;
 
   /// Dipakai sebagai tooltip sekaligus label untuk pembaca layar. Tanpa ini
   /// tombol hanya berupa ikon dan tidak terbaca oleh TalkBack/VoiceOver.
@@ -193,12 +200,24 @@ class CircleIconButton extends StatelessWidget {
       child: Container(
         width: 30,
         height: 30,
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          shape: BoxShape.circle,
-          border: Theme.of(context).extension<AppThemeExtension>()?.cardBorder,
+        decoration: filled
+            ? BoxDecoration(
+                color: Theme.of(context).cardTheme.color,
+                shape: BoxShape.circle,
+                border: Theme.of(
+                  context,
+                ).extension<AppThemeExtension>()?.cardBorder,
+              )
+            : null,
+        child: Icon(
+          icon,
+          size: filled ? 16 : 20,
+          // Tanpa latar sendiri, ikonnya duduk langsung di atas mint yang
+          // selalu terang — tinta tema mode gelap di situ hampir hilang.
+          color: filled
+              ? Theme.of(context).iconTheme.color
+              : AppTheme.borderColor,
         ),
-        child: Icon(icon, size: 16, color: Theme.of(context).iconTheme.color),
       ),
     );
 
